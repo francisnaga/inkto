@@ -147,19 +147,20 @@ export default function OutputBox({ text, sessionId, onReset }) {
                 boxShadow: '0 4px 20px rgba(0,0,0,0.07)',
                 marginBottom: '12px'
             }}>
-                {/* ── Top Toolbar: Copy / Print / Download ── */}
+                {/* ── Top Toolbar ── */}
                 <div style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '10px 14px', borderBottom: '1px solid #F3F4F6',
                     background: '#FAFAFA', gap: '8px', flexWrap: 'wrap'
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <FileText size={14} color="#9CA3AF" />
-                        <span style={{ fontSize: '12px', color: '#6B7280', fontWeight: '600' }}>Transcript</span>
-                        <span style={{
-                            fontSize: '10px', background: '#EFF6FF', color: '#2563EB',
-                            padding: '2px 7px', borderRadius: '99px', fontWeight: '700'
-                        }}>Editable</span>
+                        <ActionToggleBtn
+                            icon={<Share2 size={14} />}
+                            label="Share / Email"
+                            active={activePanel === 'share'}
+                            onClick={() => togglePanel('share')}
+                            color="#2563EB"
+                        />
                     </div>
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                         <ToolBtn icon={<Printer size={13} />} label="Print" onClick={handlePrint} />
@@ -180,36 +181,17 @@ export default function OutputBox({ text, sessionId, onReset }) {
                     </div>
                 </div>
 
-                {/* ── Bottom Toolbar: Email / Share ── */}
-                <div style={{
-                    display: 'flex', gap: '8px',
-                    padding: '10px 14px', borderBottom: '1px solid #F3F4F6',
-                    background: '#F8FAFC'
-                }}>
-                    <ActionToggleBtn
-                        icon={<Mail size={14} />}
-                        label="Email as .docx"
-                        active={activePanel === 'email'}
-                        onClick={() => togglePanel('email')}
-                        color="#374151"
-                    />
-                    <ActionToggleBtn
-                        icon={<Share2 size={14} />}
-                        label={sessionId ? 'Copy share link' : 'Share link (processing…)'}
-                        active={activePanel === 'share'}
-                        onClick={() => sessionId && togglePanel('share')}
-                        color="#2563EB"
-                        disabled={!sessionId}
-                    />
-                </div>
-
-                {/* ── Email Panel ── */}
-                {activePanel === 'email' && (
+                {/* ── Combined Share / Email Panel ── */}
+                {activePanel === 'share' && (
                     <div style={{
-                        padding: '16px', borderBottom: '1px solid #F3F4F6',
+                        padding: '20px', borderBottom: '1px solid #F3F4F6',
                         background: '#fff', animation: 'fadeIn 0.2s ease'
                     }}>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                        {/* Email Section */}
+                        <p style={{ margin: '0 0 10px', fontSize: '14px', fontWeight: '700', color: '#111827' }}>
+                            Email to yourself (Docx + Link)
+                        </p>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '24px' }}>
                             <div style={{ flex: 1 }}>
                                 <input
                                     type="email"
@@ -222,7 +204,7 @@ export default function OutputBox({ text, sessionId, onReset }) {
                                         width: '100%', padding: '10px 14px', borderRadius: '8px',
                                         border: `1px solid ${emailStatus?.type === 'error' ? '#FCA5A5' : '#D1D5DB'}`,
                                         fontSize: '14px', outline: 'none', boxSizing: 'border-box',
-                                        fontFamily: 'inherit'
+                                        fontFamily: 'inherit', background: '#F9FAFB'
                                     }}
                                 />
                                 {emailStatus && (
@@ -247,44 +229,38 @@ export default function OutputBox({ text, sessionId, onReset }) {
                                 {sendingEmail ? 'Sending…' : 'Send →'}
                             </button>
                         </div>
-                        <p style={{ margin: '8px 0 0', fontSize: '11px', color: '#9CA3AF' }}>
-                            Sends a .docx attachment + a secure link to open this transcript in your browser.
-                        </p>
-                    </div>
-                )}
 
-                {/* ── Share Panel ── */}
-                {activePanel === 'share' && sessionId && (
-                    <div style={{
-                        padding: '16px', borderBottom: '1px solid #F3F4F6',
-                        background: '#F0F9FF', animation: 'fadeIn 0.2s ease'
-                    }}>
-                        <p style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: '600', color: '#0F4C81' }}>
-                            Open this transcript on your PC — link expires in 7 days
-                        </p>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <div style={{
-                                flex: 1, padding: '10px 14px', borderRadius: '8px',
-                                background: '#fff', border: '1px solid #BAE6FD',
-                                fontSize: '13px', color: '#0369A1', overflowX: 'auto',
-                                whiteSpace: 'nowrap', fontFamily: 'monospace'
-                            }}>
-                                {window.location.origin}/session/{sessionId}
-                            </div>
-                            <button
-                                onClick={handleCopyLink}
-                                style={{
-                                    padding: '10px 18px',
-                                    background: linkCopied ? '#2563EB' : '#0EA5E9',
-                                    color: '#fff', border: 'none', borderRadius: '8px',
-                                    fontSize: '13px', fontWeight: '700',
-                                    cursor: 'pointer', transition: 'all 0.2s',
-                                    whiteSpace: 'nowrap'
-                                }}
-                            >
-                                {linkCopied ? '✓ Copied!' : 'Copy'}
-                            </button>
-                        </div>
+                        {/* Copy Link Section */}
+                        {sessionId && (
+                            <>
+                                <p style={{ margin: '0 0 10px', fontSize: '14px', fontWeight: '700', color: '#111827' }}>
+                                    Or copy link to continue on PC
+                                </p>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <div style={{
+                                        flex: 1, padding: '10px 14px', borderRadius: '8px',
+                                        background: '#F0F9FF', border: '1px solid #BAE6FD',
+                                        fontSize: '13px', color: '#0369A1', overflowX: 'auto',
+                                        whiteSpace: 'nowrap', fontFamily: 'monospace'
+                                    }}>
+                                        {window.location.origin}/session/{sessionId}
+                                    </div>
+                                    <button
+                                        onClick={handleCopyLink}
+                                        style={{
+                                            padding: '10px 18px',
+                                            background: linkCopied ? '#2563EB' : '#0EA5E9',
+                                            color: '#fff', border: 'none', borderRadius: '8px',
+                                            fontSize: '13px', fontWeight: '700',
+                                            cursor: 'pointer', transition: 'all 0.2s',
+                                            whiteSpace: 'nowrap'
+                                        }}
+                                    >
+                                        {linkCopied ? '✓ Copied!' : 'Copy'}
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
 

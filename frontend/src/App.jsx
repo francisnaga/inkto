@@ -46,9 +46,15 @@ function App() {
     <div className="app-container">
       <header>
         <h1>Inkto</h1>
-        <button className="btn-secondary" style={{ border: 'none', background: 'transparent' }}>
+        <a 
+          href="https://wa.me/2349130436032" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="btn-secondary" 
+          style={{ border: 'none', background: 'transparent', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
           <HelpCircle size={16} /> Help
-        </button>
+        </a>
       </header>
 
       <main>

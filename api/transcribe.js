@@ -1,8 +1,13 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const { GoogleGenAI } = require('@google/genai');
 const multer = require('multer');
-const { kv } = require('@vercel/kv');
+const { Redis } = require('@upstash/redis');
 const { nanoid } = require('nanoid');
+
+// ---- Redis Setup ----
+const redis = process.env.UPSTASH_REDIS_REST_URL 
+    ? new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN })
+    : null;
 
 // ---- Multer: memory storage ----
 const upload = multer({
@@ -58,15 +63,15 @@ module.exports = async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     // ---- IP Rate Limiting ----
-    // Requires KV_REST_API_URL and KV_REST_API_TOKEN in Vercel Env
-    if (process.env.KV_REST_API_URL) {
+    // Requires UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in Vercel Env
+    if (redis) {
         const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
         if (ip !== 'unknown') {
             const rlKey = `rate_limit:transcribe:${ip}`;
             try {
-                const count = await kv.incr(rlKey);
+                const count = await redis.incr(rlKey);
                 if (count === 1) {
-                    await kv.expire(rlKey, 3600); // 1 hour TTL
+                    await redis.expire(rlKey, 3600); // 1 hour TTL
                 }
                 if (count > 10) {
                     return res.status(429).json({ error: 'Too many requests. Please try again in an hour.' });
@@ -165,10 +170,10 @@ module.exports = async function handler(req, res) {
         const text = await Promise.any(providers);
         
         let sessionId = null;
-        if (process.env.KV_REST_API_URL) {
+        if (redis) {
             try {
                 sessionId = nanoid(8);
-                await kv.set(`session:${sessionId}`, {
+                await redis.set(`session:${sessionId}`, {
                     id: sessionId,
                     text,
                     createdAt: Date.now(),

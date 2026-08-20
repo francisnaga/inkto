@@ -36,6 +36,17 @@ function sanitize(str) {
     return (str || '').replace(/[^\x20-\x7E]/g, '').trim();
 }
 
+// Wraps a promise with a timeout that rejects after ms milliseconds
+function withTimeout(promise, ms, label) {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+        promise.then(
+            val => { clearTimeout(timer); resolve(val); },
+            err => { clearTimeout(timer); reject(err); }
+        );
+    });
+}
+
 module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -71,11 +82,20 @@ module.exports = async function handler(req, res) {
 
     console.log(`Received ${files.length} file(s) for transcription`);
 
-    // ---- Try Anthropic ----
     const anthropicKey = sanitize(process.env.ANTHROPIC_API_KEY);
+    const geminiKey = sanitize(process.env.GEMINI_API_KEY);
+
+    if (!anthropicKey && !geminiKey) {
+        return res.status(500).json({ error: 'No API keys configured on the server.' });
+    }
+
+    // ---- Build provider promises ----
+    const providers = [];
+
+    // Anthropic (Claude) — capped at 45s so a slow failure doesn't block Gemini
     if (anthropicKey) {
-        try {
-            console.log('Trying Anthropic...');
+        const claudePromise = (async () => {
+            console.log('Starting Anthropic...');
             const anthropic = new Anthropic.default({ apiKey: anthropicKey });
             const response = await anthropic.messages.create({
                 model: 'claude-3-5-sonnet-20241022',
@@ -85,63 +105,49 @@ module.exports = async function handler(req, res) {
                 messages: [{ role: 'user', content: [...dataBlocks, { type: 'text', text: userText }] }]
             });
             console.log('Anthropic succeeded.');
-            return res.json({ success: true, text: response.content[0].text });
-        } catch (err) {
-            console.error('Anthropic failed:', err.message);
-        }
+            return response.content[0].text;
+        })();
+        providers.push(withTimeout(claudePromise, 45000, 'Anthropic'));
     }
 
-    // ---- Fallback: Gemini ----
-    const geminiKey = sanitize(process.env.GEMINI_API_KEY);
-    if (!geminiKey) {
-        return res.status(500).json({ error: 'No API keys configured. Add ANTHROPIC_API_KEY or GEMINI_API_KEY to Vercel environment variables.' });
+    // Gemini (free-tier cascade: 3.5-flash-lite → 3.1-flash-lite)
+    if (geminiKey) {
+        const geminiPromise = (async () => {
+            const gemini = new GoogleGenAI({ apiKey: geminiKey });
+            const parts = [
+                ...dataBlocks.map(b => ({ inlineData: { mimeType: b.source.media_type, data: b.source.data } })),
+                { text: userText }
+            ];
+            const modelChain = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
+            for (const model of modelChain) {
+                try {
+                    console.log(`Starting Gemini (${model})...`);
+                    const response = await gemini.models.generateContent({
+                        model,
+                        contents: [{ role: 'user', parts }],
+                        config: { systemInstruction: SYSTEM_PROMPT, temperature: 0.1 }
+                    });
+                    console.log(`Gemini ${model} succeeded.`);
+                    return response.text;
+                } catch (err) {
+                    console.warn(`Gemini ${model} failed:`, err.message.substring(0, 100));
+                }
+            }
+            throw new Error('All Gemini models failed');
+        })();
+        providers.push(withTimeout(geminiPromise, 55000, 'Gemini'));
     }
 
+    // ---- Race: return whoever responds first ----
     try {
-        console.log('Trying Gemini (3.6-flash)...');
-        const gemini = new GoogleGenAI({ apiKey: geminiKey });
-        const parts = [
-            ...dataBlocks.map(b => ({ inlineData: { mimeType: b.source.media_type, data: b.source.data } })),
-            { text: userText }
-        ];
-        
-        const modelChain = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
-        let lastError = null;
-
-        for (const model of modelChain) {
-            try {
-                console.log(`Trying ${model}...`);
-                const response = await gemini.models.generateContent({
-                    model,
-                    contents: [{ role: 'user', parts }],
-                    config: { 
-                        systemInstruction: SYSTEM_PROMPT,
-                        temperature: 0.1
-                    }
-                });
-                console.log(`${model} succeeded.`);
-                return res.json({ success: true, text: response.text });
-            } catch (modelErr) {
-                console.warn(`${model} failed:`, modelErr.message.substring(0, 120));
-                lastError = modelErr;
-            }
-        }
-        // All models in chain failed
-        const failMsg = lastError ? lastError.message : 'Unknown error';
-        let errorMsg = failMsg;
-        try {
-            const match = failMsg.match(/(\{.*\})/);
-            if (match) {
-                const parsed = JSON.parse(match[1]);
-                if (parsed.error && parsed.error.message) errorMsg = parsed.error.message;
-            }
-        } catch (e) {}
-
-        return res.status(500).json({ error: `AI overloaded. Please tap Try Again — it usually recovers quickly.` });
-
+        const text = await Promise.any(providers);
+        return res.json({ success: true, text });
     } catch (err) {
-        console.error('Gemini setup error:', err.message);
-        return res.status(500).json({ error: `Server error: ${err.message}` });
+        // Promise.any rejects with AggregateError when ALL providers fail
+        console.error('All providers failed:', err.errors || err.message);
+        return res.status(500).json({
+            error: 'AI is temporarily unavailable. Please tap Try Again — it usually recovers quickly.'
+        });
     }
 };
 

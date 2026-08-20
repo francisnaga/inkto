@@ -1,14 +1,17 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenAI } from '@google/genai';
 
+const getSafeKey = (key) => key ? key.trim() : null;
+
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || 'dummy_key',
+  apiKey: getSafeKey(process.env.ANTHROPIC_API_KEY) || 'dummy_key',
 });
 
 // Initialize Gemini if key exists
 let gemini = null;
-if (process.env.GEMINI_API_KEY) {
-    gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const geminiKey = getSafeKey(process.env.GEMINI_API_KEY);
+if (geminiKey) {
+    gemini = new GoogleGenAI({ apiKey: geminiKey });
 }
 
 const SYSTEM_PROMPT = `You are a precise document transcription assistant. Your job is to transcribe handwritten text from document images with maximum accuracy.

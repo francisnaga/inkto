@@ -21,15 +21,16 @@ function App() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (loginInput.trim()) {
-      localStorage.setItem('handscript_password', loginInput);
-      setPassword(loginInput);
+    const pwd = loginInput.trim();
+    if (pwd) {
+      localStorage.setItem('handscript_password', pwd);
+      setPassword(pwd);
       setIsAuthenticated(true);
     }
   };
 
   const handleTranscribe = () => {
-    transcribe(customPrompt, password);
+    transcribe(customPrompt, password.trim());
   };
 
   // If unauthorized error, reset auth state
@@ -72,7 +73,7 @@ function App() {
               <button type="submit" className="btn-primary" style={{ marginTop: '0' }}>Login</button>
             </form>
             {state === 'error' && error === 'UNAUTHORIZED' && (
-              <ErrorMessage message="Invalid password" onRetry={() => {}} />
+              <ErrorMessage message="Invalid password" onRetry={() => {}} onCancel={() => {}} />
             )}
           </div>
         ) : (
@@ -125,10 +126,11 @@ function App() {
             )}
 
             {/* State: error */}
-            {state === 'error' && error !== 'UNAUTHORIZED' && (
+            {state === 'error' && (
               <ErrorMessage 
                 message={error} 
                 onRetry={handleTranscribe} 
+                onCancel={reset}
               />
             )}
           </>

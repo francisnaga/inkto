@@ -1,7 +1,7 @@
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 
-export default function ErrorMessage({ message, onRetry }) {
+export default function ErrorMessage({ message, onRetry, onCancel }) {
     if (!message) return null;
     
     return (
@@ -33,25 +33,41 @@ export default function ErrorMessage({ message, onRetry }) {
                     {message}
                 </div>
             </div>
-            <button 
-                onClick={onRetry}
-                style={{
-                    marginTop: '8px',
-                    padding: '10px 24px',
-                    background: '#F3F4F6',
-                    border: 'none',
-                    borderRadius: '10px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: '#374151',
-                    cursor: 'pointer',
-                    transition: 'background 0.2s'
-                }}
-                onMouseOver={(e) => e.target.style.background = '#E5E7EB'}
-                onMouseOut={(e) => e.target.style.background = '#F3F4F6'}
-            >
-                Try Again
-            </button>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <button 
+                    onClick={onCancel}
+                    style={{
+                        padding: '10px 24px',
+                        background: '#fff',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: '10px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: '#6B7280',
+                        cursor: 'pointer'
+                    }}
+                >
+                    Go Back
+                </button>
+                <button 
+                    onClick={onRetry}
+                    style={{
+                        padding: '10px 24px',
+                        background: '#F3F4F6',
+                        border: 'none',
+                        borderRadius: '10px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: '#374151',
+                        cursor: 'pointer',
+                        transition: 'background 0.2s'
+                    }}
+                    onMouseOver={(e) => e.target.style.background = '#E5E7EB'}
+                    onMouseOut={(e) => e.target.style.background = '#F3F4F6'}
+                >
+                    Try Again
+                </button>
+            </div>
         </div>
     );
 }

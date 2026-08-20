@@ -43,7 +43,7 @@ export function useTranscribe() {
             const response = await fetch('/api/transcribe', {
                 method: 'POST',
                 headers: {
-                    ...(password ? { 'Authorization': `Bearer ${password}` } : {})
+                    ...(password ? { 'Authorization': `Bearer ${password.trim()}` } : {})
                 },
                 body: formData,
             });

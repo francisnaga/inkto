@@ -103,8 +103,7 @@ module.exports = async function handler(req, res) {
             { text: userText }
         ];
         
-        // Try models in order: best quality first, then stable fallbacks
-        const modelChain = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+        const modelChain = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
         let lastError = null;
 
         for (const model of modelChain) {

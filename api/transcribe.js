@@ -96,22 +96,48 @@ module.exports = async function handler(req, res) {
     }
 
     try {
-        console.log('Trying Gemini...');
+        console.log('Trying Gemini (3.6-flash)...');
         const gemini = new GoogleGenAI({ apiKey: geminiKey });
         const parts = [
             ...imageBlocks.map(b => ({ inlineData: { mimeType: b.source.media_type, data: b.source.data } })),
             { text: userText }
         ];
-        const response = await gemini.models.generateContent({
-            model: 'gemini-3.6-flash',
-            contents: [{ role: 'user', parts }],
-            config: { systemInstruction: SYSTEM_PROMPT }
-        });
-        console.log('Gemini succeeded.');
-        return res.json({ success: true, text: response.text });
+        
+        try {
+            const response = await gemini.models.generateContent({
+                model: 'gemini-3.6-flash',
+                contents: [{ role: 'user', parts }],
+                config: { systemInstruction: SYSTEM_PROMPT }
+            });
+            console.log('Gemini 3.6 succeeded.');
+            return res.json({ success: true, text: response.text });
+        } catch (geminiErr) {
+            console.warn('Gemini 3.6 failed, trying 1.5-flash:', geminiErr.message);
+            // Fallback to 1.5-flash if 3.6 is overloaded
+            const fallbackResponse = await gemini.models.generateContent({
+                model: 'gemini-1.5-flash',
+                contents: [{ role: 'user', parts }],
+                config: { systemInstruction: SYSTEM_PROMPT }
+            });
+            console.log('Gemini 1.5 succeeded.');
+            return res.json({ success: true, text: fallbackResponse.text });
+        }
     } catch (err) {
-        console.error('Gemini failed:', err.message);
-        return res.status(500).json({ error: `Both AI providers failed. Details: ${err.message}` });
+        console.error('All Gemini attempts failed:', err.message);
+        
+        let errorMsg = err.message;
+        try {
+            // Try to parse the Google API error JSON if it's embedded in the message
+            const match = err.message.match(/(\{.*\})/);
+            if (match) {
+                const parsed = JSON.parse(match[1]);
+                if (parsed.error && parsed.error.message) {
+                    errorMsg = parsed.error.message;
+                }
+            }
+        } catch (e) {}
+
+        return res.status(500).json({ error: `AI is currently overloaded: ${errorMsg}. Please try again in a few moments.` });
     }
 };
 

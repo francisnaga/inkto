@@ -7,7 +7,7 @@ const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 25 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
-        const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'image/gif'];
+        const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'image/gif', 'application/pdf'];
         cb(null, allowed.includes(file.mimetype));
     }
 });
@@ -52,14 +52,14 @@ module.exports = async function handler(req, res) {
 
     const files = req.files;
     if (!files || files.length === 0) {
-        return res.status(400).json({ error: 'No image files received. Please upload JPG, PNG, or WEBP images.' });
+        return res.status(400).json({ error: 'No valid files received. Please upload images or PDFs.' });
     }
 
-    // ---- Build image blocks ----
-    const imageBlocks = files.map(file => {
+    // ---- Build data blocks ----
+    const dataBlocks = files.map(file => {
         let mediaType = file.mimetype === 'image/jpg' ? 'image/jpeg' : file.mimetype;
         return {
-            type: 'image',
+            type: mediaType === 'application/pdf' ? 'document' : 'image',
             source: { type: 'base64', media_type: mediaType, data: file.buffer.toString('base64') }
         };
     });
@@ -80,7 +80,7 @@ module.exports = async function handler(req, res) {
                 model: 'claude-3-5-sonnet-20241022',
                 max_tokens: 8192,
                 system: SYSTEM_PROMPT,
-                messages: [{ role: 'user', content: [...imageBlocks, { type: 'text', text: userText }] }]
+                messages: [{ role: 'user', content: [...dataBlocks, { type: 'text', text: userText }] }]
             });
             console.log('Anthropic succeeded.');
             return res.json({ success: true, text: response.content[0].text });
@@ -99,7 +99,7 @@ module.exports = async function handler(req, res) {
         console.log('Trying Gemini (3.6-flash)...');
         const gemini = new GoogleGenAI({ apiKey: geminiKey });
         const parts = [
-            ...imageBlocks.map(b => ({ inlineData: { mimeType: b.source.media_type, data: b.source.data } })),
+            ...dataBlocks.map(b => ({ inlineData: { mimeType: b.source.media_type, data: b.source.data } })),
             { text: userText }
         ];
         

@@ -25,7 +25,8 @@ export default function UploadZone({ onFilesSelected }) {
             const finalFiles = [];
             for (const file of fileList) {
                 try {
-                    if (file.type === 'application/pdf') {
+                    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+                    if (isPdf) {
                         const images = await convertPdfToImages(file);
                         for (const img of images) {
                             const compressed = await compressImage(img).catch(() => img);

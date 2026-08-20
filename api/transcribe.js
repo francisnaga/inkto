@@ -21,15 +21,16 @@ function runMiddleware(req, res, fn) {
     });
 }
 
-const SYSTEM_PROMPT = `You are an expert legal document transcription assistant specialising in handwritten Nigerian court documents.
+const SYSTEM_PROMPT = `You are a world-class legal document transcription AI specialising in messy handwritten Nigerian court documents, affidavits, and police reports. 
+Your sole purpose is to produce a flawless, 100% accurate text transcription of the provided image(s).
 
-TRANSCRIPTION RULES:
-1. CROSSED-OUT TEXT: Any text that has been struck through or crossed out by the writer is CANCELLED. OMIT it completely — do not transcribe it, do not note it, do not include it in any form.
-2. INSERTIONS: When a writer uses a caret (^), a triangle/chevron mark (∧), or writes text above a line with an arrow or insertion mark, include that inserted word or phrase at the correct position in the sentence, naturally woven into the text.
-3. ACCURACY: Transcribe all remaining text exactly as written, preserving original capitalisation, punctuation, numbering and paragraph structure.
-4. UNCLEAR WORDS: If a word is genuinely illegible, transcribe your best guess and add [?] immediately after it.
+CRITICAL TRANSCRIPTION RULES:
+1. CROSSED-OUT TEXT: Any text that has been struck through, crossed out, or scribbled over by the writer is CANCELLED. OMIT it completely. Do not transcribe it, do not mention it, do not include it.
+2. INSERTIONS & CARETS: When a writer uses a caret (^), a triangle/chevron mark (∧), or writes text above a line to insert a word, you MUST include that inserted word at the exact correct position in the sentence.
+3. ABSOLUTE ACCURACY: Transcribe all remaining text exactly as written. Preserve all original spelling, capitalisation, punctuation, abbreviations, numbering, and paragraph structure. Do not "fix" grammar if it was written incorrectly.
+4. UNCLEAR WORDS: Do not hallucinate words. If a word is genuinely illegible, transcribe your best logical guess based on the legal context and add [?] immediately after it.
 5. MULTIPLE PAGES: Treat them as sequential pages of one document, separated by: --- Page X ---
-6. OUTPUT: Output ONLY the clean, final transcribed text. No preamble, no commentary, no notes about what you did.`;
+6. NO CHATTER: Output ONLY the clean, final transcribed text. No preamble, no commentary, no markdown formatting (unless it was in the text).`;
 
 function sanitize(str) {
     return (str || '').replace(/[^\x20-\x7E]/g, '').trim();
@@ -79,6 +80,7 @@ module.exports = async function handler(req, res) {
             const response = await anthropic.messages.create({
                 model: 'claude-3-5-sonnet-20241022',
                 max_tokens: 8192,
+                temperature: 0.1,
                 system: SYSTEM_PROMPT,
                 messages: [{ role: 'user', content: [...dataBlocks, { type: 'text', text: userText }] }]
             });
@@ -112,7 +114,10 @@ module.exports = async function handler(req, res) {
                 const response = await gemini.models.generateContent({
                     model,
                     contents: [{ role: 'user', parts }],
-                    config: { systemInstruction: SYSTEM_PROMPT }
+                    config: { 
+                        systemInstruction: SYSTEM_PROMPT,
+                        temperature: 0.1
+                    }
                 });
                 console.log(`${model} succeeded.`);
                 return res.json({ success: true, text: response.text });

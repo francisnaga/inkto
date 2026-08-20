@@ -9,7 +9,7 @@ export default function LandingPage({ onGetStarted }) {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: '20px 40px', borderBottom: '1px solid #E2E2DC', background: '#fff'
       }}>
-        <span style={{ fontWeight: 700, fontSize: '18px', letterSpacing: '-0.3px' }}>Scriva</span>
+        <span style={{ fontWeight: 700, fontSize: '18px', letterSpacing: '-0.3px' }}>Inkto</span>
         <button onClick={onGetStarted} style={{
           padding: '8px 20px', background: '#1A1A1A', color: '#fff',
           border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer'
@@ -32,7 +32,7 @@ export default function LandingPage({ onGetStarted }) {
           margin: '0 auto 40px', lineHeight: 1.6
         }}>
           Snap a photo or upload a scanned PDF of any handwritten document.
-          Scriva reads it and gives you clean, editable text in seconds.
+          Inkto reads it and gives you clean, editable text in seconds.
         </p>
         <button onClick={onGetStarted} style={{
           padding: '16px 36px', background: '#2563EB', color: '#fff',
@@ -54,7 +54,7 @@ export default function LandingPage({ onGetStarted }) {
           boxShadow: '0 20px 60px rgba(0,0,0,0.12)',
           border: '1px solid #E2E2DC'
         }}>
-          <img src="/hero.jpg" alt="Scriva in action" style={{ width: '100%', display: 'block' }} />
+          <img src="/hero.jpg" alt="Inkto in action" style={{ width: '100%', display: 'block' }} />
         </div>
       </section>
 
@@ -94,7 +94,7 @@ export default function LandingPage({ onGetStarted }) {
           border: 'none', borderRadius: '10px', fontSize: '15px',
           fontWeight: '700', cursor: 'pointer'
         }}>
-          Launch Scriva →
+          Launch Inkto →
         </button>
       </section>
 
@@ -103,7 +103,7 @@ export default function LandingPage({ onGetStarted }) {
         textAlign: 'center', padding: '24px',
         fontSize: '13px', color: '#aaa', background: '#1A1A1A'
       }}>
-        © {new Date().getFullYear()} Scriva
+        © {new Date().getFullYear()} Inkto
       </footer>
     </div>
   );

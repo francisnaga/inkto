@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'HandScript Transcriber',
-        short_name: 'HandScript',
+        name: 'Scriva Transcriber',
+        short_name: 'Scriva',
         description: 'Transcribe handwritten documents easily',
         theme_color: '#F7F7F5',
         icons: [

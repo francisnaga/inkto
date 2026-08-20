@@ -45,7 +45,7 @@ function App() {
   return (
     <div className="app-container">
       <header>
-        <h1>HandScript</h1>
+        <h1>Scriva</h1>
         <button className="btn-secondary" style={{ border: 'none', background: 'transparent' }}>
           <HelpCircle size={16} /> Help
         </button>

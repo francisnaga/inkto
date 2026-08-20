@@ -31,7 +31,7 @@ module.exports = async function handler(req, res) {
         const dateStr = new Date().toISOString().slice(0, 10);
 
         const { data, error } = await resend.emails.send({
-            from: 'Inkto Transcriber <onboarding@resend.dev>', // If domain is not verified, resend.dev works for testing to the signed-up email
+            from: 'Inkto Transcriber <noreply@inkto.jointaccount.org>',
             to: recipientEmail,
             subject: `Inkto Transcript - ${dateStr}`,
             html: '<p>Here is your transcribed legal document attached as a Microsoft Word (.docx) file.</p><p><i>Sent securely from Inkto.</i></p>',

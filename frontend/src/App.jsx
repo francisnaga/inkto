@@ -167,7 +167,11 @@ function App() {
     return (
         <div className="app-container">
             <header>
-                <h1>Inkto</h1>
+                <h1
+                    onClick={() => setShowLanding(true)}
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                    title="Back to home"
+                >Inkto</h1>
                 <a
                     href="https://wa.me/2349130436032"
                     target="_blank" rel="noopener noreferrer"

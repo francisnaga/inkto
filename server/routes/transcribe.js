@@ -24,8 +24,10 @@ const upload = multer({
 router.post('/', upload.array('files', 20), async (req, res) => {
     // Basic Authentication Check
     if (process.env.APP_PASSWORD) {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || authHeader !== `Bearer ${process.env.APP_PASSWORD}`) {
+        const expectedPassword = process.env.APP_PASSWORD.trim();
+        const authHeader = (req.headers.authorization || '').trim();
+        const expectedHeader = `Bearer ${expectedPassword}`;
+        if (authHeader !== expectedHeader) {
             return res.status(401).json({ error: "Unauthorized: Invalid or missing password" });
         }
     }

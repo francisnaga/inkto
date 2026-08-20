@@ -240,7 +240,7 @@ export default function OutputBox({ text, sessionId, onReset }) {
                                     border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700',
                                     cursor: sendingEmail ? 'wait' : 'pointer',
                                     opacity: sendingEmail ? 0.6 : 1, whiteSpace: 'nowrap',
-                                    transition: 'opacity 0.2s'
+                                    transition: 'opacity 0.2s', minWidth: '100px', flexShrink: 0
                                 }}
                             >
                                 {sendingEmail ? 'Sending…' : 'Send →'}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Scale, Mail, Monitor, FileText, Camera, Download } from 'lucide-react';
+import { Mail, Monitor, FileText, Camera, Download } from 'lucide-react';
 
 export default function LandingPage({ onGetStarted }) {
   return (
@@ -13,12 +13,6 @@ export default function LandingPage({ onGetStarted }) {
         borderBottom: '1px solid #E4E2DC',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-          <div style={{
-            width: '28px', height: '28px', background: '#1C1917',
-            borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Scale size={14} color="#fff" />
-          </div>
           <span style={{ fontWeight: 700, fontSize: '17px', letterSpacing: '-0.3px', color: '#1C1917' }}>Inkto</span>
         </div>
         <button onClick={onGetStarted} style={{

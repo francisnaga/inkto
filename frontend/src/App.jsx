@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { HelpCircle, Sparkles, Scale } from 'lucide-react';
+import { HelpCircle, Sparkles } from 'lucide-react';
 import UploadZone from './components/UploadZone';
 import ThumbnailGrid from './components/ThumbnailGrid';
 import OutputBox from './components/OutputBox';
@@ -182,13 +182,6 @@ function App() {
                     style={{ display: 'flex', alignItems: 'center', gap: '9px', cursor: 'pointer', userSelect: 'none' }}
                     title="Back to home"
                 >
-                    <div style={{
-                        width: '28px', height: '28px', background: '#1C1917',
-                        borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        flexShrink: 0
-                    }}>
-                        <Scale size={14} color="#fff" />
-                    </div>
                     <span style={{ fontSize: '17px', fontWeight: '700', letterSpacing: '-0.3px', color: '#1C1917' }}>Inkto</span>
                 </div>
                 <a

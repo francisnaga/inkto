@@ -40,16 +40,7 @@ module.exports = async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    // ---- Auth ----
-    const appPassword = sanitize(process.env.APP_PASSWORD);
-    if (appPassword) {
-        const authHeader = sanitize(req.headers['authorization']);
-        if (authHeader !== `Bearer ${appPassword}`) {
-            return res.status(401).json({ error: 'Unauthorized: Invalid or missing password' });
-        }
-    }
-
-    // ---- Parse multipart ----
+    // Parse multipart
     try {
         await runMiddleware(req, res, upload.array('files', 30));
     } catch (err) {

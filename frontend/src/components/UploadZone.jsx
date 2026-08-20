@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Camera, Upload, FileText, ImageIcon, X, AlertCircle } from 'lucide-react';
+import { Camera, Upload, FileText, AlertCircle } from 'lucide-react';
 import { convertPdfToImages } from '../utils/pdfHelper';
 import { compressImage } from '../utils/imageCompressor';
 
@@ -11,8 +11,6 @@ export default function UploadZone({ onFilesSelected }) {
     const fileInputRef = useRef(null);
     const cameraInputRef = useRef(null);
 
-    const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'image/heic', 'application/pdf'];
-
     const processFiles = async (fileList) => {
         setIsProcessing(true);
         setRejectedFiles([]);
@@ -21,31 +19,19 @@ export default function UploadZone({ onFilesSelected }) {
 
         for (let i = 0; i < fileList.length; i++) {
             const file = fileList[i];
-            setProcessingMsg(`Preparing file ${i + 1} of ${fileList.length}…`);
+            setProcessingMsg(`Preparing ${i + 1} of ${fileList.length}…`);
             const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
             const isImage = file.type.startsWith('image/') || file.name.match(/\.(jpg|jpeg|png|webp|heic)$/i);
-
-            if (!isPdf && !isImage) {
-                rejected.push(file.name);
-                continue;
-            }
-
+            if (!isPdf && !isImage) { rejected.push(file.name); continue; }
             try {
                 if (isPdf) {
-                    setProcessingMsg(`Converting PDF: ${file.name}…`);
+                    setProcessingMsg(`Converting PDF…`);
                     const images = await convertPdfToImages(file);
-                    for (const img of images) {
-                        const compressed = await compressImage(img).catch(() => img);
-                        finalFiles.push(compressed);
-                    }
+                    for (const img of images) finalFiles.push(await compressImage(img).catch(() => img));
                 } else {
-                    const compressed = await compressImage(file).catch(() => file);
-                    finalFiles.push(compressed);
+                    finalFiles.push(await compressImage(file).catch(() => file));
                 }
-            } catch (err) {
-                console.error('Failed to process', file.name, err);
-                finalFiles.push(file);
-            }
+            } catch { finalFiles.push(file); }
         }
 
         if (rejected.length > 0) setRejectedFiles(rejected);
@@ -54,45 +40,36 @@ export default function UploadZone({ onFilesSelected }) {
         setProcessingMsg('');
     };
 
-    const handleDragOver = (e) => { e.preventDefault(); if (!isProcessing) setIsDragActive(true); };
+    const handleDragOver  = (e) => { e.preventDefault(); if (!isProcessing) setIsDragActive(true); };
     const handleDragLeave = (e) => { e.preventDefault(); setIsDragActive(false); };
-    const handleDrop = (e) => {
-        e.preventDefault();
-        setIsDragActive(false);
-        if (e.dataTransfer.files?.length > 0) processFiles(Array.from(e.dataTransfer.files));
-    };
-    const handleFileSelect = (e) => {
-        if (e.target.files?.length > 0) processFiles(Array.from(e.target.files));
-        e.target.value = '';
-    };
+    const handleDrop      = (e) => { e.preventDefault(); setIsDragActive(false); if (e.dataTransfer.files?.length) processFiles(Array.from(e.dataTransfer.files)); };
+    const handleFileSelect = (e) => { if (e.target.files?.length) processFiles(Array.from(e.target.files)); e.target.value = ''; };
 
     return (
         <div style={{ animation: 'fadeIn 0.35s ease' }}>
-            {/* Step label */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+
+            {/* Step Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
                 <div style={{
-                    width: '22px', height: '22px', borderRadius: '50%',
-                    background: '#2563EB', color: '#fff',
+                    width: '24px', height: '24px', borderRadius: '50%', flexShrink: 0,
+                    background: '#1D4ED8', color: '#fff',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '11px', fontWeight: '800', flexShrink: 0
+                    fontSize: '11px', fontWeight: '800'
                 }}>1</div>
-                <span style={{ fontSize: '13px', fontWeight: '600', color: '#374151', letterSpacing: '0.01em' }}>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: '#44403C', letterSpacing: '0.01em' }}>
                     Upload your document
                 </span>
-                <div style={{ flex: 1, height: '1px', background: '#E5E7EB' }} />
-                <div style={{
-                    width: '22px', height: '22px', borderRadius: '50%',
-                    background: '#F3F4F6', color: '#D1D5DB',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '11px', fontWeight: '800'
-                }}>2</div>
-                <div style={{ width: '20px', height: '1px', background: '#E5E7EB' }} />
-                <div style={{
-                    width: '22px', height: '22px', borderRadius: '50%',
-                    background: '#F3F4F6', color: '#D1D5DB',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '11px', fontWeight: '800'
-                }}>3</div>
+                <div style={{ flex: 1, height: '1px', background: '#E4E2DC' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {[2, 3].map(n => (
+                        <div key={n} style={{
+                            width: '24px', height: '24px', borderRadius: '50%',
+                            background: '#EDECE8', color: '#C4C0BB',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '11px', fontWeight: '800'
+                        }}>{n}</div>
+                    ))}
+                </div>
             </div>
 
             {/* Drop Zone */}
@@ -100,106 +77,107 @@ export default function UploadZone({ onFilesSelected }) {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
+                onClick={() => !isProcessing && fileInputRef.current.click()}
                 style={{
-                    border: `2px dashed ${isDragActive ? '#2563EB' : '#D1D5DB'}`,
+                    border: `2px dashed ${isDragActive ? '#1D4ED8' : '#D6D3CE'}`,
                     borderRadius: '16px',
-                    background: isDragActive ? 'rgba(37,99,235,0.04)' : '#FAFAFA',
-                    padding: '32px 20px',
+                    background: isDragActive ? 'rgba(29,78,216,0.04)' : '#FAFAF9',
+                    padding: '40px 24px',
                     textAlign: 'center',
                     transition: 'all 0.2s ease',
-                    cursor: 'default',
+                    cursor: isProcessing ? 'default' : 'pointer',
                     transform: isDragActive ? 'scale(1.01)' : 'scale(1)',
                 }}
             >
                 {isProcessing ? (
                     <div>
                         <div style={{
-                            width: '48px', height: '48px', borderRadius: '50%',
-                            border: '3px solid #E5E7EB', borderTopColor: '#2563EB',
+                            width: '44px', height: '44px', borderRadius: '50%',
+                            border: '3px solid #E4E2DC', borderTopColor: '#1D4ED8',
                             animation: 'spin 0.8s linear infinite',
                             margin: '0 auto 16px'
                         }} />
-                        <p style={{ fontSize: '14px', color: '#6B7280', fontWeight: '500', margin: 0 }}>
+                        <p style={{ fontSize: '14px', color: '#78716C', fontWeight: '500', margin: 0 }}>
                             {processingMsg}
                         </p>
                     </div>
                 ) : (
                     <>
                         <div style={{
-                            width: '56px', height: '56px', margin: '0 auto 16px',
+                            width: '56px', height: '56px', margin: '0 auto 18px',
                             background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)',
                             borderRadius: '14px',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            border: '1px solid #BFDBFE'
                         }}>
-                            <FileText size={26} color="#2563EB" />
+                            <FileText size={24} color="#1D4ED8" />
                         </div>
-                        <p style={{ fontSize: '16px', fontWeight: '700', color: '#111827', marginBottom: '6px' }}>
-                            {isDragActive ? 'Drop files here' : 'Drop files or choose below'}
+
+                        <p style={{ fontSize: '16px', fontWeight: '700', color: '#1C1917', marginBottom: '6px' }}>
+                            {isDragActive ? 'Release to upload' : 'Drop files or tap to upload'}
                         </p>
-                        <p style={{ fontSize: '13px', color: '#9CA3AF', marginBottom: '24px' }}>
-                            JPG · PNG · WEBP · PDF — up to 25 MB each
+                        <p style={{ fontSize: '13px', color: '#A8A29E', marginBottom: '28px' }}>
+                            Photos, scanned PDFs · JPG, PNG, PDF, HEIC · up to 25 MB
                         </p>
 
-                        {/* Action Buttons */}
-                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
                             <button
-                                onClick={() => cameraInputRef.current.click()}
+                                onClick={e => { e.stopPropagation(); cameraInputRef.current.click(); }}
                                 style={{
-                                    display: 'flex', alignItems: 'center', gap: '10px',
-                                    padding: '13px 22px',
-                                    background: '#1A1A1A', color: '#fff',
-                                    border: 'none', borderRadius: '12px',
+                                    display: 'flex', alignItems: 'center', gap: '9px',
+                                    padding: '12px 24px',
+                                    background: '#1C1917', color: '#fff',
+                                    border: 'none', borderRadius: '10px',
                                     fontSize: '14px', fontWeight: '700',
-                                    cursor: 'pointer', transition: 'transform 0.15s, box-shadow 0.15s',
-                                    boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
-                                    minWidth: '140px', justifyContent: 'center'
+                                    cursor: 'pointer',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.16)',
+                                    transition: 'transform 0.15s, box-shadow 0.15s',
+                                    minWidth: '148px', justifyContent: 'center'
                                 }}
-                                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.24)'; }}
-                                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.18)'; }}
+                                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 18px rgba(0,0,0,0.22)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.16)'; }}
                             >
-                                <Camera size={18} /> Take Photo
+                                <Camera size={17} /> Take Photo
                             </button>
                             <button
-                                onClick={() => fileInputRef.current.click()}
+                                onClick={e => { e.stopPropagation(); fileInputRef.current.click(); }}
                                 style={{
-                                    display: 'flex', alignItems: 'center', gap: '10px',
-                                    padding: '13px 22px',
-                                    background: '#fff', color: '#1A1A1A',
-                                    border: '2px solid #E5E7EB', borderRadius: '12px',
+                                    display: 'flex', alignItems: 'center', gap: '9px',
+                                    padding: '12px 24px',
+                                    background: '#fff', color: '#1C1917',
+                                    border: '1.5px solid #D6D3CE', borderRadius: '10px',
                                     fontSize: '14px', fontWeight: '700',
-                                    cursor: 'pointer', transition: 'transform 0.15s, border-color 0.15s',
-                                    minWidth: '140px', justifyContent: 'center'
+                                    cursor: 'pointer',
+                                    transition: 'transform 0.15s, border-color 0.15s, color 0.15s',
+                                    minWidth: '148px', justifyContent: 'center'
                                 }}
-                                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = '#2563EB'; e.currentTarget.style.color = '#2563EB'; }}
-                                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.color = '#1A1A1A'; }}
+                                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = '#1D4ED8'; e.currentTarget.style.color = '#1D4ED8'; }}
+                                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = '#D6D3CE'; e.currentTarget.style.color = '#1C1917'; }}
                             >
-                                <Upload size={18} /> Upload Files
+                                <Upload size={17} /> Browse Files
                             </button>
                         </div>
                     </>
                 )}
             </div>
 
-            {/* Rejected files warning */}
+            {/* Rejected files */}
             {rejectedFiles.length > 0 && (
                 <div style={{
                     marginTop: '12px', display: 'flex', alignItems: 'flex-start', gap: '8px',
                     background: '#FFF7ED', border: '1px solid #FED7AA',
                     borderRadius: '10px', padding: '12px 14px'
                 }}>
-                    <AlertCircle size={16} color="#EA580C" style={{ flexShrink: 0, marginTop: '1px' }} />
+                    <AlertCircle size={15} color="#EA580C" style={{ flexShrink: 0, marginTop: '1px' }} />
                     <div>
-                        <span style={{ fontSize: '13px', color: '#C2410C', fontWeight: '600' }}>Unsupported files skipped: </span>
+                        <span style={{ fontSize: '13px', color: '#C2410C', fontWeight: '700' }}>Skipped: </span>
                         <span style={{ fontSize: '13px', color: '#9A3412' }}>{rejectedFiles.join(', ')}</span>
                     </div>
                 </div>
             )}
 
-            {/* Hidden inputs */}
-            <input type="file" ref={fileInputRef} style={{ display: 'none' }}
-                accept="image/*,application/pdf" multiple onChange={handleFileSelect} />
-            <input type="file" ref={cameraInputRef} style={{ display: 'none' }}
-                accept="image/*" capture="environment" multiple onChange={handleFileSelect} />
+            <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*,application/pdf" multiple onChange={handleFileSelect} />
+            <input type="file" ref={cameraInputRef} style={{ display: 'none' }} accept="image/*" capture="environment" multiple onChange={handleFileSelect} />
         </div>
     );
 }

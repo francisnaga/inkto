@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { HelpCircle, Sparkles, Scan } from 'lucide-react';
+import { HelpCircle, Sparkles, Scale } from 'lucide-react';
 import UploadZone from './components/UploadZone';
 import ThumbnailGrid from './components/ThumbnailGrid';
 import OutputBox from './components/OutputBox';
@@ -177,25 +177,34 @@ function App() {
     return (
         <div className="app-container">
             <header>
-                <h1
+                <div
                     onClick={() => setShowLanding(true)}
-                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '9px', cursor: 'pointer', userSelect: 'none' }}
                     title="Back to home"
-                >Inkto</h1>
+                >
+                    <div style={{
+                        width: '28px', height: '28px', background: '#1C1917',
+                        borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0
+                    }}>
+                        <Scale size={14} color="#fff" />
+                    </div>
+                    <span style={{ fontSize: '17px', fontWeight: '700', letterSpacing: '-0.3px', color: '#1C1917' }}>Inkto</span>
+                </div>
                 <a
                     href="https://wa.me/2349130436032"
                     target="_blank" rel="noopener noreferrer"
                     style={{
                         display: 'flex', alignItems: 'center', gap: '6px',
-                        fontSize: '13px', color: '#6B7280', textDecoration: 'none',
-                        padding: '7px 12px', borderRadius: '8px',
-                        border: '1px solid #E5E7EB', background: '#fff',
-                        fontWeight: '600', transition: 'border-color 0.2s'
+                        fontSize: '12px', color: '#78716C', textDecoration: 'none',
+                        padding: '7px 14px', borderRadius: '8px',
+                        border: '1px solid #E4E2DC', background: '#fff',
+                        fontWeight: '600', transition: 'border-color 0.2s, color 0.2s'
                     }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = '#D1D5DB'}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = '#E5E7EB'}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#A8A29E'; e.currentTarget.style.color = '#1C1917'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#E4E2DC'; e.currentTarget.style.color = '#78716C'; }}
                 >
-                    <HelpCircle size={14} /> Help
+                    <HelpCircle size={13} /> Help
                 </a>
             </header>
 
@@ -213,14 +222,14 @@ function App() {
                                 <div style={{ marginTop: '16px' }}>
                                     <div style={{
                                         background: '#fff',
-                                        border: `1.5px solid ${promptFocused ? '#2563EB' : '#E5E7EB'}`,
+                                        border: `1.5px solid ${promptFocused ? '#A8A29E' : '#D6D3CE'}`,
                                         borderRadius: '12px', padding: '14px 16px',
                                         transition: 'border-color 0.2s, box-shadow 0.2s',
-                                        boxShadow: promptFocused ? '0 0 0 3px rgba(37,99,235,0.1)' : 'none'
+                                        boxShadow: promptFocused ? '0 0 0 3px rgba(168,162,158,0.1)' : 'none'
                                     }}>
                                         <label style={{
                                             display: 'block', fontSize: '11px', fontWeight: '700',
-                                            letterSpacing: '0.06em', color: promptFocused ? '#2563EB' : '#9CA3AF',
+                                            letterSpacing: '0.06em', color: promptFocused ? '#57534E' : '#A8A29E',
                                             textTransform: 'uppercase', marginBottom: '8px',
                                             transition: 'color 0.2s'
                                         }}>
@@ -251,15 +260,15 @@ function App() {
                                         display: 'flex', alignItems: 'center',
                                         justifyContent: 'center', gap: '10px',
                                         padding: '17px',
-                                        background: 'linear-gradient(135deg, #1D4ED8, #2563EB)',
+                                        background: '#1C1917',
                                         color: '#fff', border: 'none', borderRadius: '14px',
                                         fontSize: '15px', fontWeight: '800',
-                                        cursor: 'pointer', letterSpacing: '0.01em',
-                                        boxShadow: '0 6px 20px rgba(37,99,235,0.35)',
+                                        cursor: 'pointer', letterSpacing: '-0.1px',
+                                        boxShadow: '0 6px 20px rgba(0,0,0,0.22)',
                                         transition: 'transform 0.15s, box-shadow 0.15s'
                                     }}
-                                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 28px rgba(37,99,235,0.45)'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(37,99,235,0.35)'; }}
+                                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 28px rgba(0,0,0,0.3)'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.22)'; }}
                                 >
                                     <Sparkles size={17} />
                                     Transcribe {files.length} {files.length === 1 ? 'Page' : 'Pages'} →

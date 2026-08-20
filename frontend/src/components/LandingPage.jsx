@@ -62,9 +62,9 @@ export default function LandingPage({ onGetStarted }) {
       <section style={{ maxWidth: '860px', margin: '0 auto 80px', padding: '0 24px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
           {[
-            { icon: '📷', title: 'Snap & Upload', desc: 'Use your phone camera directly. No scanner needed.' },
-            { icon: '📄', title: 'Multi-Page', desc: 'Upload multiple images and get one clean transcript.' },
-            { icon: '⚡', title: 'Seconds, Not Hours', desc: 'Claude AI reads even messy handwriting with high accuracy.' },
+            { icon: '📁', title: 'Photos & PDFs', desc: 'Upload images, PDFs, and scanned documents, or snap a photo directly.' },
+            { icon: '📄', title: 'Multi-Page Support', desc: 'Upload multiple files at once and get one clean, combined transcript.' },
+            { icon: '⚡', title: 'Seconds, Not Hours', desc: 'Inkto reads even messy handwriting with high accuracy.' },
           ].map(f => (
             <div key={f.title} style={{
               background: '#fff', border: '1px solid #E2E2DC',

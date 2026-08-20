@@ -1,22 +1,17 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { GoogleGenAI } from '@google/genai';
-import multer from 'multer';
+const Anthropic = require('@anthropic-ai/sdk');
+const { GoogleGenAI } = require('@google/genai');
+const multer = require('multer');
 
-// ---- Multer for memory storage (no disk) ----
+// ---- Multer: memory storage ----
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 25 * 1024 * 1024 }, // 25MB per file
+    limits: { fileSize: 25 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
         const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'image/gif'];
-        if (allowed.includes(file.mimetype)) {
-            cb(null, true);
-        } else {
-            cb(null, false); // silently skip unsupported types
-        }
+        cb(null, allowed.includes(file.mimetype));
     }
 });
 
-// ---- Promisify multer for use in serverless ----
 function runMiddleware(req, res, fn) {
     return new Promise((resolve, reject) => {
         fn(req, res, (result) => {
@@ -26,47 +21,39 @@ function runMiddleware(req, res, fn) {
     });
 }
 
-// ---- AI System Prompt ----
-const SYSTEM_PROMPT = `You are a precise document transcription assistant. Your job is to transcribe handwritten text from document images with maximum accuracy.
+const SYSTEM_PROMPT = `You are a precise document transcription assistant. Transcribe handwritten text from images with maximum accuracy.
+- Transcribe ALL text exactly as written, preserving capitalization, punctuation, and paragraph structure
+- Mark unclear words with [?] immediately after them
+- Preserve paragraph breaks with a blank line
+- Output ONLY the transcribed text, no preamble, no commentary
+- For multiple images, treat them as sequential pages separated by: --- Page X ---`;
 
-Rules:
-- Transcribe ALL text exactly as written, preserving original capitalization, punctuation, and paragraph structure
-- If a word is unclear, mark it with [?] immediately after it
-- Preserve paragraph breaks using a blank line between paragraphs
-- Do NOT add headers, commentary, or notes about the document
-- Do NOT say "Here is the transcription" or any preamble
-- Output ONLY the transcribed text, nothing else
-- If multiple images are provided, treat them as sequential pages and transcribe in order, separating pages with: --- Page X ---`;
+function sanitize(str) {
+    return (str || '').replace(/[^\x20-\x7E]/g, '').trim();
+}
 
-// ---- Main Handler ----
-export default async function handler(req, res) {
-    // CORS headers
+module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
 
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
+    if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
-
-    // ---- Auth Check ----
-    const appPassword = (process.env.APP_PASSWORD || '').replace(/[^\x20-\x7E]/g, '').trim();
+    // ---- Auth ----
+    const appPassword = sanitize(process.env.APP_PASSWORD);
     if (appPassword) {
-        const authHeader = (req.headers['authorization'] || '').replace(/[^\x20-\x7E]/g, '').trim();
+        const authHeader = sanitize(req.headers['authorization']);
         if (authHeader !== `Bearer ${appPassword}`) {
             return res.status(401).json({ error: 'Unauthorized: Invalid or missing password' });
         }
     }
 
-    // ---- Parse files with multer ----
+    // ---- Parse multipart ----
     try {
         await runMiddleware(req, res, upload.array('files', 30));
     } catch (err) {
-        return res.status(400).json({ error: `File upload error: ${err.message}` });
+        return res.status(400).json({ error: `Upload error: ${err.message}` });
     }
 
     const files = req.files;
@@ -76,37 +63,30 @@ export default async function handler(req, res) {
 
     // ---- Build image blocks ----
     const imageBlocks = files.map(file => {
-        let mediaType = file.mimetype;
-        if (mediaType === 'image/jpg') mediaType = 'image/jpeg';
+        let mediaType = file.mimetype === 'image/jpg' ? 'image/jpeg' : file.mimetype;
         return {
             type: 'image',
-            source: {
-                type: 'base64',
-                media_type: mediaType,
-                data: file.buffer.toString('base64')
-            }
+            source: { type: 'base64', media_type: mediaType, data: file.buffer.toString('base64') }
         };
     });
 
-    const customPrompt = req.body?.prompt || '';
-    const userText = customPrompt
-        ? `Transcribe all pages. Additional instructions: ${customPrompt}`
+    const userText = req.body && req.body.prompt
+        ? `Transcribe all pages. Additional instructions: ${req.body.prompt}`
         : 'Transcribe all pages of this handwritten document.';
 
+    console.log(`Received ${files.length} file(s) for transcription`);
+
     // ---- Try Anthropic ----
-    const anthropicKey = (process.env.ANTHROPIC_API_KEY || '').replace(/[^\x20-\x7E]/g, '').trim();
+    const anthropicKey = sanitize(process.env.ANTHROPIC_API_KEY);
     if (anthropicKey) {
         try {
-            console.log(`Trying Anthropic with ${imageBlocks.length} image(s)...`);
-            const anthropic = new Anthropic({ apiKey: anthropicKey });
+            console.log('Trying Anthropic...');
+            const anthropic = new Anthropic.default({ apiKey: anthropicKey });
             const response = await anthropic.messages.create({
                 model: 'claude-3-5-sonnet-20241022',
                 max_tokens: 8192,
                 system: SYSTEM_PROMPT,
-                messages: [{
-                    role: 'user',
-                    content: [...imageBlocks, { type: 'text', text: userText }]
-                }]
+                messages: [{ role: 'user', content: [...imageBlocks, { type: 'text', text: userText }] }]
             });
             console.log('Anthropic succeeded.');
             return res.json({ success: true, text: response.content[0].text });
@@ -116,39 +96,31 @@ export default async function handler(req, res) {
     }
 
     // ---- Fallback: Gemini ----
-    const geminiKey = (process.env.GEMINI_API_KEY || '').replace(/[^\x20-\x7E]/g, '').trim();
+    const geminiKey = sanitize(process.env.GEMINI_API_KEY);
     if (!geminiKey) {
-        return res.status(500).json({ error: 'No API keys configured. Please add ANTHROPIC_API_KEY or GEMINI_API_KEY to Vercel environment variables.' });
+        return res.status(500).json({ error: 'No API keys configured. Add ANTHROPIC_API_KEY or GEMINI_API_KEY to Vercel environment variables.' });
     }
 
     try {
-        console.log(`Trying Gemini with ${imageBlocks.length} image(s)...`);
+        console.log('Trying Gemini...');
         const gemini = new GoogleGenAI({ apiKey: geminiKey });
-
-        const geminiParts = imageBlocks.map(b => ({
-            inlineData: { mimeType: b.source.media_type, data: b.source.data }
-        }));
-        geminiParts.push({ text: userText });
-
+        const parts = [
+            ...imageBlocks.map(b => ({ inlineData: { mimeType: b.source.media_type, data: b.source.data } })),
+            { text: userText }
+        ];
         const response = await gemini.models.generateContent({
             model: 'gemini-3.6-flash',
-            contents: [{ role: 'user', parts: geminiParts }],
+            contents: [{ role: 'user', parts }],
             config: { systemInstruction: SYSTEM_PROMPT }
         });
         console.log('Gemini succeeded.');
         return res.json({ success: true, text: response.text });
     } catch (err) {
         console.error('Gemini failed:', err.message);
-        // Return full error so we can debug from the phone
-        return res.status(500).json({ 
-            error: `AI Error: ${err.message}`,
-            hint: 'Check ANTHROPIC_API_KEY and GEMINI_API_KEY in Vercel environment variables'
-        });
+        return res.status(500).json({ error: `Both AI providers failed. Details: ${err.message}` });
     }
-}
+};
 
-export const config = {
-    api: {
-        bodyParser: false, // Required for multer to handle multipart/form-data
-    },
+module.exports.config = {
+    api: { bodyParser: false }
 };

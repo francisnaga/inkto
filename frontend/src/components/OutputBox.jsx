@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Copy, Check, RotateCcw, FileText, FileDown, Download, ChevronUp, Mail } from 'lucide-react';
+import { Copy, Check, RotateCcw, FileText, FileDown, ChevronUp, Mail } from 'lucide-react';
 
 export default function OutputBox({ text, sessionId, onReset }) {
     const [value, setValue] = useState(text);
@@ -201,12 +201,11 @@ export default function OutputBox({ text, sessionId, onReset }) {
                             padding: '2px 7px', borderRadius: '99px', fontWeight: '600'
                         }}>Editable</span>
                     </div>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                        <ActionBtn icon={<Download size={12} />} label=".txt" onClick={handleDownloadTxt} />
+                <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                         <ActionBtn icon={<FileDown size={12} color="#1D4ED8" />} label=".docx" onClick={handleDownloadDocx} accent />
                         <button onClick={handleCopy} style={{
                             display: 'flex', alignItems: 'center', gap: '5px',
-                            padding: '6px 13px',
+                            padding: '6px 13px', flexShrink: 0,
                             background: copied ? '#DCFCE7' : '#1C1917',
                             color: copied ? '#15803D' : '#fff',
                             border: 'none', borderRadius: '7px',

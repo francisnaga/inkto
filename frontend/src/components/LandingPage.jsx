@@ -1,4 +1,5 @@
 import React from 'react';
+import { FolderUp, FileText, Zap } from 'lucide-react';
 
 export default function LandingPage({ onGetStarted }) {
   return (
@@ -62,15 +63,17 @@ export default function LandingPage({ onGetStarted }) {
       <section style={{ maxWidth: '860px', margin: '0 auto 80px', padding: '0 24px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
           {[
-            { icon: '📁', title: 'Photos & PDFs', desc: 'Upload images, PDFs, and scanned documents, or snap a photo directly.' },
-            { icon: '📄', title: 'Multi-Page Support', desc: 'Upload multiple files at once and get one clean, combined transcript.' },
-            { icon: '⚡', title: 'Seconds, Not Hours', desc: 'Inkto reads even messy handwriting with high accuracy.' },
+            { icon: <FolderUp size={26} color="#2563EB" />, title: 'Photos & PDFs', desc: 'Upload images, PDFs, and scanned documents, or snap a photo directly.' },
+            { icon: <FileText size={26} color="#2563EB" />, title: 'Multi-Page Support', desc: 'Upload multiple files at once and get one clean, combined transcript.' },
+            { icon: <Zap size={26} color="#2563EB" />, title: 'Seconds, Not Hours', desc: 'Inkto reads even messy handwriting with high accuracy.' },
           ].map(f => (
             <div key={f.title} style={{
               background: '#fff', border: '1px solid #E2E2DC',
               borderRadius: '12px', padding: '28px 24px'
             }}>
-              <div style={{ fontSize: '28px', marginBottom: '12px' }}>{f.icon}</div>
+              <div style={{ marginBottom: '16px', padding: '12px', background: '#EFF6FF', display: 'inline-flex', borderRadius: '10px' }}>
+                {f.icon}
+              </div>
               <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '8px' }}>{f.title}</h3>
               <p style={{ fontSize: '14px', color: '#6B6B6B', lineHeight: 1.6 }}>{f.desc}</p>
             </div>

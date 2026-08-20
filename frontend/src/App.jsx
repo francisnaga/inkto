@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HelpCircle, Loader2, Sparkles } from 'lucide-react';
 import UploadZone from './components/UploadZone';
 import ThumbnailGrid from './components/ThumbnailGrid';
@@ -11,6 +11,24 @@ function App() {
   const { state, files, error, transcribedText, addFiles, removeFile, transcribe, reset } = useTranscribe();
   const [customPrompt, setCustomPrompt] = useState('');
   const [showLanding, setShowLanding] = useState(!localStorage.getItem('inkto_launched'));
+  const [loadingText, setLoadingText] = useState('Analysing handwriting...');
+
+  useEffect(() => {
+    if (state === 'processing') {
+      const texts = [
+        'Analysing handwriting...', 
+        'Detecting insertions and crossed-out text...',
+        'Preserving paragraph structure...',
+        'Finalising transcript...'
+      ];
+      let i = 0;
+      const interval = setInterval(() => {
+        i = (i + 1) % texts.length;
+        setLoadingText(texts[i]);
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [state]);
 
   const handleGetStarted = () => {
     localStorage.setItem('inkto_launched', '1');
@@ -107,10 +125,10 @@ function App() {
               <Loader2 size={28} className="lucide-spin" style={{ color: '#2563EB' }} />
             </div>
             <h3 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '8px', color: '#111827' }}>
-              Reading your document…
+              Reading {files.length} {files.length === 1 ? 'page' : 'pages'}…
             </h3>
-            <p style={{ color: '#6B7280', fontSize: '14px', lineHeight: '1.6', maxWidth: '260px', margin: '0 auto 24px' }}>
-              Analysing handwriting, ignoring crossed-out text, and detecting insertions. This can take up to a minute.
+            <p style={{ color: '#6B7280', fontSize: '14px', lineHeight: '1.6', maxWidth: '260px', margin: '0 auto 24px', minHeight: '44px' }}>
+              {loadingText}
             </p>
             {/* Progress bar */}
             <div style={{

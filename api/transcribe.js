@@ -131,7 +131,7 @@ export default async function handler(req, res) {
         geminiParts.push({ text: userText });
 
         const response = await gemini.models.generateContent({
-            model: 'gemini-2.5-flash-preview-05-20',
+            model: 'gemini-3.6-flash',
             contents: [{ role: 'user', parts: geminiParts }],
             config: { systemInstruction: SYSTEM_PROMPT }
         });
@@ -139,7 +139,11 @@ export default async function handler(req, res) {
         return res.json({ success: true, text: response.text });
     } catch (err) {
         console.error('Gemini failed:', err.message);
-        return res.status(500).json({ error: `Transcription failed: ${err.message}` });
+        // Return full error so we can debug from the phone
+        return res.status(500).json({ 
+            error: `AI Error: ${err.message}`,
+            hint: 'Check ANTHROPIC_API_KEY and GEMINI_API_KEY in Vercel environment variables'
+        });
     }
 }
 

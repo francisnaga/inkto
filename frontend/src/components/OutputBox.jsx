@@ -236,11 +236,12 @@ export default function OutputBox({ text, sessionId, onReset }) {
                                 onClick={handleSendEmail}
                                 disabled={sendingEmail}
                                 style={{
-                                    padding: '10px 18px', background: '#111827', color: '#fff',
+                                    width: '110px', padding: '10px 0', textAlign: 'center',
+                                    background: '#111827', color: '#fff',
                                     border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '700',
                                     cursor: sendingEmail ? 'wait' : 'pointer',
                                     opacity: sendingEmail ? 0.6 : 1, whiteSpace: 'nowrap',
-                                    transition: 'opacity 0.2s', minWidth: '100px', flexShrink: 0
+                                    transition: 'opacity 0.2s', flexShrink: 0
                                 }}
                             >
                                 {sendingEmail ? 'Sending…' : 'Send →'}

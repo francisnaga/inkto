@@ -103,41 +103,41 @@ module.exports = async function handler(req, res) {
             { text: userText }
         ];
         
-        try {
-            const response = await gemini.models.generateContent({
-                model: 'gemini-3.6-flash',
-                contents: [{ role: 'user', parts }],
-                config: { systemInstruction: SYSTEM_PROMPT }
-            });
-            console.log('Gemini 3.6 succeeded.');
-            return res.json({ success: true, text: response.text });
-        } catch (geminiErr) {
-            console.warn('Gemini 3.6 failed, trying 1.5-flash:', geminiErr.message);
-            // Fallback to 1.5-flash if 3.6 is overloaded
-            const fallbackResponse = await gemini.models.generateContent({
-                model: 'gemini-1.5-flash',
-                contents: [{ role: 'user', parts }],
-                config: { systemInstruction: SYSTEM_PROMPT }
-            });
-            console.log('Gemini 1.5 succeeded.');
-            return res.json({ success: true, text: fallbackResponse.text });
+        // Try models in order: best quality first, then stable fallbacks
+        const modelChain = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+        let lastError = null;
+
+        for (const model of modelChain) {
+            try {
+                console.log(`Trying ${model}...`);
+                const response = await gemini.models.generateContent({
+                    model,
+                    contents: [{ role: 'user', parts }],
+                    config: { systemInstruction: SYSTEM_PROMPT }
+                });
+                console.log(`${model} succeeded.`);
+                return res.json({ success: true, text: response.text });
+            } catch (modelErr) {
+                console.warn(`${model} failed:`, modelErr.message.substring(0, 120));
+                lastError = modelErr;
+            }
         }
-    } catch (err) {
-        console.error('All Gemini attempts failed:', err.message);
-        
-        let errorMsg = err.message;
+        // All models in chain failed
+        const failMsg = lastError ? lastError.message : 'Unknown error';
+        let errorMsg = failMsg;
         try {
-            // Try to parse the Google API error JSON if it's embedded in the message
-            const match = err.message.match(/(\{.*\})/);
+            const match = failMsg.match(/(\{.*\})/);
             if (match) {
                 const parsed = JSON.parse(match[1]);
-                if (parsed.error && parsed.error.message) {
-                    errorMsg = parsed.error.message;
-                }
+                if (parsed.error && parsed.error.message) errorMsg = parsed.error.message;
             }
         } catch (e) {}
 
-        return res.status(500).json({ error: `AI is currently overloaded: ${errorMsg}. Please try again in a few moments.` });
+        return res.status(500).json({ error: `AI overloaded. Please tap Try Again — it usually recovers quickly.` });
+
+    } catch (err) {
+        console.error('Gemini setup error:', err.message);
+        return res.status(500).json({ error: `Server error: ${err.message}` });
     }
 };
 

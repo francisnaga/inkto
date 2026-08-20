@@ -14,7 +14,7 @@ module.exports = async function handler(req, res) {
         return res.status(500).json({ error: 'Email service is not configured (missing API key).' });
     }
 
-    const { text, recipientEmail } = req.body || {};
+    const { text, recipientEmail, sessionId } = req.body || {};
     if (!text || !recipientEmail) {
         return res.status(400).json({ error: 'Missing transcript text or recipient email.' });
     }
@@ -29,12 +29,59 @@ module.exports = async function handler(req, res) {
         const resend = new Resend(resendKey);
         
         const dateStr = new Date().toISOString().slice(0, 10);
+        const sessionUrl = sessionId ? `https://inkto.jointaccount.org/session/${sessionId}` : null;
+
+        const emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Inkto Transcript</title>
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f9fafb; margin: 0; padding: 40px 20px; color: #111827;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+                <!-- Header -->
+                <div style="background-color: #111827; padding: 24px 32px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 0.5px;">Inkto</h1>
+                </div>
+                
+                <!-- Body -->
+                <div style="padding: 32px;">
+                    <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #374151;">
+                        Your document transcription is complete. 
+                    </p>
+                    <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #374151;">
+                        We have attached the final transcript as a fully formatted Microsoft Word (.docx) document to this email.
+                    </p>
+
+                    ${sessionUrl ? `
+                    <div style="background-color: #f3f4f6; border-left: 4px solid #2563eb; padding: 16px 20px; margin: 32px 0; border-radius: 4px;">
+                        <p style="margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #111827;">
+                            Prefer to edit in your browser?
+                        </p>
+                        <p style="margin: 0 0 16px; font-size: 14px; color: #4b5563; line-height: 1.5;">
+                            You can securely view, edit, and copy this transcript online for the next 7 days using your session link.
+                        </p>
+                        <a href="${sessionUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 600;">
+                            Open in Inkto
+                        </a>
+                    </div>
+                    ` : ''}
+
+                    <p style="margin: 0; font-size: 14px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 24px;">
+                        This is an automated message. Please do not reply directly to this email.
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        `;
 
         const { data, error } = await resend.emails.send({
             from: 'Inkto Transcriber <noreply@inkto.jointaccount.org>',
             to: recipientEmail,
             subject: `Inkto Transcript - ${dateStr}`,
-            html: '<p>Here is your transcribed legal document attached as a Microsoft Word (.docx) file.</p><p><i>Sent securely from Inkto.</i></p>',
+            html: emailHtml,
             attachments: [
                 {
                     filename: `inkto-transcript-${dateStr}.docx`,

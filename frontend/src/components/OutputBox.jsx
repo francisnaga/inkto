@@ -110,7 +110,11 @@ export default function OutputBox({ text, sessionId, onReset }) {
             const res = await fetch('/api/send-email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: value, recipientEmail: email })
+                body: JSON.stringify({ 
+                    text: value, 
+                    recipientEmail: email,
+                    sessionId: sessionId 
+                })
             });
             const data = await res.json();
             

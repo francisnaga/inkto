@@ -1,10 +1,17 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Copy, Check, RotateCcw, Download, FileText, Printer, ChevronUp } from 'lucide-react';
+import { Copy, Check, RotateCcw, Download, FileText, Printer, ChevronUp, Mail, Share2, FileDown } from 'lucide-react';
 
-export default function OutputBox({ text, onReset }) {
+export default function OutputBox({ text, sessionId, onReset }) {
     const [value, setValue] = useState(text);
     const [copied, setCopied] = useState(false);
+    const [linkCopied, setLinkCopied] = useState(false);
     const [showScrollTop, setShowScrollTop] = useState(false);
+    
+    // Email state
+    const [email, setEmail] = useState(() => localStorage.getItem('inkto_last_email') || '');
+    const [sendingEmail, setSendingEmail] = useState(false);
+    const [emailStatus, setEmailStatus] = useState(null); // { type: 'success' | 'error', msg: string }
+
     const textareaRef = useRef(null);
     const containerRef = useRef(null);
 
@@ -21,7 +28,7 @@ export default function OutputBox({ text, onReset }) {
 
     useEffect(() => () => clearTimeout(debounceTimer.current), []);
 
-    // ─── Memoised stats so large docs never lag the editor ───
+    // ─── Memoised stats ───
     const stats = useMemo(() => {
         const words = deferredValue.trim().split(/\s+/).filter(Boolean).length;
         const chars = deferredValue.length;
@@ -45,7 +52,19 @@ export default function OutputBox({ text, onReset }) {
         setTimeout(() => setCopied(false), 2500);
     };
 
-    const handleDownload = () => {
+    const handleCopyLink = async () => {
+        if (!sessionId) return;
+        const link = `${window.location.origin}/session/${sessionId}`;
+        try {
+            await navigator.clipboard.writeText(link);
+            setLinkCopied(true);
+            setTimeout(() => setLinkCopied(false), 2500);
+        } catch (err) {
+            console.error('Failed to copy link', err);
+        }
+    };
+
+    const handleDownloadTxt = () => {
         const blob = new Blob([value], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -53,6 +72,57 @@ export default function OutputBox({ text, onReset }) {
         a.download = `inkto-transcript-${new Date().toISOString().slice(0, 10)}.txt`;
         a.click();
         URL.revokeObjectURL(url);
+    };
+
+    const handleDownloadDocx = async () => {
+        try {
+            const res = await fetch('/api/download-docx', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: value })
+            });
+            if (!res.ok) throw new Error('Failed to generate document');
+            
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `inkto-transcript-${new Date().toISOString().slice(0, 10)}.docx`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error(err);
+            alert("Could not download DOCX right now. You can try the .txt download.");
+        }
+    };
+
+    const handleSendEmail = async () => {
+        if (!email || !email.includes('@')) {
+            setEmailStatus({ type: 'error', msg: 'Please enter a valid email address.' });
+            return;
+        }
+
+        setSendingEmail(true);
+        setEmailStatus(null);
+        localStorage.setItem('inkto_last_email', email);
+
+        try {
+            const res = await fetch('/api/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: value, recipientEmail: email })
+            });
+            const data = await res.json();
+            
+            if (!res.ok) throw new Error(data.error || 'Failed to send email');
+            
+            setEmailStatus({ type: 'success', msg: 'Sent! Check your inbox.' });
+            setTimeout(() => setEmailStatus(null), 5000);
+        } catch (err) {
+            setEmailStatus({ type: 'error', msg: err.message });
+        } finally {
+            setSendingEmail(false);
+        }
     };
 
     const handlePrint = () => {
@@ -65,7 +135,6 @@ export default function OutputBox({ text, onReset }) {
     };
 
     const scrollToTop = () => textareaRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-
     const handleTextareaScroll = (e) => setShowScrollTop(e.target.scrollTop > 150);
 
     return (
@@ -85,37 +154,41 @@ export default function OutputBox({ text, onReset }) {
                 <div style={{ flex: 1, height: '1px', background: '#E5E7EB' }} />
             </div>
 
-            {/* ── Stats Row ── */}
-            <div style={{
-                display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap'
-            }}>
-                {[
-                    { label: 'Words', value: stats.words.toLocaleString() },
-                    { label: 'Characters', value: stats.chars.toLocaleString() },
-                    { label: 'Read time', value: `~${stats.readMins} min` },
-                ].map(s => (
-                    <div key={s.label} style={{
-                        flex: '1', minWidth: '80px',
-                        background: '#fff', border: '1px solid #E5E7EB',
-                        borderRadius: '10px', padding: '10px 14px',
-                        textAlign: 'center'
-                    }}>
-                        <div style={{ fontSize: '17px', fontWeight: '800', color: '#111827', letterSpacing: '-0.5px' }}>
-                            {s.value}
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: '500', marginTop: '2px' }}>
-                            {s.label}
+            {/* ── Cross-device Handoff ── */}
+            {sessionId && (
+                <div style={{ 
+                    background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '12px',
+                    padding: '12px 16px', marginBottom: '16px', display: 'flex',
+                    alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Share2 size={16} color="#2563EB" />
+                        <div>
+                            <div style={{ fontSize: '13px', fontWeight: '600', color: '#1E3A8A' }}>Continue on PC</div>
+                            <div style={{ fontSize: '12px', color: '#3B82F6' }}>inkto.app/session/{sessionId}</div>
                         </div>
                     </div>
-                ))}
-            </div>
+                    <button 
+                        onClick={handleCopyLink}
+                        style={{
+                            background: linkCopied ? '#2563EB' : '#fff', 
+                            color: linkCopied ? '#fff' : '#2563EB',
+                            border: '1px solid #93C5FD', borderRadius: '6px',
+                            padding: '6px 12px', fontSize: '12px', fontWeight: '600',
+                            cursor: 'pointer', transition: 'all 0.2s'
+                        }}
+                    >
+                        {linkCopied ? 'Link Copied!' : 'Copy Link'}
+                    </button>
+                </div>
+            )}
 
             {/* ── Main Editor Card ── */}
             <div style={{
                 background: '#fff', border: '1px solid #E5E7EB',
                 borderRadius: '16px', overflow: 'hidden',
                 boxShadow: '0 4px 20px rgba(0,0,0,0.07)',
-                marginBottom: '12px'
+                marginBottom: '16px'
             }}>
                 {/* Toolbar */}
                 <div style={{
@@ -135,9 +208,10 @@ export default function OutputBox({ text, onReset }) {
                             Editable
                         </span>
                     </div>
-                    <div style={{ display: 'flex', gap: '6px' }}>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                         <ToolBtn icon={<Printer size={13} />} label="Print" onClick={handlePrint} />
-                        <ToolBtn icon={<Download size={13} />} label="Save .txt" onClick={handleDownload} />
+                        <ToolBtn icon={<Download size={13} />} label=".txt" onClick={handleDownloadTxt} />
+                        <ToolBtn icon={<FileDown size={13} color="#2563EB" />} label=".docx" onClick={handleDownloadDocx} primary />
                         <button
                             onClick={handleCopy}
                             style={{
@@ -151,12 +225,12 @@ export default function OutputBox({ text, onReset }) {
                             }}
                         >
                             {copied ? <Check size={13} /> : <Copy size={13} />}
-                            {copied ? 'Copied!' : 'Copy All'}
+                            {copied ? 'Copied!' : 'Copy'}
                         </button>
                     </div>
                 </div>
 
-                {/* Editor wrapper — scroll here, not on page */}
+                {/* Editor wrapper */}
                 <div style={{ position: 'relative' }}>
                     <textarea
                         ref={textareaRef}
@@ -179,7 +253,6 @@ export default function OutputBox({ text, onReset }) {
                             WebkitOverflowScrolling: 'touch',
                         }}
                     />
-                    {/* Scroll-to-top */}
                     {showScrollTop && (
                         <button
                             onClick={scrollToTop}
@@ -207,10 +280,53 @@ export default function OutputBox({ text, onReset }) {
                     <span style={{ fontSize: '11px', color: '#D1D5DB' }}>
                         Tap inside to edit · Changes are local only
                     </span>
-                    <span style={{ fontSize: '11px', color: '#D1D5DB' }}>
-                        Inkto
+                    <span style={{ fontSize: '11px', color: '#9CA3AF' }}>
+                        {stats.words.toLocaleString()} words
                     </span>
                 </div>
+            </div>
+
+            {/* ── Email Action ── */}
+            <div style={{
+                background: '#fff', border: '1px solid #E5E7EB',
+                borderRadius: '12px', padding: '16px', marginBottom: '16px',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
+            }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '12px' }}>
+                    <Mail size={16} color="#6B7280" /> Email as .docx
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <input 
+                        type="email" 
+                        placeholder="recipient@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        style={{
+                            flex: 1, padding: '10px 14px', borderRadius: '8px',
+                            border: '1px solid #D1D5DB', fontSize: '14px',
+                            outline: 'none'
+                        }}
+                    />
+                    <button
+                        onClick={handleSendEmail}
+                        disabled={sendingEmail}
+                        style={{
+                            padding: '10px 20px', background: '#111827', color: '#fff',
+                            border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600',
+                            cursor: sendingEmail ? 'wait' : 'pointer', opacity: sendingEmail ? 0.7 : 1
+                        }}
+                    >
+                        {sendingEmail ? 'Sending...' : 'Send'}
+                    </button>
+                </div>
+                {emailStatus && (
+                    <div style={{ 
+                        marginTop: '10px', fontSize: '13px', fontWeight: '500',
+                        color: emailStatus.type === 'success' ? '#16A34A' : '#DC2626'
+                    }}>
+                        {emailStatus.msg}
+                    </div>
+                )}
             </div>
 
             {/* ── New Document ── */}
@@ -224,8 +340,6 @@ export default function OutputBox({ text, onReset }) {
                     fontSize: '14px', fontWeight: '600', color: '#374151',
                     cursor: 'pointer', transition: 'all 0.2s'
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.borderColor = '#D1D5DB'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#F9FAFB'; e.currentTarget.style.borderColor = '#E5E7EB'; }}
             >
                 <RotateCcw size={14} /> Start New Document
             </button>
@@ -233,19 +347,17 @@ export default function OutputBox({ text, onReset }) {
     );
 }
 
-function ToolBtn({ icon, label, onClick }) {
+function ToolBtn({ icon, label, onClick, primary }) {
     return (
         <button
             onClick={onClick}
             style={{
                 display: 'flex', alignItems: 'center', gap: '5px',
-                padding: '7px 12px', background: '#F3F4F6',
+                padding: '7px 12px', background: primary ? '#EFF6FF' : '#F3F4F6',
                 border: 'none', borderRadius: '8px',
-                fontSize: '12px', fontWeight: '600', color: '#374151',
+                fontSize: '12px', fontWeight: '600', color: primary ? '#2563EB' : '#374151',
                 cursor: 'pointer', transition: 'background 0.15s'
             }}
-            onMouseEnter={e => e.currentTarget.style.background = '#E5E7EB'}
-            onMouseLeave={e => e.currentTarget.style.background = '#F3F4F6'}
         >
             {icon} {label}
         </button>

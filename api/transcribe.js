@@ -1,6 +1,8 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const { GoogleGenAI } = require('@google/genai');
 const multer = require('multer');
+const { kv } = require('@vercel/kv');
+const { nanoid } = require('nanoid');
 
 // ---- Multer: memory storage ----
 const upload = multer({
@@ -54,6 +56,26 @@ module.exports = async function handler(req, res) {
 
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+    // ---- IP Rate Limiting ----
+    // Requires KV_REST_API_URL and KV_REST_API_TOKEN in Vercel Env
+    if (process.env.KV_REST_API_URL) {
+        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        if (ip !== 'unknown') {
+            const rlKey = `rate_limit:transcribe:${ip}`;
+            try {
+                const count = await kv.incr(rlKey);
+                if (count === 1) {
+                    await kv.expire(rlKey, 3600); // 1 hour TTL
+                }
+                if (count > 10) {
+                    return res.status(429).json({ error: 'Too many requests. Please try again in an hour.' });
+                }
+            } catch (err) {
+                console.error('Rate limit error:', err);
+            }
+        }
+    }
 
     // Parse multipart
     try {
@@ -141,7 +163,24 @@ module.exports = async function handler(req, res) {
     // ---- Race: return whoever responds first ----
     try {
         const text = await Promise.any(providers);
-        return res.json({ success: true, text });
+        
+        let sessionId = null;
+        if (process.env.KV_REST_API_URL) {
+            try {
+                sessionId = nanoid(8);
+                await kv.set(`session:${sessionId}`, {
+                    id: sessionId,
+                    text,
+                    createdAt: Date.now(),
+                    sourceImageCount: files.length
+                }, { ex: 604800 }); // 7 days in seconds
+            } catch (err) {
+                console.error('Session persistence failed:', err);
+                sessionId = null;
+            }
+        }
+
+        return res.json({ success: true, text, sessionId });
     } catch (err) {
         // Promise.any rejects with AggregateError when ALL providers fail
         console.error('All providers failed:', err.errors || err.message);

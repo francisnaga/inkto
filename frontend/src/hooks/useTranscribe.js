@@ -5,6 +5,7 @@ export function useTranscribe() {
     const [files, setFiles] = useState([]);
     const [error, setError] = useState(null);
     const [transcribedText, setTranscribedText] = useState('');
+    const [sessionId, setSessionId] = useState(null);
 
     const addFiles = (newFiles) => {
         setFiles(prev => [...prev, ...newFiles]);
@@ -18,6 +19,27 @@ export function useTranscribe() {
             if (newFiles.length === 0) setState('idle');
             return newFiles;
         });
+    };
+
+    const fetchSession = async (id) => {
+        setState('processing');
+        setError(null);
+        try {
+            const response = await fetch(`/api/session?id=${id}`);
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to load session');
+            }
+
+            setTranscribedText(data.session.text);
+            setSessionId(data.session.id);
+            setState('success');
+        } catch (err) {
+            console.error(err);
+            setError(err.message);
+            setState('error');
+        }
     };
 
     const transcribe = async (customPrompt = '') => {
@@ -59,6 +81,7 @@ export function useTranscribe() {
             }
 
             setTranscribedText(data.text);
+            if (data.sessionId) setSessionId(data.sessionId);
             setState('success');
         } catch (err) {
             console.error(err);
@@ -70,8 +93,13 @@ export function useTranscribe() {
     const reset = () => {
         setFiles([]);
         setTranscribedText('');
+        setSessionId(null);
         setError(null);
         setState('idle');
+        // If we were on a session URL, remove it
+        if (window.location.pathname.startsWith('/session/')) {
+            window.history.pushState({}, '', '/');
+        }
     };
 
     return {
@@ -79,9 +107,11 @@ export function useTranscribe() {
         files,
         error,
         transcribedText,
+        sessionId,
         addFiles,
         removeFile,
         transcribe,
+        fetchSession,
         reset
     };
 }

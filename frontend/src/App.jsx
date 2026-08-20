@@ -151,10 +151,20 @@ function ProcessingScreen({ pageCount }) {
 }
 
 function App() {
-    const { state, files, error, transcribedText, addFiles, removeFile, transcribe, reset } = useTranscribe();
+    const { state, files, error, transcribedText, sessionId, addFiles, removeFile, transcribe, fetchSession, reset } = useTranscribe();
     const [customPrompt, setCustomPrompt] = useState('');
     const [promptFocused, setPromptFocused] = useState(false);
-    const [showLanding, setShowLanding] = useState(!localStorage.getItem('inkto_launched'));
+    const [showLanding, setShowLanding] = useState(!localStorage.getItem('inkto_launched') && !window.location.pathname.startsWith('/session/'));
+
+    useEffect(() => {
+        const path = window.location.pathname;
+        if (path.startsWith('/session/')) {
+            const id = path.split('/')[2];
+            if (id) {
+                fetchSession(id);
+            }
+        }
+    }, []);
 
     const handleGetStarted = () => {
         localStorage.setItem('inkto_launched', '1');
@@ -263,7 +273,7 @@ function App() {
                 {state === 'processing' && <ProcessingScreen pageCount={files.length} />}
 
                 {/* ── Success ── */}
-                {state === 'success' && <OutputBox text={transcribedText} onReset={reset} />}
+                {state === 'success' && <OutputBox text={transcribedText} sessionId={sessionId} onReset={reset} />}
 
                 {/* ── Error ── */}
                 {state === 'error' && (

@@ -24,24 +24,30 @@ export default function UploadZone({ onFilesSelected }) {
         try {
             const finalFiles = [];
             for (const file of fileList) {
-                if (file.type === 'application/pdf') {
-                    // PDF pages are already rendered to JPEG by pdfHelper (at scale 2.0)
-                    // so compress those output images too
-                    const images = await convertPdfToImages(file);
-                    for (const img of images) {
-                        const compressed = await compressImage(img);
+                try {
+                    if (file.type === 'application/pdf') {
+                        const images = await convertPdfToImages(file);
+                        for (const img of images) {
+                            const compressed = await compressImage(img).catch(() => img);
+                            finalFiles.push(compressed);
+                        }
+                    } else if (file.type.startsWith('image/')) {
+                        const compressed = await compressImage(file).catch(() => file);
                         finalFiles.push(compressed);
+                    } else {
+                        // Fallback: if it's an unknown type (e.g. Android HEIC missing mime type), add it anyway
+                        finalFiles.push(file);
                     }
-                } else if (file.type.startsWith('image/')) {
-                    // Compress & resize before adding — critical for Android camera photos
-                    const compressed = await compressImage(file);
-                    finalFiles.push(compressed);
+                } catch (innerErr) {
+                    console.error("Failed to process individual file:", file.name, innerErr);
+                    // Add the original file as a fallback if compression entirely crashes
+                    finalFiles.push(file);
                 }
             }
             onFilesSelected(finalFiles);
         } catch (err) {
             console.error("Failed to process files", err);
-            alert("Failed to process file. Please try again.");
+            alert("Failed to process files. Please try again.");
         } finally {
             setIsProcessing(false);
         }

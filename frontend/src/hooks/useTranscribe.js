@@ -40,18 +40,27 @@ export function useTranscribe() {
         }
 
         try {
+            // Sanitize password - strip anything non-printable-ASCII (prevents DOMException in Safari)
+            const safePassword = password ? password.replace(/[^\x20-\x7E]/g, '').trim() : '';
+
             const response = await fetch('/api/transcribe', {
                 method: 'POST',
                 headers: {
-                    ...(password ? { 'Authorization': `Bearer ${password.trim()}` } : {})
+                    ...(safePassword ? { 'Authorization': `Bearer ${safePassword}` } : {})
                 },
                 body: formData,
             });
 
-            const data = await response.json();
+            // Parse safely: avoid Safari DOMException when server returns HTML instead of JSON
+            const rawText = await response.text();
+            let data = {};
+            try {
+                data = JSON.parse(rawText);
+            } catch {
+                throw new Error(`Server error (${response.status}). Please try again.`);
+            }
 
             if (response.status === 401) {
-                // Clear password on unauthorized
                 localStorage.removeItem('handscript_password');
                 throw new Error("UNAUTHORIZED");
             }

@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0",
+    "@google/genai": "^2.18.0",
+    "multer": "^1.4.5-lts.2"
+  }
+}

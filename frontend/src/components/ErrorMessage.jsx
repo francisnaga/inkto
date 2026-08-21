@@ -1,6 +1,19 @@
 import React from 'react';
 import { AlertTriangle, Coffee } from 'lucide-react';
 
+const IconPaystack = ({ size = 16 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 17h6v4H4v-4zM14 17h6v4h-6v-4zM4 10h6v4H4v-4zM14 10h6v4h-6v-4zM4 3h6v4H4V3z" />
+    </svg>
+);
+
+const IconPayPal = ({ size = 16 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M7.077 16.26l1.3-8.24c.1-.64.65-1.12 1.3-1.12h4.55c2.4 0 3.9 1.15 3.9 3.4 0 2.44-1.5 4.38-4 4.38h-2.02c-.52 0-.96.38-1.04.9l-.6 3.75c-.04.25-.26.43-.51.43H7.43c-.35 0-.6-.33-.53-.66l.17-.84z" />
+        <path fillOpacity="0.5" d="M10.77 8.26l-1.3 8.24c-.1.64-.65 1.12-1.3 1.12H5.63c-.35 0-.6.33-.53.66l1.7-10.84c.1-.64.65-1.12 1.3-1.12h4.55c1.47 0 2.57.43 3.24 1.16-.48-.7-1.33-1.16-2.52-1.16H8.82c-.65 0-1.2.48-1.3 1.12L6.22 15.26h2.52c.52 0 .96-.38 1.04-.9l.99-6.1z" />
+    </svg>
+);
+
 export default function ErrorMessage({ message, onRetry, onCancel }) {
     if (!message) return null;
     
@@ -101,7 +114,7 @@ export default function ErrorMessage({ message, onRetry, onCancel }) {
                         onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
                         onMouseLeave={e => e.currentTarget.style.opacity = '1'}
                     >
-                        Tip via Paystack
+                        <IconPaystack size={14} /> Tip via Paystack
                     </a>
                     <a
                         href="https://paypal.me/frankyideal25"
@@ -116,7 +129,7 @@ export default function ErrorMessage({ message, onRetry, onCancel }) {
                         onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
                         onMouseLeave={e => e.currentTarget.style.opacity = '1'}
                     >
-                        Tip via PayPal
+                        <IconPayPal size={14} /> Tip via PayPal
                     </a>
                 </div>
             </div>

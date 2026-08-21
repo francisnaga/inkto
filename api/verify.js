@@ -1,4 +1,14 @@
-const { serialize } = require('cookie');
+const serializeCookie = (name, val, options = {}) => {
+    let str = `${name}=${encodeURIComponent(val)}`;
+    if (options.maxAge) str += `; Max-Age=${Math.floor(options.maxAge)}`;
+    if (options.domain) str += `; Domain=${options.domain}`;
+    if (options.path) str += `; Path=${options.path}`;
+    if (options.expires) str += `; Expires=${options.expires.toUTCString()}`;
+    if (options.httpOnly) str += `; HttpOnly`;
+    if (options.secure) str += `; Secure`;
+    if (options.sameSite) str += `; SameSite=${options.sameSite}`;
+    return str;
+};
 const crypto = require('crypto');
 const { supabase } = require('./utils/supabase');
 
@@ -46,17 +56,16 @@ module.exports = async function handler(req, res) {
 
         // Set signed cookie
         const cookieValue = signCookie(tokenData.email);
-        const cookieHeader = serialize('inkto_auth', cookieValue, {
+        res.setHeader('Set-Cookie', serializeCookie('inkto_auth', cookieValue, {
             httpOnly: true,
-            secure: true,
-            maxAge: 30 * 24 * 60 * 60,
-            path: '/',
-            sameSite: 'lax'
-        });
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 7,
+            path: '/'
+        }));
 
         // Use a meta-redirect HTML page so the cookie is reliably set
         // before the React app boots (avoids race conditions with 302 redirect)
-        res.setHeader('Set-Cookie', cookieHeader);
         res.setHeader('Content-Type', 'text/html');
         return res.status(200).send(`<!DOCTYPE html>
 <html>

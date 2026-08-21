@@ -1,4 +1,13 @@
-const { parse } = require('cookie');
+const parseCookie = (str) => {
+    if (!str) return {};
+    return str.split(';').reduce((res, c) => {
+        const [key, val] = c.split('=').map(i => i.trim());
+        if (key && val) {
+            try { res[key] = decodeURIComponent(val); } catch(e) { res[key] = val; }
+        }
+        return res;
+    }, {});
+};
 const crypto = require('crypto');
 const { supabase } = require('./utils/supabase');
 
@@ -30,7 +39,7 @@ module.exports = async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-    const cookies = parse(req.headers.cookie || '');
+    const cookies = parseCookie(req.headers.cookie || '');
     const email = verifyCookie(cookies.inkto_auth);
 
     if (!email) {

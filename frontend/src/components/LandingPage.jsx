@@ -109,6 +109,20 @@ export default function LandingPage({ onGetStarted }) {
             fontFamily: "'Inter', -apple-system, sans-serif",
             color: '#1C1917'
         }}>
+            <style>
+                {`
+                @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600&display=swap');
+                
+                @media (max-width: 768px) {
+                    .hero-visual-arrow { transform: rotate(90deg); margin: 10px 0; }
+                    .hero-visual-container { flex-direction: column; }
+                }
+                @media (min-width: 769px) {
+                    .hero-visual-arrow { transform: none; }
+                    .hero-visual-container { flex-direction: row; }
+                }
+                `}
+            </style>
 
             {/* Navbar */}
             <nav style={{
@@ -148,8 +162,8 @@ export default function LandingPage({ onGetStarted }) {
 
             {/* Hero */}
             <section style={{
-                maxWidth: '720px', margin: '0 auto',
-                padding: 'clamp(124px, 15vw, 160px) clamp(20px, 5vw, 40px) 56px',
+                maxWidth: '900px', margin: '0 auto',
+                padding: 'clamp(124px, 15vw, 140px) clamp(20px, 5vw, 40px) 56px',
                 textAlign: 'center'
             }}>
                 <h1 style={{
@@ -173,8 +187,48 @@ export default function LandingPage({ onGetStarted }) {
                     maxWidth: '520px', margin: '0 auto 40px',
                     lineHeight: 1.65, fontWeight: 400
                 }}>
-                    Snap a photo of any handwritten document and Inkto converts it to clean, editable text. Crossed out words are removed automatically and insertions are placed in the correct location.
+                    Snap a photo of any handwritten document and Inkto converts it to clean, editable text.
                 </p>
+
+                {/* Hero Visual Demo */}
+                <div className="hero-visual-container" style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px',
+                    margin: '0 auto 48px', maxWidth: '800px'
+                }}>
+                    {/* Before */}
+                    <div style={{
+                        flex: '1 1 300px', background: '#FDFBF7', border: '1px solid #E4E2DC',
+                        borderRadius: '16px', padding: '32px 24px', boxShadow: '0 8px 24px rgba(0,0,0,0.04)',
+                        position: 'relative', overflow: 'hidden', textAlign: 'left'
+                    }}>
+                        <div style={{ position: 'absolute', left: '24px', top: 0, bottom: 0, width: '2px', background: '#FCA5A5', opacity: 0.4 }} />
+                        <div style={{
+                            fontFamily: "'Caveat', cursive", fontSize: '28px', color: '#1E3A8A',
+                            lineHeight: 1.5, paddingLeft: '16px', transform: 'rotate(-1deg)'
+                        }}>
+                            I swear that the <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>defendant</span> <span style={{ position: 'relative' }}>claimant<span style={{ position: 'absolute', bottom: '-16px', left: '50%', transform: 'translateX(-50%)', fontSize: '18px', color: '#1E3A8A' }}>^</span></span> was present.
+                        </div>
+                    </div>
+                    
+                    {/* Arrow */}
+                    <div className="hero-visual-arrow" style={{ color: '#94A3B8', flexShrink: 0 }}>
+                        <IconArrowRight size={28} />
+                    </div>
+
+                    {/* After */}
+                    <div style={{
+                        flex: '1 1 300px', background: '#fff', border: '1px solid #E2E8F0',
+                        borderRadius: '16px', padding: '32px 24px', boxShadow: '0 12px 32px rgba(0,0,0,0.08)',
+                        textAlign: 'left'
+                    }}>
+                        <div style={{
+                            fontFamily: "'EB Garamond', Georgia, serif", fontSize: '21px', color: '#0F172A',
+                            lineHeight: 1.6
+                        }}>
+                            I swear that the claimant was present.
+                        </div>
+                    </div>
+                </div>
 
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
                     <button
@@ -201,34 +255,59 @@ export default function LandingPage({ onGetStarted }) {
                 </p>
             </section>
 
-            {/* Feature pills */}
-            <section style={{ maxWidth: '800px', margin: '0 auto', padding: '0 clamp(20px, 5vw, 40px) 80px' }}>
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                    gap: '10px'
-                }}>
-                    {FEATURES.map((f, i) => (
+            {/* Features (Mixed Layout) */}
+            <section style={{ maxWidth: '960px', margin: '0 auto 80px', padding: '0 clamp(20px, 5vw, 40px)' }}>
+                {/* Top Demos */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '24px' }}>
+                    {/* Card A: Edits */}
+                    <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '32px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 20px', color: '#0F172A', letterSpacing: '-0.3px' }}>Understands edits, not just characters</h3>
+                        <div style={{ background: '#FDFBF7', padding: '24px 20px', borderRadius: '12px', border: '1px solid #E4E2DC', marginBottom: '16px', position: 'relative', overflow: 'hidden' }}>
+                            <div style={{ position: 'absolute', left: '16px', top: 0, bottom: 0, width: '2px', background: '#FCA5A5', opacity: 0.4 }} />
+                            <div style={{ fontFamily: "'Caveat', cursive", fontSize: '26px', color: '#1E3A8A', paddingLeft: '12px', lineHeight: 1.2 }}>
+                                <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>ignore this</span> keep this
+                            </div>
+                        </div>
+                        <div style={{ background: '#F8FAFC', padding: '16px 20px', borderRadius: '12px', border: '1px solid #E2E8F0', fontFamily: "'EB Garamond', Georgia, serif", fontSize: '19px', color: '#0F172A' }}>
+                            keep this
+                        </div>
+                    </div>
+
+                    {/* Card B: Structure */}
+                    <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '32px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 20px', color: '#0F172A', letterSpacing: '-0.3px' }}>Preserves document structure</h3>
+                        <div className="hero-visual-container" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                            <div style={{ flex: 1, background: '#FDFBF7', padding: '20px 16px', borderRadius: '12px', border: '1px solid #E4E2DC', position: 'relative', overflow: 'hidden', minWidth: '120px' }}>
+                                <div style={{ position: 'absolute', left: '16px', top: 0, bottom: 0, width: '2px', background: '#FCA5A5', opacity: 0.4 }} />
+                                <div style={{ fontFamily: "'Caveat', cursive", fontSize: '22px', color: '#1E3A8A', paddingLeft: '12px', lineHeight: 1.4 }}>
+                                    1. First item<br/>2. Second item
+                                </div>
+                            </div>
+                            <div className="hero-visual-arrow" style={{ flexShrink: 0 }}>
+                                <IconArrowRight size={16} color="#94A3B8" />
+                            </div>
+                            <div style={{ flex: 1, background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', fontFamily: "'EB Garamond', Georgia, serif", fontSize: '17px', color: '#0F172A', lineHeight: 1.5, minWidth: '120px' }}>
+                                <ol style={{ margin: 0, paddingLeft: '20px' }}>
+                                    <li style={{ marginBottom: '4px' }}>First item</li>
+                                    <li>Second item</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Bottom Standard Features */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                    {FEATURES.slice(2).map((f, i) => (
                         <div key={i} style={{
                             display: 'flex', alignItems: 'center', gap: '10px',
                             background: '#fff', border: '1px solid #E2E8F0',
-                            borderRadius: '10px', padding: '12px 16px',
+                            borderRadius: '10px', padding: '14px 18px',
                             fontSize: '13px', fontWeight: '600', color: '#374151'
                         }}>
                             {f.icon} {f.text}
                         </div>
                     ))}
-                </div>
-            </section>
-
-            {/* App screenshot / hero visual */}
-            <section style={{ maxWidth: '960px', margin: '0 auto 80px', padding: '0 clamp(20px, 5vw, 40px)' }}>
-                <div style={{
-                    borderRadius: '20px', overflow: 'hidden',
-                    boxShadow: '0 24px 80px rgba(0,0,0,0.12)',
-                    border: '1px solid #E2E8F0'
-                }}>
-                    <img src="/hero.jpg" alt="Inkto converting a handwritten document to clean text" style={{ width: '100%', display: 'block' }} />
                 </div>
             </section>
 
@@ -322,7 +401,7 @@ export default function LandingPage({ onGetStarted }) {
                     Try it now. Free.
                 </h2>
                 <p style={{ color: '#64748B', marginBottom: '32px', fontSize: '16px', maxWidth: '360px', margin: '0 auto 32px' }}>
-                    No sign up required. Just upload a photo and get clean text in under a minute.
+                    No sign up required. Just upload a photo and get clean text in seconds.
                 </p>
                 <button
                     onClick={onGetStarted}
@@ -372,7 +451,7 @@ export default function LandingPage({ onGetStarted }) {
                     {[
                         {
                             q: 'How do I convert handwriting to text for free?',
-                            a: 'Upload a photo or scanned PDF of your handwritten document to Inkto. The system reads the handwriting and returns clean, editable text in under 60 seconds. Completely free and no sign up is required.'
+                            a: 'Upload a photo or scanned PDF of your handwritten document to Inkto. The system reads the handwriting and returns clean, editable text in seconds. Completely free and no sign up is required.'
                         },
                         {
                             q: 'Can Inkto transcribe legal documents and affidavits?',

@@ -26,7 +26,9 @@ module.exports = async function handler(req, res) {
         const expiresAt = new Date();
         expiresAt.setMinutes(expiresAt.getMinutes() + 15);
 
-        const { error: dbError } = await supabase.from('auth_tokens').insert([{
+        const db = require('./utils/supabase').checkSupabase();
+
+        const { error: dbError } = await db.from('auth_tokens').insert([{
             token,
             email: email.toLowerCase(),
             expires_at: expiresAt.toISOString(),

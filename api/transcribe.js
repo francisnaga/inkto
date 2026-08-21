@@ -168,6 +168,8 @@ module.exports = async function handler(req, res) {
         // Upload images to Supabase Storage and Save document to DB
         const sessionId = nanoid(21);
         
+        const db = require('./utils/supabase').checkSupabase();
+        
         // Upload images asynchronously
         await Promise.all(files.map(async (file, index) => {
             const ext = file.mimetype === 'image/jpeg' ? 'jpg' : 
@@ -175,14 +177,14 @@ module.exports = async function handler(req, res) {
                         file.mimetype === 'application/pdf' ? 'pdf' : 'bin';
             const filePath = `${sessionId}/${index}.${ext}`;
             
-            await supabase.storage.from('inkto-images').upload(filePath, file.buffer, {
+            await db.storage.from('inkto-images').upload(filePath, file.buffer, {
                 contentType: file.mimetype,
                 upsert: true
             });
         }));
 
         // Insert into postgres documents table (email is nullable)
-        const { error: dbError } = await supabase.from('documents').insert([{
+        const { error: dbError } = await db.from('documents').insert([{
             id: sessionId,
             transcript_text: finalText,
             source_image_count: files.length

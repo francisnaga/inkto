@@ -20,9 +20,12 @@ module.exports = async function handler(req, res) {
     }
 
     try {
-        const { data: tokenData, error } = await supabase
+        const db = require('./utils/supabase').checkSupabase();
+
+        // Check token validity
+        const { data: tokenData, error } = await db
             .from('auth_tokens')
-            .select('email, expires_at, used')
+            .select('email, used, expires_at')
             .eq('token', token)
             .single();
 
@@ -39,7 +42,7 @@ module.exports = async function handler(req, res) {
         }
 
         // Mark token as used
-        await supabase.from('auth_tokens').update({ used: true }).eq('token', token);
+        await db.from('auth_tokens').update({ used: true }).eq('token', token);
 
         // Set signed cookie
         const cookieValue = signCookie(tokenData.email);

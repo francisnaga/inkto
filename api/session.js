@@ -18,8 +18,10 @@ module.exports = async function handler(req, res) {
     if (!id) return res.status(400).json({ error: 'Session ID is required.' });
 
     try {
+        const db = require('./utils/supabase').checkSupabase();
+
         // Try Supabase (Postgres) first — for all new sessions
-        const { data: session, error } = await supabase
+        const { data: session, error } = await db
             .from('documents')
             .select('id, transcript_text, source_image_count, created_at')
             .eq('id', id)

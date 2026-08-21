@@ -98,7 +98,8 @@ module.exports = async function handler(req, res) {
 
         // If email sent successfully, update the document's email address so it appears in their history
         if (sessionId) {
-            await supabase.from('documents')
+            const db = require('./utils/supabase').checkSupabase();
+            await db.from('documents')
                 .update({ email: recipientEmail.toLowerCase() })
                 .eq('id', sessionId)
                 .is('email', null); // Only set if not already set (prevents overtaking)

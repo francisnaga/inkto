@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Copy, Check, RotateCcw, FileText, FileDown, ChevronUp, Mail } from 'lucide-react';
+import { Copy, Check, RotateCcw, FileText, FileDown, ChevronUp, Mail, Pen } from 'lucide-react';
 
 export default function OutputBox({ text, sessionId, images = [], onReset }) {
     const [value, setValue] = useState(text);
     const [copied, setCopied] = useState(false);
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
+    const [isEditing, setIsEditing] = useState(false);
 
     const [email, setEmail] = useState(() => localStorage.getItem('inkto_last_email') || '');
     const [sendingEmail, setSendingEmail] = useState(false);
@@ -194,11 +195,17 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
                 <FileText size={13} color="#C4C0BB" />
                 <span style={{ fontSize: '12px', color: '#A8A29E', fontWeight: '600' }}>Transcript</span>
                 <span style={{
-                    fontSize: '10px', background: '#F0EFEB', color: '#78716C',
+                    fontSize: '10px', background: isEditing ? '#DBEAFE' : '#F0EFEB', color: isEditing ? '#1D4ED8' : '#78716C',
                     padding: '2px 7px', borderRadius: '99px', fontWeight: '600'
-                }}>Editable</span>
+                }}>{isEditing ? 'Editing' : 'Read-only'}</span>
             </div>
             <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                {!isEditing && (
+                    <ActionBtn icon={<Pen size={12} color="#57534E" />} label="Edit" onClick={() => {
+                        setIsEditing(true);
+                        setTimeout(() => textareaRef.current?.focus(), 50);
+                    }} />
+                )}
                 <ActionBtn icon={<FileDown size={12} color="#1D4ED8" />} label={isDesktop ? "Open in Word" : ".docx"} onClick={handleDownloadDocx} accent />
                 <button onClick={handleCopy} style={{
                     display: 'flex', alignItems: 'center', gap: '5px',
@@ -282,6 +289,13 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
                                     onChange={handleChange}
                                     onScroll={e => setShowScrollTop(e.target.scrollTop > 160)}
                                     spellCheck={false}
+                                    readOnly={!isEditing}
+                                    onClick={() => {
+                                        if (!isEditing) {
+                                            setIsEditing(true);
+                                            setTimeout(() => textareaRef.current?.focus(), 50);
+                                        }
+                                    }}
                                     style={{
                                         display: 'block', width: '100%', minHeight: '60vh',
                                         padding: '40px 48px', border: 'none', outline: 'none',
@@ -361,6 +375,13 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
                         onChange={handleChange}
                         onScroll={e => setShowScrollTop(e.target.scrollTop > 160)}
                         spellCheck={false}
+                        readOnly={!isEditing}
+                        onClick={() => {
+                            if (!isEditing) {
+                                setIsEditing(true);
+                                setTimeout(() => textareaRef.current?.focus(), 50);
+                            }
+                        }}
                         style={{
                             display: 'block', width: '100%', height: '380px',
                             padding: '22px', border: 'none', outline: 'none',

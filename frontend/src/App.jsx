@@ -148,7 +148,7 @@ function App() {
     const { state, files, error, transcribedText, sessionId, sessionImages, addFiles, removeFile, transcribe, fetchSession, reset } = useTranscribe();
     const [customPrompt, setCustomPrompt] = useState('');
     const [promptFocused, setPromptFocused] = useState(false);
-    const isHistoryPath = window.location.pathname === '/history';
+    const isHistoryPath = window.location.pathname.startsWith('/history');
     const isSessionPath = window.location.pathname.startsWith('/session/');
     const [showLanding, setShowLanding] = useState(!localStorage.getItem('inkto_launched') && !isSessionPath && !isHistoryPath);
     const [showHistory, setShowHistory] = useState(isHistoryPath);
@@ -158,13 +158,13 @@ function App() {
         if (path.startsWith('/session/')) {
             const id = path.split('/')[2];
             if (id) fetchSession(id);
-        } else if (path === '/history') {
+        } else if (path.startsWith('/history')) {
             setShowHistory(true);
         }
 
         const handlePopState = () => {
             const path = window.location.pathname;
-            if (path === '/history') setShowHistory(true);
+            if (path.startsWith('/history')) setShowHistory(true);
             else if (path === '/') { setShowHistory(false); reset(); }
             else if (path.startsWith('/session/')) {
                 setShowHistory(false);

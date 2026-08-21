@@ -62,7 +62,7 @@ module.exports = async function handler(req, res) {
                         Click the button below to view your transcription history.
                     </p>
                     <a href="${verifyUrl}" style="display: inline-block; background-color: #111827; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-size: 14px; font-weight: 600; margin-bottom: 24px;">
-                        Sign in to Inkto
+                        View history
                     </a>
                     <p style="margin: 0; font-size: 12px; color: #6b7280;">
                         This link expires in 15 minutes. If you did not request this, you can ignore it.
@@ -76,7 +76,7 @@ module.exports = async function handler(req, res) {
         const { error: emailError } = await resend.emails.send({
             from: 'Inkto Transcriber <noreply@inkto.jointaccount.org>',
             to: email,
-            subject: 'Sign in to Inkto',
+            subject: 'Inkto Document History',
             html: emailHtml
         });
 

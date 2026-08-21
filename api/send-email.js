@@ -1,6 +1,6 @@
 const { Resend } = require('resend');
 const { generateDocx } = require('./utils/docxGenerator');
-const { supabase } = require('./utils/supabase');
+const { supabase } = require('./_utils/supabase');
 
 module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -98,7 +98,7 @@ module.exports = async function handler(req, res) {
 
         // If email sent successfully, update the document's email address so it appears in their history
         if (sessionId) {
-            const db = require('./utils/supabase').checkSupabase();
+            const db = require('./_utils/supabase').checkSupabase();
             await db.from('documents')
                 .update({ email: recipientEmail.toLowerCase() })
                 .eq('id', sessionId)

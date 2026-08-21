@@ -12,7 +12,7 @@ module.exports = async function handler(req, res) {
     }
 
     try {
-        const db = require('./utils/supabase').checkSupabase();
+        const db = require('./_utils/supabase').checkSupabase();
 
         // Upsert — one rating per session
         const { error } = await db.from('ratings').upsert(

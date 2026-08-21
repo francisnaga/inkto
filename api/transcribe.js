@@ -3,7 +3,7 @@ const { GoogleGenAI } = require('@google/genai');
 const multer = require('multer');
 const { Redis } = require('@upstash/redis');
 const { nanoid } = require('nanoid');
-const { supabase } = require('./utils/supabase');
+const { supabase } = require('./_utils/supabase');
 
 // ---- Redis Setup ----
 const redis = process.env.UPSTASH_REDIS_REST_KV_REST_API_URL 
@@ -168,7 +168,7 @@ module.exports = async function handler(req, res) {
         // Upload images to Supabase Storage and Save document to DB
         const sessionId = nanoid(21);
         
-        const db = require('./utils/supabase').checkSupabase();
+        const db = require('./_utils/supabase').checkSupabase();
         
         // Upload images asynchronously
         await Promise.all(files.map(async (file, index) => {

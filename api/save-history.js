@@ -1,4 +1,4 @@
-const { supabase } = require('./utils/supabase');
+const { supabase } = require('./_utils/supabase');
 
 module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -19,7 +19,7 @@ module.exports = async function handler(req, res) {
     }
 
     try {
-        const db = require('./utils/supabase').checkSupabase();
+        const db = require('./_utils/supabase').checkSupabase();
 
         // Update the document to tie it to the user's email
         const { error } = await db

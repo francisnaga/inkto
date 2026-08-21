@@ -1,6 +1,6 @@
 const { nanoid } = require('nanoid');
 const { Resend } = require('resend');
-const { supabase } = require('./utils/supabase');
+const { supabase } = require('./_utils/supabase');
 
 module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -26,7 +26,7 @@ module.exports = async function handler(req, res) {
         const expiresAt = new Date();
         expiresAt.setMinutes(expiresAt.getMinutes() + 15);
 
-        const db = require('./utils/supabase').checkSupabase();
+        const db = require('./_utils/supabase').checkSupabase();
 
         const { error: dbError } = await db.from('auth_tokens').insert([{
             token,

@@ -57,7 +57,7 @@ module.exports = async function handler(req, res) {
     }
 
     try {
-        const db = require('./utils/supabase').checkSupabase();
+        const db = require('./_utils/supabase').checkSupabase();
 
         const { data, error } = await db
             .from('documents')

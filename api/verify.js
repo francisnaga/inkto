@@ -29,7 +29,7 @@ module.exports = async function handler(req, res) {
     if (!token) return res.redirect('/history');
 
     try {
-        const db = require('./utils/supabase').checkSupabase();
+        const db = require('./_utils/supabase').checkSupabase();
 
         const { data: tokenData, error } = await db
             .from('auth_tokens')

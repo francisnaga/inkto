@@ -1,5 +1,5 @@
 const { Redis } = require('@upstash/redis');
-const { supabase } = require('./utils/supabase');
+const { supabase } = require('./_utils/supabase');
 
 // ---- Redis fallback for old sessions ----
 const redis = process.env.UPSTASH_REDIS_REST_KV_REST_API_URL
@@ -18,7 +18,7 @@ module.exports = async function handler(req, res) {
     if (!id) return res.status(400).json({ error: 'Session ID is required.' });
 
     try {
-        const db = require('./utils/supabase').checkSupabase();
+        const db = require('./_utils/supabase').checkSupabase();
 
         // Try Supabase (Postgres) first — for all new sessions
         const { data: session, error } = await db

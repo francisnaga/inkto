@@ -100,7 +100,7 @@ History is scoped to an email address (via magic link) — documents only appear
 ## Local Development
 
 ```bash
-git clone https://github.com/francisnaga/Legal-Text-Ai-Transcriber
+git clone https://github.com/francisnaga/inkto
 cd inkto
 npm install
 npm run dev

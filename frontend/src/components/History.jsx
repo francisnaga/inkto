@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, FileText, ChevronRight, Loader2 } from 'lucide-react';
+import { ArrowLeft, FileText, ChevronRight, Loader2, Clock, Mail } from 'lucide-react';
 
 export default function History({ onBack, onSelectSession }) {
     const [history, setHistory] = useState([]);
@@ -9,30 +9,28 @@ export default function History({ onBack, onSelectSession }) {
     const [requestEmail, setRequestEmail] = useState('');
     const [requesting, setRequesting] = useState(false);
     const [requestSent, setRequestSent] = useState(false);
+    const [isAuthed, setIsAuthed] = useState(false);
 
     useEffect(() => {
-        // Read email from URL query param (set by verify.js after magic link click)
-        const params = new URLSearchParams(window.location.search);
-        const emailFromUrl = params.get('email');
-        if (emailFromUrl) {
-            fetchHistory(emailFromUrl);
-        } else {
-            setLoading(false);
-        }
+        fetchHistory();
     }, []);
 
-    const fetchHistory = async (emailParam) => {
+    const fetchHistory = async () => {
         setLoading(true);
+        setError(null);
         try {
-            const res = await fetch(`/api/history?email=${encodeURIComponent(emailParam)}`);
+            const res = await fetch('/api/history', { credentials: 'include' });
             const data = await res.json();
             if (res.ok && data.success) {
                 setHistory(data.history);
                 setEmail(data.email);
+                setIsAuthed(true);
+            } else if (res.status === 401) {
+                setIsAuthed(false);
             } else {
                 setError(data.error || 'Failed to load history.');
             }
-        } catch (err) {
+        } catch {
             setError('Network error. Please try again.');
         } finally {
             setLoading(false);
@@ -62,120 +60,185 @@ export default function History({ onBack, onSelectSession }) {
 
     if (loading) {
         return (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-                <Loader2 className="spinner" size={24} color="#78716C" style={{ animation: 'spin 1s linear infinite' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', gap: '16px' }}>
+                <Loader2 size={22} color="#A8A29E" style={{ animation: 'spin 1s linear infinite' }} />
+                <p style={{ color: '#A8A29E', fontSize: '14px', margin: 0 }}>Loading...</p>
+                <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
             </div>
         );
     }
 
-    // No email in URL — show the magic link request form
-    if (!email) {
+    // Not authenticated — show magic link request form
+    if (!isAuthed) {
         return (
-            <div style={{ animation: 'fadeIn 0.3s ease', maxWidth: '400px', margin: '0 auto', padding: '20px' }}>
+            <div style={{ animation: 'fadeIn 0.3s ease' }}>
                 <button onClick={onBack} style={{
                     display: 'flex', alignItems: 'center', gap: '6px',
                     background: 'none', border: 'none', color: '#78716C',
                     fontSize: '14px', fontWeight: '600', cursor: 'pointer',
-                    marginBottom: '24px', padding: 0
+                    marginBottom: '28px', padding: 0
                 }}>
-                    <ArrowLeft size={16} /> Back
+                    <ArrowLeft size={15} /> Back
                 </button>
 
-                <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#1C1917', marginBottom: '8px' }}>
-                    Document History
-                </h2>
-                <p style={{ fontSize: '15px', color: '#57534E', marginBottom: '24px', lineHeight: '1.5' }}>
-                    Enter your email and we'll send you a link to view your documents.
-                </p>
-
-                {requestSent ? (
-                    <div style={{ background: '#DCFCE7', color: '#15803D', padding: '16px', borderRadius: '12px', fontSize: '14px', fontWeight: '500' }}>
-                        Check your inbox — we've sent a link to <strong>{requestEmail}</strong>.
+                <div style={{
+                    maxWidth: '400px', margin: '0 auto',
+                    background: '#fff', border: '1px solid #E4E2DC',
+                    borderRadius: '20px', padding: '36px 32px',
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.06)'
+                }}>
+                    <div style={{
+                        width: '44px', height: '44px', borderRadius: '12px',
+                        background: '#F0F9FF', display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', marginBottom: '20px'
+                    }}>
+                        <Mail size={20} color="#2563EB" />
                     </div>
-                ) : (
-                    <form onSubmit={handleRequestLink} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <input
-                            type="email"
-                            placeholder="Email address"
-                            value={requestEmail}
-                            onChange={e => setRequestEmail(e.target.value)}
-                            required
-                            style={{
-                                padding: '14px 16px', borderRadius: '10px',
-                                border: '1px solid #E4E2DC', fontSize: '15px',
-                                outline: 'none', width: '100%', boxSizing: 'border-box'
-                            }}
-                        />
-                        {error && <p style={{ color: '#B91C1C', fontSize: '13px', margin: 0 }}>{error}</p>}
-                        <button type="submit" disabled={requesting} style={{
-                            padding: '14px', background: '#2563EB', color: '#fff',
-                            border: 'none', borderRadius: '10px', fontSize: '15px',
-                            fontWeight: '700', cursor: requesting ? 'wait' : 'pointer',
-                            opacity: requesting ? 0.7 : 1
+
+                    <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#1C1917', marginBottom: '8px', letterSpacing: '-0.3px' }}>
+                        View your history
+                    </h2>
+                    <p style={{ fontSize: '14px', color: '#78716C', marginBottom: '24px', lineHeight: '1.6' }}>
+                        Enter the email you used when saving or sending a document. We'll email you a link — no password needed.
+                    </p>
+
+                    {requestSent ? (
+                        <div style={{
+                            background: '#F0FDF4', border: '1px solid #BBF7D0',
+                            color: '#15803D', padding: '16px 18px', borderRadius: '12px',
+                            fontSize: '14px', fontWeight: '500', lineHeight: '1.5'
                         }}>
-                            {requesting ? 'Sending...' : 'Send Magic Link'}
-                        </button>
-                    </form>
-                )}
+                            ✓ Link sent to <strong>{requestEmail}</strong>. Check your inbox — it expires in 15 minutes.
+                        </div>
+                    ) : (
+                        <form onSubmit={handleRequestLink} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <input
+                                type="email"
+                                placeholder="your@email.com"
+                                value={requestEmail}
+                                onChange={e => setRequestEmail(e.target.value)}
+                                required
+                                style={{
+                                    padding: '13px 16px', borderRadius: '10px',
+                                    border: '1.5px solid #E4E2DC', fontSize: '15px',
+                                    outline: 'none', width: '100%', boxSizing: 'border-box',
+                                    fontFamily: 'inherit', color: '#1C1917',
+                                    transition: 'border-color 0.2s'
+                                }}
+                                onFocus={e => e.target.style.borderColor = '#2563EB'}
+                                onBlur={e => e.target.style.borderColor = '#E4E2DC'}
+                            />
+                            {error && <p style={{ color: '#B91C1C', fontSize: '13px', margin: 0 }}>{error}</p>}
+                            <button type="submit" disabled={requesting} style={{
+                                padding: '13px', background: '#1C1917', color: '#fff',
+                                border: 'none', borderRadius: '10px', fontSize: '14px',
+                                fontWeight: '700', cursor: requesting ? 'wait' : 'pointer',
+                                opacity: requesting ? 0.6 : 1, transition: 'opacity 0.2s',
+                                fontFamily: 'inherit'
+                            }}>
+                                {requesting ? 'Sending...' : 'Send magic link'}
+                            </button>
+                        </form>
+                    )}
+                </div>
             </div>
         );
     }
 
+    // Authenticated — show document list
     return (
-        <div style={{ animation: 'fadeIn 0.3s ease', maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+        <div style={{ animation: 'fadeIn 0.3s ease', maxWidth: '760px', margin: '0 auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px' }}>
                 <button onClick={onBack} style={{
                     display: 'flex', alignItems: 'center', gap: '6px',
                     background: 'none', border: 'none', color: '#78716C',
                     fontSize: '14px', fontWeight: '600', cursor: 'pointer', padding: 0
                 }}>
-                    <ArrowLeft size={16} /> Back
+                    <ArrowLeft size={15} /> Back
                 </button>
-                <div style={{ fontSize: '13px', color: '#78716C', fontWeight: '500' }}>
-                    Viewing history for <b>{email}</b>
-                </div>
+                <span style={{ fontSize: '12px', color: '#A8A29E', fontWeight: '500' }}>
+                    {email}
+                </span>
             </div>
 
-            <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#1C1917', marginBottom: '24px' }}>
-                Your Documents
-            </h2>
+            <div style={{ marginBottom: '24px' }}>
+                <h2 style={{ fontSize: '26px', fontWeight: '800', color: '#1C1917', letterSpacing: '-0.4px', margin: '0 0 4px' }}>
+                    Your documents
+                </h2>
+                <p style={{ fontSize: '14px', color: '#78716C', margin: 0 }}>
+                    {history.length} document{history.length !== 1 ? 's' : ''} · saved for 7 days
+                </p>
+            </div>
 
             {history.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '60px 20px', background: '#FAFAF9', borderRadius: '16px', border: '1px solid #E4E2DC' }}>
-                    <FileText size={32} color="#A8A29E" style={{ margin: '0 auto 12px' }} />
-                    <p style={{ fontSize: '15px', color: '#78716C', margin: 0 }}>No documents found for this email.</p>
+                <div style={{
+                    textAlign: 'center', padding: '60px 20px',
+                    background: '#FAFAF9', borderRadius: '16px',
+                    border: '1px solid #E4E2DC'
+                }}>
+                    <FileText size={28} color="#D1CCC7" style={{ marginBottom: '12px' }} />
+                    <p style={{ fontSize: '15px', color: '#A8A29E', margin: '0 0 4px', fontWeight: '600' }}>No documents yet</p>
+                    <p style={{ fontSize: '13px', color: '#C4BFB9', margin: 0 }}>
+                        Transcribe a document and use "Save" or "Inbox" with this email.
+                    </p>
                 </div>
             ) : (
-                <div className="history-list">
-                    {history.map(doc => (
-                        <div
-                            key={doc.id}
-                            onClick={() => onSelectSession(doc.id)}
-                            style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                padding: '16px', background: '#fff', border: '1px solid #E4E2DC',
-                                borderRadius: '12px', marginBottom: '12px', cursor: 'pointer',
-                                transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-                            }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#A8A29E'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#E4E2DC'; e.currentTarget.style.transform = 'translateY(0)'; }}
-                        >
-                            <div style={{ overflow: 'hidden', paddingRight: '16px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
-                                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#1C1917' }}>
-                                        {new Date(doc.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                    </span>
-                                    <span style={{ fontSize: '11px', background: '#F5F4F0', padding: '2px 8px', borderRadius: '99px', color: '#78716C', fontWeight: '600' }}>
-                                        {doc.sourceImageCount} pages
-                                    </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {history.map(doc => {
+                        const date = new Date(doc.createdAt);
+                        const dateStr = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                        const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+                        return (
+                            <div
+                                key={doc.id}
+                                onClick={() => onSelectSession(doc.id)}
+                                style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    padding: '18px 20px', background: '#fff',
+                                    border: '1px solid #E4E2DC', borderRadius: '14px',
+                                    cursor: 'pointer', transition: 'all 0.18s',
+                                    boxShadow: '0 1px 4px rgba(0,0,0,0.03)'
+                                }}
+                                onMouseEnter={e => {
+                                    e.currentTarget.style.borderColor = '#C4BFB9';
+                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.07)';
+                                }}
+                                onMouseLeave={e => {
+                                    e.currentTarget.style.borderColor = '#E4E2DC';
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.03)';
+                                }}
+                            >
+                                <div style={{ overflow: 'hidden', flex: 1, paddingRight: '16px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#1C1917' }}>{dateStr}</span>
+                                        <span style={{ fontSize: '11px', color: '#A8A29E', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                            <Clock size={10} /> {timeStr}
+                                        </span>
+                                        <span style={{
+                                            fontSize: '11px', background: '#F5F4F0',
+                                            padding: '2px 8px', borderRadius: '99px',
+                                            color: '#78716C', fontWeight: '600'
+                                        }}>
+                                            {doc.sourceImageCount} {doc.sourceImageCount === 1 ? 'page' : 'pages'}
+                                        </span>
+                                    </div>
+                                    <p style={{
+                                        fontSize: '14px', color: '#57534E', margin: 0,
+                                        whiteSpace: 'nowrap', overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        fontFamily: "'EB Garamond', serif",
+                                        fontStyle: 'italic'
+                                    }}>
+                                        {doc.preview}
+                                    </p>
                                 </div>
-                                <p style={{ fontSize: '14px', color: '#57534E', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'EB Garamond', serif" }}>
-                                    {doc.preview}
-                                </p>
+                                <ChevronRight size={17} color="#C4BFB9" style={{ flexShrink: 0 }} />
                             </div>
-                            <ChevronRight size={18} color="#A8A29E" style={{ flexShrink: 0 }} />
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>

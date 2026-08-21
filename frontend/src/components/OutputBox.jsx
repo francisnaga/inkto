@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Copy, Check, RotateCcw, FileText, FileDown, ChevronUp, Mail, Pen } from 'lucide-react';
 
+const IconCoffee = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>
+);
+
 export default function OutputBox({ text, sessionId, images = [], onReset }) {
     const [value, setValue] = useState(text);
     const [copied, setCopied] = useState(false);
@@ -221,6 +225,26 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
         </div>
     );
 
+    const tipBanner = (
+        <div style={{
+            marginTop: '8px', marginBottom: '14px', background: '#FFFBEB', border: '1px solid #FEF3C7',
+            borderRadius: '10px', padding: '16px', textAlign: 'center',
+            boxShadow: '0 2px 8px rgba(245,158,11,0.08)'
+        }}>
+            <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#92400E', lineHeight: '1.5', fontWeight: '500' }}>
+                Did Inkto save you time? Consider buying the creator a coffee to keep the servers running.
+            </p>
+            <a href="https://paypal.me/frankyideal25" target="_blank" rel="noopener noreferrer" style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                background: '#F59E0B', color: '#fff', textDecoration: 'none',
+                padding: '9px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: '700',
+                boxShadow: '0 2px 8px rgba(245,158,11,0.3)', transition: 'all 0.2s'
+            }}>
+                <IconCoffee size={15} /> Buy me a coffee
+            </a>
+        </div>
+    );
+
     if (isDesktop) {
         return (
             <div style={{ animation: 'fadeIn 0.4s ease' }} className="desktop-split">
@@ -318,6 +342,8 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
                             </div>
                         </div>
 
+                        {tipBanner}
+
                         <button onClick={onReset} style={{
                             width: '100%', display: 'flex', alignItems: 'center',
                             justifyContent: 'center', gap: '8px', padding: '13px',
@@ -406,6 +432,8 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
                     )}
                 </div>
             </div>
+
+            {tipBanner}
 
             <button onClick={onReset} style={{
                 width: '100%', display: 'flex', alignItems: 'center',

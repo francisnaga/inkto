@@ -234,14 +234,24 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
             <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#92400E', lineHeight: '1.5', fontWeight: '500' }}>
                 Did Inkto save you time? Consider buying the creator a coffee to keep the servers running.
             </p>
-            <a href="https://paypal.me/frankyideal25" target="_blank" rel="noopener noreferrer" style={{
-                display: 'inline-flex', alignItems: 'center', gap: '6px',
-                background: '#F59E0B', color: '#fff', textDecoration: 'none',
-                padding: '9px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: '700',
-                boxShadow: '0 2px 8px rgba(245,158,11,0.3)', transition: 'all 0.2s'
-            }}>
-                <IconCoffee size={15} /> Buy me a coffee
-            </a>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <a href="https://paystack.shop/pay/4h04eqpye7" target="_blank" rel="noopener noreferrer" style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    background: '#10B981', color: '#fff', textDecoration: 'none',
+                    padding: '9px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: '700',
+                    boxShadow: '0 2px 8px rgba(16,185,129,0.3)', transition: 'all 0.2s'
+                }}>
+                    <IconCoffee size={15} /> Tip (NGN)
+                </a>
+                <a href="https://paypal.me/frankyideal25" target="_blank" rel="noopener noreferrer" style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    background: '#F59E0B', color: '#fff', textDecoration: 'none',
+                    padding: '9px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: '700',
+                    boxShadow: '0 2px 8px rgba(245,158,11,0.3)', transition: 'all 0.2s'
+                }}>
+                    <IconCoffee size={15} /> Tip (USD)
+                </a>
+            </div>
         </div>
     );
 

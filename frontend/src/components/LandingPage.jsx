@@ -424,9 +424,15 @@ export default function LandingPage({ onGetStarted }) {
                 <div style={{ flex: '1 1 100%', marginBottom: '4px' }}>
                     <span>Handwriting OCR · Affidavit Transcription · Legal Document Converter · Scan to Word</span>
                 </div>
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                    <a href="https://paypal.me/frankyideal25" target="_blank" rel="noopener noreferrer" style={{ color: '#94A3B8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600' }}>
-                        <IconCoffee size={15} /> Tip the creator
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <a href="https://paystack.shop/pay/4h04eqpye7" target="_blank" rel="noopener noreferrer" style={{ color: '#0F172A', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', background: '#F1F5F9', padding: '6px 12px', borderRadius: '8px' }}>
+                        <IconCoffee size={15} /> Tip via Paystack (NGN)
+                    </a>
+                    <a href="https://paypal.me/frankyideal25" target="_blank" rel="noopener noreferrer" style={{ color: '#0F172A', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', background: '#F1F5F9', padding: '6px 12px', borderRadius: '8px' }}>
+                        <IconCoffee size={15} /> Tip via PayPal (USD)
+                    </a>
+                    <a href="mailto:efobifrancis53@gmail.com" style={{ color: '#94A3B8', display: 'flex', alignItems: 'center', marginLeft: 'auto' }} title="Contact Support">
+                        <IconMail size={17} />
                     </a>
                     <a href="https://x.com/inktotext" target="_blank" rel="noopener noreferrer" style={{ color: '#94A3B8', display: 'flex', alignItems: 'center' }}>
                         <IconTwitter size={17} />

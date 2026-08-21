@@ -11,24 +11,29 @@ export default function History({ onBack, onSelectSession }) {
     const [requestSent, setRequestSent] = useState(false);
 
     useEffect(() => {
-        fetchHistory();
+        // Read email from URL query param (set by verify.js after magic link click)
+        const params = new URLSearchParams(window.location.search);
+        const emailFromUrl = params.get('email');
+        if (emailFromUrl) {
+            fetchHistory(emailFromUrl);
+        } else {
+            setLoading(false);
+        }
     }, []);
 
-    const fetchHistory = async () => {
+    const fetchHistory = async (emailParam) => {
+        setLoading(true);
         try {
-            const res = await fetch('/api/history');
+            const res = await fetch(`/api/history?email=${encodeURIComponent(emailParam)}`);
             const data = await res.json();
             if (res.ok && data.success) {
                 setHistory(data.history);
                 setEmail(data.email);
-            } else if (res.status === 401) {
-                // Not authenticated
-                setEmail('');
             } else {
-                throw new Error(data.error || 'Failed to load history');
+                setError(data.error || 'Failed to load history.');
             }
         } catch (err) {
-            setError(err.message);
+            setError('Network error. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -63,6 +68,7 @@ export default function History({ onBack, onSelectSession }) {
         );
     }
 
+    // No email in URL — show the magic link request form
     if (!email) {
         return (
             <div style={{ animation: 'fadeIn 0.3s ease', maxWidth: '400px', margin: '0 auto', padding: '20px' }}>
@@ -79,12 +85,12 @@ export default function History({ onBack, onSelectSession }) {
                     Document History
                 </h2>
                 <p style={{ fontSize: '15px', color: '#57534E', marginBottom: '24px', lineHeight: '1.5' }}>
-                    Enter your email to receive a secure login link.
+                    Enter your email and we'll send you a link to view your documents.
                 </p>
 
                 {requestSent ? (
                     <div style={{ background: '#DCFCE7', color: '#15803D', padding: '16px', borderRadius: '12px', fontSize: '14px', fontWeight: '500' }}>
-                        Check your inbox! We've sent a magic link to {requestEmail}.
+                        Check your inbox — we've sent a link to <strong>{requestEmail}</strong>.
                     </div>
                 ) : (
                     <form onSubmit={handleRequestLink} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -102,7 +108,7 @@ export default function History({ onBack, onSelectSession }) {
                         />
                         {error && <p style={{ color: '#B91C1C', fontSize: '13px', margin: 0 }}>{error}</p>}
                         <button type="submit" disabled={requesting} style={{
-                            padding: '14px', background: '#1C1917', color: '#fff',
+                            padding: '14px', background: '#2563EB', color: '#fff',
                             border: 'none', borderRadius: '10px', fontSize: '15px',
                             fontWeight: '700', cursor: requesting ? 'wait' : 'pointer',
                             opacity: requesting ? 0.7 : 1
@@ -126,7 +132,7 @@ export default function History({ onBack, onSelectSession }) {
                     <ArrowLeft size={16} /> Back
                 </button>
                 <div style={{ fontSize: '13px', color: '#78716C', fontWeight: '500' }}>
-                    Logged in as <b>{email}</b>
+                    Viewing history for <b>{email}</b>
                 </div>
             </div>
 
@@ -142,8 +148,8 @@ export default function History({ onBack, onSelectSession }) {
             ) : (
                 <div className="history-list">
                     {history.map(doc => (
-                        <div 
-                            key={doc.id} 
+                        <div
+                            key={doc.id}
                             onClick={() => onSelectSession(doc.id)}
                             style={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',

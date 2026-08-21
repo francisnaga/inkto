@@ -274,6 +274,18 @@ function App() {
                 {/* ── Processing ── */}
                 {state === 'processing' && <ProcessingScreen pageCount={files.length} />}
 
+                {/* ── Fetching Session ── */}
+                {state === 'fetching_session' && (
+                    <div style={{ textAlign: 'center', padding: '80px 20px', animation: 'fadeIn 0.3s ease' }}>
+                        <div style={{
+                            width: '36px', height: '36px', borderRadius: '50%',
+                            border: '3px solid #E4E2DC', borderTopColor: '#1C1917',
+                            animation: 'spin 0.8s linear infinite', margin: '0 auto 16px'
+                        }} />
+                        <p style={{ fontSize: '15px', color: '#78716C', fontWeight: '500' }}>Loading transcript…</p>
+                    </div>
+                )}
+
                 {/* ── Success ── */}
                 {state === 'success' && <OutputBox text={transcribedText} sessionId={sessionId} onReset={reset} />}
 

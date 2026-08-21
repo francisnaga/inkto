@@ -22,7 +22,7 @@ export function useTranscribe() {
     };
 
     const fetchSession = async (id) => {
-        setState('processing');
+        setState('fetching_session');
         setError(null);
         try {
             const response = await fetch(`/api/session?id=${id}`);

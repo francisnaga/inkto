@@ -87,7 +87,15 @@ export default function LandingPage({ onGetStarted }) {
                 borderBottom: '1px solid rgba(0,0,0,0.06)',
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-                    <img src="/icon-512.png" alt="" style={{ width: '26px', height: '26px', borderRadius: '7px' }} />
+                    <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16 50 L36 28 L54 38 L54 62 L36 72 Z" fill="#2563EB"/>
+                        <circle cx="30" cy="50" r="3.5" fill="white"/>
+                        <line x1="16" y1="50" x2="36" y2="50" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+                        <line x1="36" y1="28" x2="36" y2="72" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                        <rect x="57" y="30" width="28" height="7" rx="3.5" fill="#2563EB"/>
+                        <rect x="57" y="46.5" width="26" height="7" rx="3.5" fill="#2563EB"/>
+                        <rect x="57" y="63" width="20" height="7" rx="3.5" fill="#2563EB"/>
+                    </svg>
                     <span style={{ fontWeight: 800, fontSize: '17px', letterSpacing: '-0.4px' }}>Inkto</span>
                 </div>
                 <button
@@ -406,7 +414,15 @@ export default function LandingPage({ onGetStarted }) {
                 fontSize: '13px', color: '#94A3B8', background: '#FAFAF8'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <img src="/icon-512.png" alt="" style={{ width: '20px', height: '20px', borderRadius: '5px' }} />
+                    <svg width="20" height="20" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16 50 L36 28 L54 38 L54 62 L36 72 Z" fill="#2563EB"/>
+                        <circle cx="30" cy="50" r="3.5" fill="white"/>
+                        <line x1="16" y1="50" x2="36" y2="50" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+                        <line x1="36" y1="28" x2="36" y2="72" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                        <rect x="57" y="30" width="28" height="7" rx="3.5" fill="#2563EB"/>
+                        <rect x="57" y="46.5" width="26" height="7" rx="3.5" fill="#2563EB"/>
+                        <rect x="57" y="63" width="20" height="7" rx="3.5" fill="#2563EB"/>
+                    </svg>
                     <span style={{ fontWeight: '700', color: '#64748B' }}>Inkto</span>
                     <span>© {new Date().getFullYear()}</span>
                 </div>

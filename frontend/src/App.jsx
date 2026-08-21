@@ -148,27 +148,28 @@ function App() {
     const { state, files, error, transcribedText, sessionId, sessionImages, addFiles, removeFile, transcribe, fetchSession, reset } = useTranscribe();
     const [customPrompt, setCustomPrompt] = useState('');
     const [promptFocused, setPromptFocused] = useState(false);
-    const isHistoryPath = window.location.pathname === '/history';
+    const cleanPath = window.location.pathname.replace(/\/$/, '') || '/';
+    const isHistoryPath = cleanPath === '/history';
     const isSessionPath = window.location.pathname.startsWith('/session/');
     const [showLanding, setShowLanding] = useState(!localStorage.getItem('inkto_launched') && !isSessionPath && !isHistoryPath);
     const [showHistory, setShowHistory] = useState(isHistoryPath);
 
     useEffect(() => {
-        const path = window.location.pathname;
-        if (path.startsWith('/session/')) {
-            const id = path.split('/')[2];
+        const path = window.location.pathname.replace(/\/$/, '') || '/';
+        if (window.location.pathname.startsWith('/session/')) {
+            const id = window.location.pathname.split('/')[2];
             if (id) fetchSession(id);
         } else if (path === '/history') {
             setShowHistory(true);
         }
 
         const handlePopState = () => {
-            const path = window.location.pathname;
+            const path = window.location.pathname.replace(/\/$/, '') || '/';
             if (path === '/history') setShowHistory(true);
             else if (path === '/') { setShowHistory(false); reset(); }
-            else if (path.startsWith('/session/')) {
+            else if (window.location.pathname.startsWith('/session/')) {
                 setShowHistory(false);
-                fetchSession(path.split('/')[2]);
+                fetchSession(window.location.pathname.split('/')[2]);
             }
         };
 

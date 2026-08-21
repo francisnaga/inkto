@@ -287,7 +287,7 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
                                 background: '#fff', border: '1px solid #E4E2DC', borderRadius: '12px',
                                 overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
                             }}>
-                                <img src={img} alt={`Page ${i+1}`} style={{ width: '100%', display: 'block' }} />
+                                <img src={img} alt={`Page ${i+1}`} style={{ width: '100%', maxHeight: '60vh', objectFit: 'contain', display: 'block', background: '#F5F4F0' }} />
                                 <div style={{ padding: '8px 12px', background: '#FAFAF9', borderTop: '1px solid #F0EFEB', fontSize: '11px', color: '#A8A29E', fontWeight: '600', textAlign: 'center' }}>
                                     Page {i+1}
                                 </div>

@@ -447,27 +447,6 @@ export default function LandingPage({ onGetStarted }) {
                 </button>
             </section>
 
-            {/* Social Proof / Ratings */}
-            <section style={{ maxWidth: '800px', margin: '0 auto', padding: '0 clamp(20px, 5vw, 40px) 60px' }}>
-                <div style={{
-                    background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px',
-                    padding: '24px 28px', display: 'flex', alignItems: 'center',
-                    gap: '20px', flexWrap: 'wrap', boxShadow: '0 1px 4px rgba(0,0,0,0.03)'
-                }}>
-                    <div style={{ display: 'flex', gap: '3px', fontSize: '22px', color: '#F59E0B' }}>
-                        {'★★★★★'}
-                    </div>
-                    <div>
-                        <div style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A' }}>
-                            Rated 4.9 / 5 by users
-                        </div>
-                        <div style={{ fontSize: '13px', color: '#64748B', marginTop: '2px' }}>
-                            "Finally works on my handwritten affidavits" · "Saved me hours" · "Accurate even on messy handwriting"
-                        </div>
-                    </div>
-                </div>
-            </section>
-
             {/* FAQ */}
             <section style={{ maxWidth: '800px', margin: '0 auto 80px', padding: '0 clamp(20px, 5vw, 40px)' }} id="faq">
                 <h2 style={{ fontSize: 'clamp(22px, 3.5vw, 30px)', fontWeight: '900', letterSpacing: '-0.5px', marginBottom: '28px', color: '#0F172A' }}>
@@ -529,21 +508,29 @@ export default function LandingPage({ onGetStarted }) {
                 <div style={{ flex: '1 1 100%', marginBottom: '4px' }}>
                     <span>Handwriting OCR · Affidavit Transcription · Legal Document Converter · Scan to Word</span>
                 </div>
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <a href="https://paystack.shop/pay/4h04eqpye7" target="_blank" rel="noopener noreferrer" style={{ color: '#0F172A', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', background: '#F1F5F9', padding: '6px 12px', borderRadius: '8px' }}>
-                        <IconCoffee size={15} /> Tip via Paystack (NGN)
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <a href="https://paystack.shop/pay/4h04eqpye7" target="_blank" rel="noopener noreferrer" style={{
+                        color: '#475569', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px',
+                        fontWeight: '600', fontSize: '12px', border: '1px solid #E2E8F0',
+                        padding: '5px 12px', borderRadius: '8px', transition: 'color 0.15s'
+                    }}>
+                        <IconCoffee size={13} /> Tip NGN
                     </a>
-                    <a href="https://paypal.me/frankyideal25" target="_blank" rel="noopener noreferrer" style={{ color: '#0F172A', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '700', background: '#F1F5F9', padding: '6px 12px', borderRadius: '8px' }}>
-                        <IconCoffee size={15} /> Tip via PayPal (USD)
+                    <a href="https://paypal.me/frankyideal25" target="_blank" rel="noopener noreferrer" style={{
+                        color: '#475569', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px',
+                        fontWeight: '600', fontSize: '12px', border: '1px solid #E2E8F0',
+                        padding: '5px 12px', borderRadius: '8px', transition: 'color 0.15s'
+                    }}>
+                        <IconCoffee size={13} /> Tip USD
                     </a>
-                    <a href="mailto:efobifrancis53@gmail.com" style={{ color: '#94A3B8', display: 'flex', alignItems: 'center', marginLeft: 'auto' }} title="Contact Support">
-                        <IconMail size={17} />
+                    <a href="mailto:efobifrancis53@gmail.com" style={{ color: '#94A3B8', display: 'flex', alignItems: 'center' }} title="Contact">
+                        <IconMail size={16} />
                     </a>
                     <a href="https://x.com/inktotext" target="_blank" rel="noopener noreferrer" style={{ color: '#94A3B8', display: 'flex', alignItems: 'center' }}>
-                        <IconTwitter size={17} />
+                        <IconTwitter size={16} />
                     </a>
                     <a href="https://github.com/francisnaga" target="_blank" rel="noopener noreferrer" style={{ color: '#94A3B8', display: 'flex', alignItems: 'center' }}>
-                        <IconGithub size={17} />
+                        <IconGithub size={16} />
                     </a>
                 </div>
             </footer>

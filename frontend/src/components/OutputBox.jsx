@@ -198,17 +198,31 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <FileText size={13} color="#C4C0BB" />
                 <span style={{ fontSize: '12px', color: '#A8A29E', fontWeight: '600' }}>Transcript</span>
-                <span style={{
-                    fontSize: '10px', background: isEditing ? '#DBEAFE' : '#F0EFEB', color: isEditing ? '#1D4ED8' : '#78716C',
-                    padding: '2px 7px', borderRadius: '99px', fontWeight: '600'
-                }}>{isEditing ? 'Editing' : 'Read-only'}</span>
             </div>
-            <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-                {!isEditing && (
-                    <ActionBtn icon={<Pen size={12} color="#57534E" />} label="Edit" onClick={() => {
-                        setIsEditing(true);
-                        setTimeout(() => textareaRef.current?.focus(), 50);
-                    }} />
+            <div style={{ display: 'flex', gap: '6px', flexShrink: 0, alignItems: 'center' }}>
+                {isEditing ? (
+                    <button onClick={() => setIsEditing(false)} style={{
+                        display: 'flex', alignItems: 'center', gap: '5px',
+                        padding: '6px 12px',
+                        background: '#FEF2F2', border: 'none', borderRadius: '7px',
+                        fontSize: '12px', fontWeight: '600', color: '#B91C1C',
+                        cursor: 'pointer', whiteSpace: 'nowrap'
+                    }}>
+                        Done editing
+                    </button>
+                ) : (
+                    <button
+                        onClick={() => { setIsEditing(true); setTimeout(() => textareaRef.current?.focus(), 50); }}
+                        title="Edit transcript"
+                        style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            width: '30px', height: '30px',
+                            background: '#F5F4F0', border: 'none', borderRadius: '7px',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <Pen size={12} color="#57534E" />
+                    </button>
                 )}
                 <ActionBtn icon={<FileDown size={12} color="#1D4ED8" />} label={isDesktop ? "Open in Word" : ".docx"} onClick={handleDownloadDocx} accent />
                 <button onClick={handleCopy} title={copied ? 'Copied!' : 'Copy'} style={{
@@ -450,7 +464,7 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
                 justifyContent: 'center', gap: '8px', padding: '13px',
                 background: '#FAFAF9', border: '1px solid #E4E2DC', borderRadius: '10px',
                 fontSize: '13px', fontWeight: '600', color: '#78716C',
-                cursor: 'pointer', transition: 'all 0.2s'
+                cursor: 'pointer', transition: 'all 0.2s', marginBottom: '32px'
             }}
                 onMouseEnter={e => { e.currentTarget.style.background = '#F0EFEB'; e.currentTarget.style.color = '#44403C'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = '#FAFAF9'; e.currentTarget.style.color = '#78716C'; }}

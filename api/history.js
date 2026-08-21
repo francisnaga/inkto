@@ -38,7 +38,9 @@ module.exports = async function handler(req, res) {
     }
 
     try {
-        const { data, error } = await supabase
+        const db = require('./utils/supabase').checkSupabase();
+        
+        const { data, error } = await db
             .from('documents')
             .select('id, transcript_text, source_image_count, created_at, expires_at')
             .eq('email', email)

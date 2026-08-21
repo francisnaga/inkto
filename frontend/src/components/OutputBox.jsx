@@ -85,6 +85,27 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
         } finally { setSendingEmail(false); }
     };
 
+    const handleSaveHistory = async () => {
+        if (!email || !email.includes('@')) {
+            setEmailStatus({ type: 'error', msg: 'Enter a valid email.' });
+            return;
+        }
+        setSendingEmail(true);
+        setEmailStatus(null);
+        localStorage.setItem('inkto_last_email', email);
+        try {
+            const res = await fetch('/api/save-history', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, sessionId })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to save');
+            setEmailStatus({ type: 'success', msg: 'Saved to history!' });
+        } catch (err) {
+            setEmailStatus({ type: 'error', msg: err.message });
+        } finally { setSendingEmail(false); }
+    };
+
     const scrollToTop = () => textareaRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
 
     const emailRow = (
@@ -94,65 +115,71 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
             marginBottom: '10px',
             boxShadow: '0 1px 4px rgba(0,0,0,0.04)'
         }}>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <div style={{
-                    width: '32px', height: '32px', borderRadius: '8px',
-                    background: '#F5F4F0', display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', flexShrink: 0
-                }}>
-                    <Mail size={15} color="#78716C" />
-                </div>
-                <div style={{
-                    flex: 1,
+                    flex: '1 1 200px',
                     border: `1.5px solid ${emailFocused ? '#1D4ED8' : '#E4E2DC'}`,
                     borderRadius: '8px', background: '#FAFAF9',
                     transition: 'border-color 0.2s',
                     boxShadow: emailFocused ? '0 0 0 3px rgba(29,78,216,0.08)' : 'none',
+                    display: 'flex', alignItems: 'center', padding: '0 12px'
                 }}>
+                    <Mail size={15} color="#A8A29E" style={{ flexShrink: 0 }} />
                     <input
                         type="email"
-                        placeholder="Email transcript to yourself"
+                        placeholder="Email address"
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                         onFocus={() => setEmailFocused(true)}
                         onBlur={() => setEmailFocused(false)}
-                        onKeyDown={e => e.key === 'Enter' && handleSendEmail()}
                         style={{
-                            width: '100%', padding: '9px 13px',
+                            flex: 1, padding: '9px 10px',
                             border: 'none', outline: 'none',
                             fontSize: '14px', fontFamily: 'inherit',
                             background: 'transparent', color: '#1C1917',
-                            borderRadius: '8px',
                         }}
                     />
                 </div>
-                <button
-                    onClick={handleSendEmail}
-                    disabled={sendingEmail}
-                    style={{
-                        width: '90px', padding: '9px 0', textAlign: 'center',
-                        background: '#1C1917', color: '#fff',
-                        border: 'none', borderRadius: '8px',
-                        fontSize: '13px', fontWeight: '700',
-                        cursor: sendingEmail ? 'wait' : 'pointer',
-                        opacity: sendingEmail ? 0.5 : 1,
-                        flexShrink: 0, transition: 'opacity 0.2s',
-                        whiteSpace: 'nowrap'
-                    }}
-                >
-                    {sendingEmail ? '...' : 'Send'}
-                </button>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                        onClick={handleSendEmail}
+                        disabled={sendingEmail}
+                        title="Send transcript via email"
+                        style={{
+                            padding: '9px 14px', textAlign: 'center',
+                            background: '#F5F4F0', color: '#1C1917',
+                            border: '1px solid #E4E2DC', borderRadius: '8px',
+                            fontSize: '13px', fontWeight: '600',
+                            cursor: sendingEmail ? 'wait' : 'pointer',
+                            opacity: sendingEmail ? 0.5 : 1,
+                            transition: 'all 0.2s', whiteSpace: 'nowrap'
+                        }}
+                    >
+                        Inbox
+                    </button>
+                    <button
+                        onClick={handleSaveHistory}
+                        disabled={sendingEmail}
+                        title="Save to your history (no email sent)"
+                        style={{
+                            padding: '9px 14px', textAlign: 'center',
+                            background: '#1C1917', color: '#fff',
+                            border: 'none', borderRadius: '8px',
+                            fontSize: '13px', fontWeight: '700',
+                            cursor: sendingEmail ? 'wait' : 'pointer',
+                            opacity: sendingEmail ? 0.5 : 1,
+                            transition: 'opacity 0.2s', whiteSpace: 'nowrap'
+                        }}
+                    >
+                        Save
+                    </button>
+                </div>
             </div>
             {emailStatus && (
                 <p style={{
-                    margin: '8px 0 0 40px', fontSize: '12px', fontWeight: '600',
+                    margin: '8px 0 0 4px', fontSize: '12px', fontWeight: '600',
                     color: emailStatus.type === 'success' ? '#15803D' : '#B91C1C'
                 }}>{emailStatus.msg}</p>
-            )}
-            {emailStatus?.type === 'success' && sessionId && (
-                <p style={{ margin: '4px 0 0 40px', fontSize: '11px', color: '#A8A29E' }}>
-                    The email includes your Word doc and a link to open this on your PC.
-                </p>
             )}
         </div>
     );

@@ -1,9 +1,17 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// Using the keys provided by the Supabase MCP
 const supabaseUrl = 'https://leqvvgdwwllroqyknsvq.supabase.co';
-const supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlcXZ2Z2R3d2xscm9xeWtuc3ZxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNjc0OTcsImV4cCI6MjEwMjg0MzQ5N30.9gsmmDlPOBnSxI3-lEHDIjBy1RbqDgdmy1ASkbIjL_c';
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Don't throw synchronously on require, let it be handled gracefully
+const supabase = supabaseKey 
+    ? createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } }) 
+    : null;
 
-module.exports = { supabase };
+module.exports = { 
+    supabase,
+    checkSupabase: () => {
+        if (!supabase) throw new Error('Supabase is not configured (missing SUPABASE_ANON_KEY). Please add it in Vercel settings and redeploy.');
+        return supabase;
+    }
+};

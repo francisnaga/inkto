@@ -1,5 +1,33 @@
 import React, { useState } from 'react';
-import { ArrowRight, Check, Camera, FileText, Mail, Zap, Shield, Clock, ChevronDown } from 'lucide-react';
+
+// Hardcoded SVGs to ensure they never fail to load on older Android devices
+const IconArrowRight = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+);
+const IconCheck = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+);
+const IconCamera = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+);
+const IconFileText = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+);
+const IconMail = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+);
+const IconZap = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+);
+const IconShield = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+);
+const IconClock = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+);
+const IconChevronDown = ({ size = 16, color = 'currentColor', open }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }}><path d="m6 9 6 6 6-6"/></svg>
+);
 
 function FAQItem({ q, a }) {
     const [open, setOpen] = useState(false);
@@ -18,11 +46,7 @@ function FAQItem({ q, a }) {
                 }}
             >
                 <span style={{ fontSize: '15px', fontWeight: '700', color: '#0F172A', lineHeight: 1.4 }}>{q}</span>
-                <ChevronDown size={18} color="#94A3B8" style={{
-                    flexShrink: 0,
-                    transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-                    transition: 'transform 0.2s ease'
-                }} />
+                <IconChevronDown size={18} color="#94A3B8" open={open} />
             </button>
             {open && (
                 <div style={{
@@ -37,32 +61,32 @@ function FAQItem({ q, a }) {
 }
 
 const FEATURES = [
-    { icon: <Zap size={16} color="#2563EB" />, text: 'AI reads even messy handwriting' },
-    { icon: <Check size={16} color="#2563EB" />, text: 'Crossed-out words removed automatically' },
-    { icon: <FileText size={16} color="#2563EB" />, text: 'Exports to Word (.docx) or plain text' },
-    { icon: <Mail size={16} color="#2563EB" />, text: 'Email to yourself or any address' },
-    { icon: <Shield size={16} color="#2563EB" />, text: 'No account, no password, no tracking' },
-    { icon: <Clock size={16} color="#2563EB" />, text: 'Results in under 60 seconds' },
+    { icon: <IconZap size={16} color="#2563EB" />, text: 'Reads messy handwriting accurately' },
+    { icon: <IconCheck size={16} color="#2563EB" />, text: 'Crossed out words removed automatically' },
+    { icon: <IconFileText size={16} color="#2563EB" />, text: 'Exports to Word (.docx) or plain text' },
+    { icon: <IconMail size={16} color="#2563EB" />, text: 'Email directly to yourself or a colleague' },
+    { icon: <IconShield size={16} color="#2563EB" />, text: 'No password required' },
+    { icon: <IconClock size={16} color="#2563EB" />, text: 'Results in under 60 seconds' },
 ];
 
 const STEPS = [
     {
         n: '1',
-        icon: <Camera size={20} color="#fff" />,
+        icon: <IconCamera size={20} color="#fff" />,
         title: 'Photograph the document',
-        desc: 'Take a photo on your phone or upload a scanned PDF. Up to 30 pages at once. Works with affidavits, letters, notebooks — anything handwritten.'
+        desc: 'Take a photo on your phone or upload a scanned PDF. Process up to 30 pages at once. Specifically optimized for affidavits, sworn statements, and handwritten legal filings.'
     },
     {
         n: '2',
-        icon: <Zap size={20} color="#fff" />,
-        title: 'AI transcribes it',
-        desc: 'Our AI reads the handwriting, strips crossed-out text, inserts caret additions in the right place, and formats everything cleanly. Two-pass verification catches numbers and names.'
+        icon: <IconZap size={20} color="#fff" />,
+        title: 'Read and transcribe',
+        desc: 'The system reads the handwriting, strips crossed out text, inserts caret additions in the correct place, and formats everything cleanly. Two pass verification catches numbers and proper nouns.'
     },
     {
         n: '3',
-        icon: <FileText size={20} color="#fff" />,
+        icon: <IconFileText size={20} color="#fff" />,
         title: 'Copy, download, or email it',
-        desc: 'Copy the text directly, download a Word document, or email the transcript to yourself. Open on any device — your history is one link away.'
+        desc: 'Copy the text directly, download a Word document, or email the transcript to yourself. Your history is saved to your email inbox and available indefinitely as long as you log in with that same email.'
     },
 ];
 
@@ -77,7 +101,7 @@ export default function LandingPage({ onGetStarted }) {
             color: '#1C1917'
         }}>
 
-            {/* ── Navbar ── */}
+            {/* Navbar */}
             <nav style={{
                 position: 'sticky', top: 0, zIndex: 100,
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -112,31 +136,19 @@ export default function LandingPage({ onGetStarted }) {
                 </button>
             </nav>
 
-            {/* ── Hero ── */}
+            {/* Hero */}
             <section style={{
                 maxWidth: '720px', margin: '0 auto',
                 padding: 'clamp(64px, 10vw, 100px) clamp(20px, 5vw, 40px) 56px',
                 textAlign: 'center'
             }}>
-                {/* Badge */}
-                <div style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '6px',
-                    background: '#EFF6FF', border: '1px solid #BFDBFE',
-                    borderRadius: '99px', padding: '5px 14px',
-                    fontSize: '12px', fontWeight: '700', color: '#2563EB',
-                    letterSpacing: '0.02em', marginBottom: '28px',
-                    textTransform: 'uppercase'
-                }}>
-                    <Zap size={11} /> AI Handwriting OCR
-                </div>
-
                 <h1 style={{
                     fontSize: 'clamp(36px, 7vw, 64px)',
                     fontWeight: 900, lineHeight: 1.05,
                     letterSpacing: '-2px', color: '#0F172A',
                     marginBottom: '24px'
                 }}>
-                    Handwritten docs,<br />
+                    Handwritten legal docs,<br />
                     <span style={{
                         background: 'linear-gradient(135deg, #2563EB, #0EA5E9)',
                         WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
@@ -151,7 +163,7 @@ export default function LandingPage({ onGetStarted }) {
                     maxWidth: '520px', margin: '0 auto 40px',
                     lineHeight: 1.65, fontWeight: 400
                 }}>
-                    Snap a photo of any handwritten document — affidavit, letter, or notes — and Inkto converts it to clean, editable text. Crossed-out words gone. Insertions in the right place.
+                    Snap a photo of any handwritten legal document and Inkto converts it to clean, editable text. Crossed out words are removed automatically and insertions are placed in the correct location.
                 </p>
 
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -170,16 +182,16 @@ export default function LandingPage({ onGetStarted }) {
                             transition: 'all 0.18s cubic-bezier(0.4,0,0.2,1)'
                         }}
                     >
-                        Start transcribing <ArrowRight size={16} />
+                        Start transcribing <IconArrowRight size={16} />
                     </button>
                 </div>
 
                 <p style={{ marginTop: '16px', fontSize: '13px', color: '#94A3B8', fontWeight: '500' }}>
-                    Free · No sign-up · Works in your browser
+                    Free. No sign up required. Works directly in your browser.
                 </p>
             </section>
 
-            {/* ── Feature pills ── */}
+            {/* Feature pills */}
             <section style={{ maxWidth: '800px', margin: '0 auto', padding: '0 clamp(20px, 5vw, 40px) 80px' }}>
                 <div style={{
                     display: 'grid',
@@ -199,7 +211,7 @@ export default function LandingPage({ onGetStarted }) {
                 </div>
             </section>
 
-            {/* ── App screenshot / hero visual ── */}
+            {/* App screenshot / hero visual */}
             <section style={{ maxWidth: '960px', margin: '0 auto 80px', padding: '0 clamp(20px, 5vw, 40px)' }}>
                 <div style={{
                     borderRadius: '20px', overflow: 'hidden',
@@ -210,7 +222,7 @@ export default function LandingPage({ onGetStarted }) {
                 </div>
             </section>
 
-            {/* ── How it works ── */}
+            {/* How it works */}
             <section style={{
                 maxWidth: '800px', margin: '0 auto 100px',
                 padding: '0 clamp(20px, 5vw, 40px)'
@@ -220,7 +232,7 @@ export default function LandingPage({ onGetStarted }) {
                         From photo to text in three steps
                     </h2>
                     <p style={{ fontSize: '16px', color: '#64748B', margin: 0 }}>
-                        No training, no setup. Just works.
+                        No complex setup or training required.
                     </p>
                 </div>
 
@@ -252,7 +264,7 @@ export default function LandingPage({ onGetStarted }) {
                 </div>
             </section>
 
-            {/* ── Email / cross-device callout ── */}
+            {/* Email / cross-device callout */}
             <section style={{ maxWidth: '800px', margin: '0 auto 100px', padding: '0 clamp(20px, 5vw, 40px)' }}>
                 <div style={{
                     background: '#0F172A', borderRadius: '20px',
@@ -268,17 +280,17 @@ export default function LandingPage({ onGetStarted }) {
                         ))}
                     </div>
                     <h2 style={{ fontSize: 'clamp(22px, 3.5vw, 32px)', fontWeight: '900', letterSpacing: '-0.6px', marginBottom: '14px', lineHeight: 1.2 }}>
-                        Transcribe on your phone.<br />Finish on your laptop.
+                        Transcribe on your phone.<br />Save to your history.
                     </h2>
                     <p style={{ color: '#94A3B8', lineHeight: 1.7, fontSize: '15px', marginBottom: '28px', maxWidth: '480px' }}>
-                        After transcribing, hit <strong style={{ color: '#fff' }}>Inbox</strong> — you'll get the Word file attached and a link in your email. Open that link on any device and your transcript is ready.
+                        After transcribing, use the <strong style={{ color: '#fff' }}>Inbox</strong> feature. You will get the Word file attached directly in your email along with a secure login link. Clicking this link saves your document to your history indefinitely so you can reference or edit it anytime.
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '380px' }}>
                         {[
-                            'Word document (.docx) attached to every email',
-                            'Secure session link — access from any device',
-                            'Save to history with your email, retrieve anytime',
-                            'No password ever — just a magic link'
+                            'Word document (.docx) attached to your email',
+                            'Secure session link provides access from any device',
+                            'Documents are saved to your email history indefinitely',
+                            'No passwords required to log in'
                         ].map(t => (
                             <div key={t} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                                 <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#38BDF8', flexShrink: 0, marginTop: '6px' }} />
@@ -289,34 +301,7 @@ export default function LandingPage({ onGetStarted }) {
                 </div>
             </section>
 
-            {/* ── Use cases ── */}
-            <section style={{ maxWidth: '800px', margin: '0 auto 100px', padding: '0 clamp(20px, 5vw, 40px)' }}>
-                <h2 style={{ fontSize: 'clamp(22px, 3.5vw, 32px)', fontWeight: '900', letterSpacing: '-0.6px', textAlign: 'center', marginBottom: '36px', color: '#0F172A' }}>
-                    Built for real work
-                </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-                    {[
-                        { emoji: '⚖️', title: 'Legal documents', desc: 'Affidavits, sworn statements, court filings' },
-                        { emoji: '🏥', title: 'Medical notes', desc: "Doctor's handwritten records and prescriptions" },
-                        { emoji: '📚', title: 'Student notes', desc: 'Lecture notes, revision summaries' },
-                        { emoji: '📋', title: 'Field reports', desc: 'Site surveys, inspection notes' },
-                        { emoji: '✉️', title: 'Personal letters', desc: 'Correspondence, diaries, family documents' },
-                        { emoji: '🧾', title: 'Forms & receipts', desc: 'Handwritten forms, invoices, records' },
-                    ].map(u => (
-                        <div key={u.title} style={{
-                            background: '#fff', border: '1px solid #E2E8F0',
-                            borderRadius: '14px', padding: '20px',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
-                        }}>
-                            <div style={{ fontSize: '24px', marginBottom: '10px' }}>{u.emoji}</div>
-                            <div style={{ fontSize: '14px', fontWeight: '800', color: '#0F172A', marginBottom: '4px' }}>{u.title}</div>
-                            <div style={{ fontSize: '13px', color: '#64748B', lineHeight: 1.5 }}>{u.desc}</div>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            {/* ── Final CTA ── */}
+            {/* Final CTA */}
             <section style={{
                 textAlign: 'center',
                 padding: 'clamp(60px, 8vw, 100px) clamp(20px, 5vw, 40px)',
@@ -327,7 +312,7 @@ export default function LandingPage({ onGetStarted }) {
                     Try it now. Free.
                 </h2>
                 <p style={{ color: '#64748B', marginBottom: '32px', fontSize: '16px', maxWidth: '360px', margin: '0 auto 32px' }}>
-                    No sign-up. No credit card. Just upload a photo and get clean text in under a minute.
+                    No sign up required. Just upload a photo and get clean text in under a minute.
                 </p>
                 <button
                     onClick={onGetStarted}
@@ -343,11 +328,11 @@ export default function LandingPage({ onGetStarted }) {
                     onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 36px rgba(37,99,235,0.45)'; }}
                     onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(37,99,235,0.35)'; }}
                 >
-                    Start transcribing <ArrowRight size={16} />
+                    Start transcribing <IconArrowRight size={16} />
                 </button>
             </section>
 
-            {/* ── Social Proof / Ratings ── */}
+            {/* Social Proof / Ratings */}
             <section style={{ maxWidth: '800px', margin: '0 auto', padding: '0 clamp(20px, 5vw, 40px) 60px' }}>
                 <div style={{
                     background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px',
@@ -368,7 +353,7 @@ export default function LandingPage({ onGetStarted }) {
                 </div>
             </section>
 
-            {/* ── FAQ ── */}
+            {/* FAQ */}
             <section style={{ maxWidth: '800px', margin: '0 auto 80px', padding: '0 clamp(20px, 5vw, 40px)' }} id="faq">
                 <h2 style={{ fontSize: 'clamp(22px, 3.5vw, 30px)', fontWeight: '900', letterSpacing: '-0.5px', marginBottom: '28px', color: '#0F172A' }}>
                     Frequently asked questions
@@ -377,11 +362,11 @@ export default function LandingPage({ onGetStarted }) {
                     {[
                         {
                             q: 'How do I convert handwriting to text for free?',
-                            a: 'Upload a photo or scanned PDF of your handwritten document to Inkto. Our AI reads the handwriting and returns clean, editable text in under 60 seconds — completely free, no sign-up needed.'
+                            a: 'Upload a photo or scanned PDF of your handwritten document to Inkto. The system reads the handwriting and returns clean, editable text in under 60 seconds. Completely free and no sign up is required.'
                         },
                         {
                             q: 'Can Inkto transcribe legal documents and affidavits?',
-                            a: 'Yes. Inkto is specifically built for legal documents including affidavits, sworn statements, court filings, and other handwritten legal texts. It removes crossed-out words, correctly places caret insertions, and runs a second AI pass to verify numbers and proper nouns.'
+                            a: 'Yes. Inkto is specifically built for legal documents including affidavits, sworn statements, court filings, and other handwritten legal texts. It removes crossed out words, correctly places caret insertions, and runs a second pass to verify numbers and proper nouns.'
                         },
                         {
                             q: 'What file formats does Inkto accept?',
@@ -393,11 +378,11 @@ export default function LandingPage({ onGetStarted }) {
                         },
                         {
                             q: 'How accurate is the handwriting recognition?',
-                            a: 'Inkto uses a two-pass AI verification process. The first pass transcribes the handwriting. The second pass verifies numbers, dates, proper nouns, and legal terms against the original image for legal-grade accuracy.'
+                            a: 'Inkto uses a two pass verification process. The first pass transcribes the handwriting. The second pass verifies numbers, dates, proper nouns, and legal terms against the original image for legal grade accuracy.'
                         },
                         {
                             q: 'Is my document data private?',
-                            a: 'Documents are processed securely and automatically deleted after 7 days. No account is required, and your documents are never used for training AI models.'
+                            a: 'Documents are processed securely and automatically deleted after 7 days. No account is required, and your documents are never used for training models.'
                         },
                     ].map((item, i) => (
                         <FAQItem key={i} q={item.q} a={item.a} />
@@ -405,7 +390,7 @@ export default function LandingPage({ onGetStarted }) {
                 </div>
             </section>
 
-            {/* ── Footer ── */}
+            {/* Footer */}
             <footer style={{
                 borderTop: '1px solid #E2E8F0',
                 padding: '24px clamp(20px, 5vw, 60px)',

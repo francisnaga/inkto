@@ -390,7 +390,7 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
                 </div>
             </div>
             {emailStatus && (
-                <p style={{ margin: '8px 0 0 2px', fontSize: '12px', fontWeight: '600', color: emailStatus.type === 'success' ? '#15803D' : '#B91C1C' }}>
+                <p style={{ margin: '8px 0 0 2px', fontSize: '12px', fontWeight: '600', color: emailStatus.type === 'success' ? '#15803D' : '#B91C1C', wordBreak: 'break-word', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical' }}>
                     {emailStatus.msg}
                 </p>
             )}
@@ -412,11 +412,14 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
                 {/* Edit / Done */}
                 {isEditing ? (
-                    <button onClick={() => setIsEditing(false)} style={{
-                        display: 'flex', alignItems: 'center', gap: '5px',
-                        padding: '6px 12px', background: '#FEF2F2', border: 'none', borderRadius: '7px',
-                        fontSize: '12px', fontWeight: '600', color: '#B91C1C', cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit',
-                    }}>Done editing</button>
+                    <button onClick={() => setIsEditing(false)} title="Done editing" style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isDesktop ? '5px' : '0',
+                        width: isDesktop ? 'auto' : '30px', height: '30px',
+                        padding: isDesktop ? '6px 12px' : '0', background: '#FEF2F2', border: 'none', borderRadius: '7px',
+                        fontSize: '12px', fontWeight: '600', color: '#B91C1C', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, fontFamily: 'inherit',
+                    }}>
+                        {isDesktop ? 'Done editing' : <X size={14} />}
+                    </button>
                 ) : (
                     <button onClick={() => { setIsEditing(true); setTimeout(() => textareaRef.current?.focus(), 50); }}
                         title="Edit transcript" style={{

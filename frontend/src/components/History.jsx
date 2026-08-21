@@ -166,7 +166,7 @@ export default function History({ onBack, onSelectSession }) {
                     Your documents
                 </h2>
                 <p style={{ fontSize: '14px', color: '#78716C', margin: 0 }}>
-                    {history.length} document{history.length !== 1 ? 's' : ''} · saved for 7 days
+                    {history.length} document{history.length !== 1 ? 's' : ''} · saved indefinitely
                 </p>
             </div>
 

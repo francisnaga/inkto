@@ -308,7 +308,15 @@ function App() {
                                             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 28px rgba(0,0,0,0.3)'; }}
                                             onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.22)'; }}
                                         >
-                                            <Sparkles size={17} />
+                                            <svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M16 50 L36 28 L54 38 L54 62 L36 72 Z" fill="#38BDF8"/>
+                                                <circle cx="30" cy="50" r="3.5" fill="white"/>
+                                                <line x1="16" y1="50" x2="36" y2="50" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+                                                <line x1="36" y1="28" x2="36" y2="72" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                                                <rect x="57" y="30" width="28" height="7" rx="3.5" fill="#38BDF8"/>
+                                                <rect x="57" y="46.5" width="26" height="7" rx="3.5" fill="#38BDF8"/>
+                                                <rect x="57" y="63" width="20" height="7" rx="3.5" fill="#38BDF8"/>
+                                            </svg>
                                             Transcribe {files.length} {files.length === 1 ? 'Page' : 'Pages'} →
                                         </button>
                                     </div>

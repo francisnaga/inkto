@@ -147,9 +147,9 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
                         title="Send transcript via email"
                         style={{
                             padding: '9px 14px', textAlign: 'center',
-                            background: '#F5F4F0', color: '#1C1917',
-                            border: '1px solid #E4E2DC', borderRadius: '8px',
-                            fontSize: '13px', fontWeight: '600',
+                            background: '#2563EB', color: '#fff',
+                            border: 'none', borderRadius: '8px',
+                            fontSize: '13px', fontWeight: '700',
                             cursor: sendingEmail ? 'wait' : 'pointer',
                             opacity: sendingEmail ? 0.5 : 1,
                             transition: 'all 0.2s', whiteSpace: 'nowrap'

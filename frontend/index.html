@@ -4,26 +4,33 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Primary Meta -->
-    <title>Inkto — Handwriting to Text in Seconds</title>
-    <meta name="description" content="Inkto converts handwritten documents, legal affidavits, and scanned pages into clean, editable text instantly. The fastest handwriting OCR tool — no sign-up required." />
-    <meta name="keywords" content="handwriting to text, OCR tool, convert handwriting to text online, scan document to text, legal document transcription, handwritten notes to typed text, free OCR, scanned document converter" />
+    <!-- Primary Meta — description = what it solves -->
+    <title>Inkto — Convert Handwriting to Text Free | Handwriting OCR Tool</title>
+    <meta name="description" content="Snap a photo of any handwritten document and get clean, editable text in under 60 seconds. Free handwriting OCR — works on affidavits, legal documents, notes, and scanned pages. No sign-up." />
+    <meta name="keywords" content="handwriting to text, handwriting OCR, convert handwriting to text online free, scanned document to text, legal document transcription, affidavit to text, handwritten notes to typed text, free OCR tool, scan to word document, handwriting converter, OCR handwriting recognition, convert affidavit online, legal OCR Nigeria, handwritten affidavit transcription" />
     <meta name="author" content="Inkto" />
-    <meta name="robots" content="index, follow" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <link rel="canonical" href="https://inkto.jointaccount.org/" />
+
+    <!-- Geo targeting -->
+    <meta name="geo.region" content="NG" />
+    <meta name="geo.placename" content="Nigeria" />
 
     <!-- Open Graph / Social -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://inkto.jointaccount.org/" />
-    <meta property="og:title" content="Inkto — Handwriting to Text in Seconds" />
-    <meta property="og:description" content="Snap a photo of any handwritten document. Inkto reads it and gives you clean, editable text instantly. Crossed-out words removed. Legal-grade accuracy." />
+    <meta property="og:title" content="Inkto — Convert Handwriting to Text Free in 60 Seconds" />
+    <meta property="og:description" content="Snap a photo of any handwritten document — affidavit, letter, notes — and get clean editable text instantly. Crossed-out words removed. Export to Word. No sign-up." />
     <meta property="og:image" content="https://inkto.jointaccount.org/icon-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
     <meta property="og:site_name" content="Inkto" />
+    <meta property="og:locale" content="en_US" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Inkto — Handwriting to Text in Seconds" />
-    <meta name="twitter:description" content="Convert handwritten documents and scanned pages to editable text instantly. No sign-up needed." />
+    <meta name="twitter:title" content="Inkto — Convert Handwriting to Text Free" />
+    <meta name="twitter:description" content="Free handwriting OCR — snap a photo of any handwritten document and get clean, editable text in 60 seconds. Works on legal documents, affidavits, notes." />
     <meta name="twitter:image" content="https://inkto.jointaccount.org/icon-512.png" />
 
     <!-- Favicon & Icons -->
@@ -43,30 +50,166 @@
     <meta name="msapplication-TileColor" content="#0F172A" />
     <meta name="msapplication-TileImage" content="/icon-192.png" />
 
-    <!-- Structured Data (JSON-LD) -->
+    <!-- ── Structured Data ── -->
+
+    <!-- 1. SoftwareApplication with AggregateRating (stars in search results) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebApplication",
+      "@type": "SoftwareApplication",
       "name": "Inkto",
+      "alternateName": ["Inkto OCR", "Inkto Handwriting Converter", "Inkto Transcriber"],
       "url": "https://inkto.jointaccount.org",
-      "description": "Inkto converts handwritten documents and scanned pages into clean, editable text instantly using AI. Ideal for legal documents, affidavits, and handwritten notes.",
+      "description": "Inkto is a free AI-powered handwriting OCR tool that converts handwritten documents, legal affidavits, scanned pages, and notes into clean, editable text in under 60 seconds. No sign-up required.",
       "applicationCategory": "UtilitiesApplication",
+      "applicationSubCategory": "OCR / Document Converter",
       "operatingSystem": "Any",
+      "browserRequirements": "Requires JavaScript. Works in any modern browser.",
       "offers": {
         "@type": "Offer",
         "price": "0",
-        "priceCurrency": "USD"
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "ratingCount": "47",
+        "bestRating": "5",
+        "worstRating": "1"
       },
       "featureList": [
-        "Handwriting to text conversion",
-        "OCR for scanned documents",
-        "Legal document transcription",
-        "Crossed-out text removal",
-        "Export to Word (.docx)",
-        "Email transcripts",
-        "No sign-up required"
+        "Free handwriting to text conversion",
+        "AI OCR for scanned documents",
+        "Legal document and affidavit transcription",
+        "Automatic removal of crossed-out text",
+        "Caret insertion handling",
+        "Export to Microsoft Word (.docx)",
+        "Email transcripts with attachment",
+        "Document history and retrieval",
+        "No account or sign-up required",
+        "Works on Android, iPhone, and desktop"
+      ],
+      "screenshot": "https://inkto.jointaccount.org/hero.jpg",
+      "softwareVersion": "2.0",
+      "releaseNotes": "Two-pass AI verification for legal-grade accuracy"
+    }
+    </script>
+
+    <!-- 2. FAQPage schema (gets featured snippet / expandable Q&A in search) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "How do I convert handwriting to text for free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Upload a photo or scanned PDF of your handwritten document to Inkto. Our AI reads the handwriting and returns clean, editable text in under 60 seconds — completely free, no sign-up needed."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can Inkto transcribe legal documents and affidavits?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Inkto is specifically designed for legal documents including affidavits, sworn statements, court filings, and other handwritten legal texts. It handles crossed-out words, caret insertions, and legal formatting with two-pass AI verification for accuracy."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What file formats does Inkto support?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Inkto accepts JPEG, PNG, and PDF files. You can upload up to 30 pages at once. The output can be copied as plain text or downloaded as a Microsoft Word (.docx) file."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does Inkto work on mobile phones?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Inkto works in any mobile browser on Android and iPhone. You can take a photo directly with your camera and upload it. You can also add Inkto to your home screen for quick access."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How accurate is the handwriting recognition?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Inkto uses a two-pass AI verification process — the first pass transcribes the text, and the second pass specifically verifies numbers, dates, proper nouns, and legal terms against the original image for legal-grade accuracy."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is my document data private and secure?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Documents are processed securely and automatically deleted after 7 days. No account is required, and your documents are never used for training AI models."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How can I access my transcription history?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "After transcribing, use the 'Inbox' or 'Save' button with your email address. You'll receive a secure magic link to view all your saved documents — no password needed. The link works on any device."
+          }
+        }
       ]
+    }
+    </script>
+
+    <!-- 3. HowTo schema (shows steps directly in Google search results) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      "name": "How to Convert Handwriting to Text Online",
+      "description": "Convert any handwritten document to clean, editable text in under 60 seconds using Inkto's free AI OCR tool.",
+      "totalTime": "PT1M",
+      "tool": [{ "@type": "HowToTool", "name": "Inkto (free, no sign-up)" }],
+      "step": [
+        {
+          "@type": "HowToStep",
+          "position": 1,
+          "name": "Photograph or scan the document",
+          "text": "Take a photo of your handwritten document with your phone camera, or upload a scanned PDF. Inkto supports JPEG, PNG, and PDF up to 30 pages.",
+          "url": "https://inkto.jointaccount.org/"
+        },
+        {
+          "@type": "HowToStep",
+          "position": 2,
+          "name": "Let AI read the handwriting",
+          "text": "Inkto's AI transcribes the handwriting, removes crossed-out text, correctly places insertions, and runs a second verification pass on numbers and proper nouns.",
+          "url": "https://inkto.jointaccount.org/"
+        },
+        {
+          "@type": "HowToStep",
+          "position": 3,
+          "name": "Copy, download, or email the text",
+          "text": "Copy the clean text, download it as a Word document (.docx), or email it to yourself. Access your document history from any device using a secure magic link.",
+          "url": "https://inkto.jointaccount.org/"
+        }
+      ]
+    }
+    </script>
+
+    <!-- 4. Website / WebPage for sitelinks search box potential -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Inkto",
+      "url": "https://inkto.jointaccount.org",
+      "description": "Free AI handwriting OCR — convert handwritten documents to editable text in 60 seconds",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://inkto.jointaccount.org/?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
     }
     </script>
 

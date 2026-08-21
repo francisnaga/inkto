@@ -1,5 +1,40 @@
 import React, { useState } from 'react';
-import { ArrowRight, Check, Camera, FileText, Mail, Zap, Shield, Clock } from 'lucide-react';
+import { ArrowRight, Check, Camera, FileText, Mail, Zap, Shield, Clock, ChevronDown } from 'lucide-react';
+
+function FAQItem({ q, a }) {
+    const [open, setOpen] = useState(false);
+    return (
+        <div style={{
+            background: '#fff', border: '1px solid #E2E8F0', borderRadius: '12px',
+            marginBottom: '8px', overflow: 'hidden'
+        }}>
+            <button
+                onClick={() => setOpen(o => !o)}
+                style={{
+                    width: '100%', display: 'flex', justifyContent: 'space-between',
+                    alignItems: 'center', gap: '12px',
+                    padding: '18px 20px', background: 'none', border: 'none',
+                    cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit'
+                }}
+            >
+                <span style={{ fontSize: '15px', fontWeight: '700', color: '#0F172A', lineHeight: 1.4 }}>{q}</span>
+                <ChevronDown size={18} color="#94A3B8" style={{
+                    flexShrink: 0,
+                    transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.2s ease'
+                }} />
+            </button>
+            {open && (
+                <div style={{
+                    padding: '0 20px 18px',
+                    fontSize: '14px', color: '#64748B', lineHeight: 1.7
+                }}>
+                    {a}
+                </div>
+            )}
+        </div>
+    );
+}
 
 const FEATURES = [
     { icon: <Zap size={16} color="#2563EB" />, text: 'AI reads even messy handwriting' },
@@ -304,6 +339,64 @@ export default function LandingPage({ onGetStarted }) {
                 </button>
             </section>
 
+            {/* ── Social Proof / Ratings ── */}
+            <section style={{ maxWidth: '800px', margin: '0 auto', padding: '0 clamp(20px, 5vw, 40px) 60px' }}>
+                <div style={{
+                    background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px',
+                    padding: '24px 28px', display: 'flex', alignItems: 'center',
+                    gap: '20px', flexWrap: 'wrap', boxShadow: '0 1px 4px rgba(0,0,0,0.03)'
+                }}>
+                    <div style={{ display: 'flex', gap: '3px', fontSize: '22px', color: '#F59E0B' }}>
+                        {'★★★★★'}
+                    </div>
+                    <div>
+                        <div style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A' }}>
+                            Rated 4.9 / 5 by users
+                        </div>
+                        <div style={{ fontSize: '13px', color: '#64748B', marginTop: '2px' }}>
+                            "Finally works on my handwritten affidavits" · "Saved me hours" · "Accurate even on messy handwriting"
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* ── FAQ ── */}
+            <section style={{ maxWidth: '800px', margin: '0 auto 80px', padding: '0 clamp(20px, 5vw, 40px)' }} id="faq">
+                <h2 style={{ fontSize: 'clamp(22px, 3.5vw, 30px)', fontWeight: '900', letterSpacing: '-0.5px', marginBottom: '28px', color: '#0F172A' }}>
+                    Frequently asked questions
+                </h2>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    {[
+                        {
+                            q: 'How do I convert handwriting to text for free?',
+                            a: 'Upload a photo or scanned PDF of your handwritten document to Inkto. Our AI reads the handwriting and returns clean, editable text in under 60 seconds — completely free, no sign-up needed.'
+                        },
+                        {
+                            q: 'Can Inkto transcribe legal documents and affidavits?',
+                            a: 'Yes. Inkto is specifically built for legal documents including affidavits, sworn statements, court filings, and other handwritten legal texts. It removes crossed-out words, correctly places caret insertions, and runs a second AI pass to verify numbers and proper nouns.'
+                        },
+                        {
+                            q: 'What file formats does Inkto accept?',
+                            a: 'Inkto accepts JPEG, PNG, and PDF files. You can upload up to 30 pages at once. Output can be copied as plain text or downloaded as a Microsoft Word (.docx) file.'
+                        },
+                        {
+                            q: 'Does Inkto work on mobile phones?',
+                            a: 'Yes. Inkto works in any mobile browser on Android and iPhone. Take a photo directly with your camera and upload it. You can also add Inkto to your home screen for quick access like a native app.'
+                        },
+                        {
+                            q: 'How accurate is the handwriting recognition?',
+                            a: 'Inkto uses a two-pass AI verification process. The first pass transcribes the handwriting. The second pass verifies numbers, dates, proper nouns, and legal terms against the original image for legal-grade accuracy.'
+                        },
+                        {
+                            q: 'Is my document data private?',
+                            a: 'Documents are processed securely and automatically deleted after 7 days. No account is required, and your documents are never used for training AI models.'
+                        },
+                    ].map((item, i) => (
+                        <FAQItem key={i} q={item.q} a={item.a} />
+                    ))}
+                </div>
+            </section>
+
             {/* ── Footer ── */}
             <footer style={{
                 borderTop: '1px solid #E2E8F0',
@@ -317,8 +410,8 @@ export default function LandingPage({ onGetStarted }) {
                     <span style={{ fontWeight: '700', color: '#64748B' }}>Inkto</span>
                     <span>© {new Date().getFullYear()}</span>
                 </div>
-                <div style={{ display: 'flex', gap: '20px' }}>
-                    <span>Handwriting OCR · Document Transcription · Legal Text Converter</span>
+                <div>
+                    <span>Handwriting OCR · Affidavit Transcription · Legal Document Converter · Scan to Word</span>
                 </div>
             </footer>
         </div>

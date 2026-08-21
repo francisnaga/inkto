@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Copy, Check, RotateCcw, FileText, FileDown, ChevronUp, Mail, Pen } from 'lucide-react';
+import StarRating from './StarRating';
 
 export default function OutputBox({ text, sessionId, images = [], onReset }) {
     const [value, setValue] = useState(text);
@@ -281,6 +282,9 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
                             marginBottom: '10px'
                         }}>
                             {toolbar}
+                            <div style={{ padding: '10px 14px 0', borderTop: '1px solid #F0EFEB' }}>
+                                <StarRating sessionId={sessionId} />
+                            </div>
                             
                             <div style={{ position: 'relative' }}>
                                 <textarea
@@ -367,6 +371,9 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
                 marginBottom: '10px'
             }}>
                 {toolbar}
+                <div style={{ padding: '8px 12px 0', borderTop: '1px solid #F0EFEB' }}>
+                    <StarRating sessionId={sessionId} />
+                </div>
 
                 <div style={{ position: 'relative' }}>
                     <textarea

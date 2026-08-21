@@ -370,7 +370,7 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
                             whiteSpace: 'nowrap', fontFamily: 'inherit',
                         }}
                     >
-                        {isDesktop ? 'Email transcript' : 'Email'}
+                        Email transcript
                     </button>
                     <button
                         onClick={handleSaveHistory}
@@ -385,7 +385,7 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
                             whiteSpace: 'nowrap', fontFamily: 'inherit',
                         }}
                     >
-                        {isDesktop ? 'Save to history' : 'Save'}
+                        Save to history
                     </button>
                 </div>
             </div>

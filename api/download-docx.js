@@ -1,4 +1,4 @@
-const { generateDocx } = require('./utils/docxGenerator');
+const { generateDocx } = require('./_utils/docxGenerator');
 
 module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');

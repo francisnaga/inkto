@@ -1,6 +1,34 @@
 const { Resend } = require('resend');
-const { generateDocx } = require('./utils/docxGenerator');
+const { generateDocx } = require('./_utils/docxGenerator');
 const { supabase } = require('./_utils/supabase');
+const PDFDocument = require('pdfkit');
+
+// Helper to generate a PDF buffer in memory
+function generatePdfBuffer(text, dateStr) {
+    return new Promise((resolve, reject) => {
+        try {
+            const doc = new PDFDocument({ margin: 72, size: 'A4' });
+            const buffers = [];
+            doc.on('data', buffers.push.bind(buffers));
+            doc.on('end', () => resolve(Buffer.concat(buffers)));
+
+            doc.fontSize(10).fillColor('#888888').text('INKTO TRANSCRIPT', { align: 'left' });
+            doc.text(dateStr, { align: 'right' });
+            doc.moveDown(0.5);
+            doc.moveTo(72, doc.y).lineTo(doc.page.width - 72, doc.y).strokeColor('#CCCCCC').stroke();
+            doc.moveDown(1);
+
+            doc.fontSize(12).fillColor('#1C1917').font('Helvetica').text(text, {
+                align: 'left',
+                lineGap: 6,
+            });
+
+            doc.end();
+        } catch (err) {
+            reject(err);
+        }
+    });
+}
 
 module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,7 +43,7 @@ module.exports = async function handler(req, res) {
         return res.status(500).json({ error: 'Email service is not configured (missing API key).' });
     }
 
-    const { text, recipientEmail, sessionId } = req.body || {};
+    const { text, recipientEmail, sessionId, formats } = req.body || {};
     if (!text || !recipientEmail) {
         return res.status(400).json({ error: 'Missing transcript text or recipient email.' });
     }
@@ -25,12 +53,39 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'Invalid email address.' });
     }
 
+    // Default to docx if formats isn't provided (for backwards compatibility)
+    const attachDocx = formats ? formats.docx : true;
+    const attachPdf = formats ? formats.pdf : false;
+
+    if (!attachDocx && !attachPdf) {
+        return res.status(400).json({ error: 'Please select at least one attachment format.' });
+    }
+
     try {
-        const docxBuffer = await generateDocx(text);
-        const resend = new Resend(resendKey);
-        
         const dateStr = new Date().toISOString().slice(0, 10);
+        const emailAttachments = [];
+
+        if (attachDocx) {
+            const docxBuffer = await generateDocx(text);
+            emailAttachments.push({
+                filename: `inkto-transcript-${dateStr}.docx`,
+                content: docxBuffer,
+            });
+        }
+
+        if (attachPdf) {
+            const pdfBuffer = await generatePdfBuffer(text, dateStr);
+            emailAttachments.push({
+                filename: `inkto-transcript-${dateStr}.pdf`,
+                content: pdfBuffer,
+            });
+        }
+
+        const resend = new Resend(resendKey);
         const sessionUrl = sessionId ? `https://inkto.jointaccount.org/session/${sessionId}` : null;
+        
+        // Dynamic text based on attachments
+        const attachedFormatsStr = attachDocx && attachPdf ? 'Word (.docx) and PDF' : attachDocx ? 'Word (.docx)' : 'PDF';
 
         const emailHtml = `
         <!DOCTYPE html>
@@ -49,7 +104,7 @@ module.exports = async function handler(req, res) {
                         Your document transcription is complete. 
                     </p>
                     <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #374151;">
-                        We have attached the final transcript as a fully formatted Microsoft Word (.docx) document to this email.
+                        We have attached the final transcript as a fully formatted ${attachedFormatsStr} document to this email.
                     </p>
 
                     ${sessionUrl ? `
@@ -80,12 +135,7 @@ module.exports = async function handler(req, res) {
             to: recipientEmail,
             subject: `Inkto Transcript - ${dateStr}`,
             html: emailHtml,
-            attachments: [
-                {
-                    filename: `inkto-transcript-${dateStr}.docx`,
-                    content: docxBuffer,
-                }
-            ]
+            attachments: emailAttachments
         });
 
         if (error) {

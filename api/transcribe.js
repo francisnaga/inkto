@@ -3,6 +3,7 @@ const { GoogleGenAI } = require('@google/genai');
 const multer = require('multer');
 const { Redis } = require('@upstash/redis');
 const { nanoid } = require('nanoid');
+const { supabase } = require('./utils/supabase');
 
 // ---- Redis Setup ----
 const redis = process.env.UPSTASH_REDIS_REST_KV_REST_API_URL 
@@ -28,7 +29,7 @@ function runMiddleware(req, res, fn) {
     });
 }
 
-const SYSTEM_PROMPT = `You are a world-class legal document transcription AI specialising in messy handwritten Nigerian court documents, affidavits, and police reports. 
+const SYSTEM_PROMPT_PASS_1 = `You are a world-class legal document transcription AI specialising in messy handwritten Nigerian court documents, affidavits, and police reports. 
 Your sole purpose is to produce a flawless, 100% accurate text transcription of the provided image(s).
 
 CRITICAL TRANSCRIPTION RULES:
@@ -37,7 +38,15 @@ CRITICAL TRANSCRIPTION RULES:
 3. ABSOLUTE ACCURACY: Transcribe all remaining text exactly as written. Preserve all original spelling, capitalisation, punctuation, abbreviations, numbering, and paragraph structure. Do not "fix" grammar if it was written incorrectly.
 4. UNCLEAR WORDS: Do not hallucinate words. If a word is genuinely illegible, transcribe your best logical guess based on the legal context and add [?] immediately after it.
 5. MULTIPLE PAGES: Treat them as sequential pages of one document, separated by: --- Page X ---
-6. NO CHATTER: Output ONLY the clean, final transcribed text. No preamble, no commentary, no markdown formatting (unless it was in the text).`;
+6. STRUCTURED OUTPUT: If the document contains numbered or lettered lists, preserve the exact numbering on distinct lines. If the document contains label/value pairs or itemized accounting (e.g. "12mm rods = N163,800"), format them as distinct structured lines so they can be parsed as tables, rather than merging them into prose.
+7. NO CHATTER: Output ONLY the clean, final transcribed text. No preamble, no commentary, no markdown formatting (unless it was in the text).`;
+
+const SYSTEM_PROMPT_PASS_2 = `You are a strict accuracy verification AI. 
+You are given the original handwritten images AND a draft transcription.
+Your task is to re-check EVERY number, amount, date, and proper noun in the draft against the images.
+Correct any mismatches. Ensure absolute perfection for financial and legal figures.
+If the document contains lists or itemized accounts, ensure they remain distinctly formatted on separate lines.
+Return ONLY the final corrected transcript text. No preamble or commentary.`;
 
 function sanitize(str) {
     return (str || '').replace(/[^\x20-\x7E]/g, '').trim();
@@ -54,6 +63,43 @@ function withTimeout(promise, ms, label) {
     });
 }
 
+// Generate with specific provider
+async function generateTranscription(provider, apiKey, dataBlocks, userText, pass) {
+    const prompt = pass === 2 ? SYSTEM_PROMPT_PASS_2 : SYSTEM_PROMPT_PASS_1;
+    
+    if (provider === 'anthropic') {
+        const anthropic = new Anthropic.default({ apiKey });
+        const response = await anthropic.messages.create({
+            model: 'claude-3-5-sonnet-20241022',
+            max_tokens: 8192,
+            temperature: 0.1,
+            system: prompt,
+            messages: [{ role: 'user', content: [...dataBlocks, { type: 'text', text: userText }] }]
+        });
+        return response.content[0].text;
+    } else {
+        const gemini = new GoogleGenAI({ apiKey });
+        const parts = [
+            ...dataBlocks.map(b => ({ inlineData: { mimeType: b.source.media_type, data: b.source.data } })),
+            { text: userText }
+        ];
+        const modelChain = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
+        for (const model of modelChain) {
+            try {
+                const response = await gemini.models.generateContent({
+                    model,
+                    contents: [{ role: 'user', parts }],
+                    config: { systemInstruction: prompt, temperature: 0.1 }
+                });
+                return response.text;
+            } catch (err) {
+                console.warn(`Gemini ${model} failed:`, err.message.substring(0, 100));
+            }
+        }
+        throw new Error('All Gemini models failed');
+    }
+}
+
 module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -63,38 +109,26 @@ module.exports = async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     // ---- IP Rate Limiting ----
-    // Requires UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in Vercel Env
     if (redis) {
         const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
         if (ip !== 'unknown') {
             const rlKey = `rate_limit:transcribe:${ip}`;
             try {
                 const count = await redis.incr(rlKey);
-                if (count === 1) {
-                    await redis.expire(rlKey, 3600); // 1 hour TTL
-                }
-                if (count > 10) {
-                    return res.status(429).json({ error: 'Too many requests. Please try again in an hour.' });
-                }
-            } catch (err) {
-                console.error('Rate limit error:', err);
-            }
+                if (count === 1) await redis.expire(rlKey, 3600);
+                if (count > 10) return res.status(429).json({ error: 'Too many requests. Please try again in an hour.' });
+            } catch (err) { console.error('Rate limit error:', err); }
         }
     }
 
-    // Parse multipart
-    try {
-        await runMiddleware(req, res, upload.array('files', 30));
-    } catch (err) {
-        return res.status(400).json({ error: `Upload error: ${err.message}` });
-    }
+    try { await runMiddleware(req, res, upload.array('files', 30)); } 
+    catch (err) { return res.status(400).json({ error: `Upload error: ${err.message}` }); }
 
     const files = req.files;
     if (!files || files.length === 0) {
-        return res.status(400).json({ error: 'No valid files received. Please upload images or PDFs.' });
+        return res.status(400).json({ error: 'No valid files received.' });
     }
 
-    // ---- Build data blocks ----
     const dataBlocks = files.map(file => {
         let mediaType = file.mimetype === 'image/jpg' ? 'image/jpeg' : file.mimetype;
         return {
@@ -103,11 +137,8 @@ module.exports = async function handler(req, res) {
         };
     });
 
-    const userText = req.body && req.body.prompt
-        ? `Transcribe all pages. Additional instructions: ${req.body.prompt}`
-        : 'Transcribe all pages of this handwritten document.';
-
-    console.log(`Received ${files.length} file(s) for transcription`);
+    const userInstructions = req.body && req.body.prompt ? `Additional instructions: ${req.body.prompt}` : '';
+    const pass1UserText = `Transcribe all pages of this handwritten document. ${userInstructions}`;
 
     const anthropicKey = sanitize(process.env.ANTHROPIC_API_KEY);
     const geminiKey = sanitize(process.env.GEMINI_API_KEY);
@@ -116,79 +147,54 @@ module.exports = async function handler(req, res) {
         return res.status(500).json({ error: 'No API keys configured on the server.' });
     }
 
-    // ---- Build provider promises ----
-    const providers = [];
-
-    // Anthropic (Claude) — capped at 45s so a slow failure doesn't block Gemini
-    if (anthropicKey) {
-        const claudePromise = (async () => {
-            console.log('Starting Anthropic...');
-            const anthropic = new Anthropic.default({ apiKey: anthropicKey });
-            const response = await anthropic.messages.create({
-                model: 'claude-3-5-sonnet-20241022',
-                max_tokens: 8192,
-                temperature: 0.1,
-                system: SYSTEM_PROMPT,
-                messages: [{ role: 'user', content: [...dataBlocks, { type: 'text', text: userText }] }]
-            });
-            console.log('Anthropic succeeded.');
-            return response.content[0].text;
-        })();
-        providers.push(withTimeout(claudePromise, 45000, 'Anthropic'));
-    }
-
-    // Gemini (free-tier cascade: 3.5-flash-lite → 3.1-flash-lite)
-    if (geminiKey) {
-        const geminiPromise = (async () => {
-            const gemini = new GoogleGenAI({ apiKey: geminiKey });
-            const parts = [
-                ...dataBlocks.map(b => ({ inlineData: { mimeType: b.source.media_type, data: b.source.data } })),
-                { text: userText }
-            ];
-            const modelChain = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
-            for (const model of modelChain) {
-                try {
-                    console.log(`Starting Gemini (${model})...`);
-                    const response = await gemini.models.generateContent({
-                        model,
-                        contents: [{ role: 'user', parts }],
-                        config: { systemInstruction: SYSTEM_PROMPT, temperature: 0.1 }
-                    });
-                    console.log(`Gemini ${model} succeeded.`);
-                    return response.text;
-                } catch (err) {
-                    console.warn(`Gemini ${model} failed:`, err.message.substring(0, 100));
-                }
-            }
-            throw new Error('All Gemini models failed');
-        })();
-        providers.push(withTimeout(geminiPromise, 55000, 'Gemini'));
-    }
-
-    // ---- Race: return whoever responds first ----
     try {
-        const text = await Promise.any(providers);
+        let draftText = '';
+        const providers = [];
         
-        let sessionId = null;
-        if (redis) {
-            try {
-                sessionId = nanoid(8);
-                await redis.set(`session:${sessionId}`, {
-                    id: sessionId,
-                    text,
-                    createdAt: Date.now(),
-                    sourceImageCount: files.length
-                }, { ex: 604800 }); // 7 days in seconds
-            } catch (err) {
-                console.error('Session persistence failed:', err);
-                sessionId = null;
-            }
+        // PASS 1
+        if (anthropicKey) providers.push(withTimeout(generateTranscription('anthropic', anthropicKey, dataBlocks, pass1UserText, 1), 45000, 'Anthropic'));
+        if (geminiKey) providers.push(withTimeout(generateTranscription('gemini', geminiKey, dataBlocks, pass1UserText, 1), 55000, 'Gemini'));
+        
+        draftText = await Promise.any(providers);
+        
+        // PASS 2 (Accuracy Verification)
+        const pass2UserText = `Here is the draft transcript:\n\n---\n${draftText}\n---\n\nPlease verify and correct it according to the instructions.`;
+        const providersPass2 = [];
+        if (anthropicKey) providersPass2.push(withTimeout(generateTranscription('anthropic', anthropicKey, dataBlocks, pass2UserText, 2), 45000, 'Anthropic'));
+        if (geminiKey) providersPass2.push(withTimeout(generateTranscription('gemini', geminiKey, dataBlocks, pass2UserText, 2), 55000, 'Gemini'));
+        
+        const finalText = await Promise.any(providersPass2);
+
+        // Upload images to Supabase Storage and Save document to DB
+        const sessionId = nanoid(21);
+        
+        // Upload images asynchronously
+        await Promise.all(files.map(async (file, index) => {
+            const ext = file.mimetype === 'image/jpeg' ? 'jpg' : 
+                        file.mimetype === 'image/png' ? 'png' : 
+                        file.mimetype === 'application/pdf' ? 'pdf' : 'bin';
+            const filePath = `${sessionId}/${index}.${ext}`;
+            
+            await supabase.storage.from('inkto-images').upload(filePath, file.buffer, {
+                contentType: file.mimetype,
+                upsert: true
+            });
+        }));
+
+        // Insert into postgres documents table (email is nullable)
+        const { error: dbError } = await supabase.from('documents').insert([{
+            id: sessionId,
+            transcript_text: finalText,
+            source_image_count: files.length
+        }]);
+
+        if (dbError) {
+            console.error('Failed to save to Supabase Postgres:', dbError);
         }
 
-        return res.json({ success: true, text, sessionId });
+        return res.json({ success: true, text: finalText, sessionId });
     } catch (err) {
-        // Promise.any rejects with AggregateError when ALL providers fail
-        console.error('All providers failed:', err.errors || err.message);
+        console.error('Transcription failed:', err.errors || err.message);
         return res.status(500).json({
             error: 'AI is temporarily unavailable. Please tap Try Again — it usually recovers quickly.'
         });

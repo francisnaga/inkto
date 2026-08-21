@@ -51,6 +51,15 @@ body {
   min-height: 100vh;
 }
 
+.app-container-desktop {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
 header {
   display: flex;
   justify-content: space-between;
@@ -66,6 +75,38 @@ h1 {
   letter-spacing: -0.3px;
   color: var(--ink);
 }
+
+/* ── Desktop Split Pane ── */
+.desktop-split {
+  display: flex;
+  flex: 1;
+  min-height: calc(100vh - 80px);
+  gap: 0;
+  margin: 0 -20px; /* Bleed to edges on wide screens if needed */
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.left-pane {
+  flex: 0 0 35%;
+  min-width: 320px;
+  max-width: 500px;
+  height: calc(100vh - 80px);
+  position: sticky;
+  top: 80px;
+}
+
+.right-pane {
+  flex: 1;
+  min-width: 0;
+}
+
+/* History List Hover Effect */
+.history-list {
+  display: flex;
+  flex-direction: column;
+}
+
 
 /* ── Animations ── */
 @keyframes fadeIn {

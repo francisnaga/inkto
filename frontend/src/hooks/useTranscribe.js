@@ -1,11 +1,12 @@
 import { useState } from 'react';
 
 export function useTranscribe() {
-    const [state, setState] = useState('idle'); // 'idle', 'uploading', 'processing', 'success', 'error'
+    const [state, setState] = useState('idle'); // 'idle', 'uploading', 'processing', 'fetching_session', 'success', 'error'
     const [files, setFiles] = useState([]);
     const [error, setError] = useState(null);
     const [transcribedText, setTranscribedText] = useState('');
     const [sessionId, setSessionId] = useState(null);
+    const [sessionImages, setSessionImages] = useState([]);
 
     const addFiles = (newFiles) => {
         setFiles(prev => [...prev, ...newFiles]);
@@ -34,6 +35,7 @@ export function useTranscribe() {
 
             setTranscribedText(data.session.text);
             setSessionId(data.session.id);
+            setSessionImages(data.session.images || []);
             setState('success');
         } catch (err) {
             console.error(err);
@@ -67,7 +69,6 @@ export function useTranscribe() {
                 body: formData,
             });
 
-            // Parse safely - avoids Safari DOMException if server returns HTML
             const rawText = await response.text();
             let data = {};
             try {
@@ -82,6 +83,11 @@ export function useTranscribe() {
 
             setTranscribedText(data.text);
             if (data.sessionId) setSessionId(data.sessionId);
+            
+            // Generate object URLs for the local files so we can display them in the split pane
+            const localUrls = files.map(file => URL.createObjectURL(file));
+            setSessionImages(localUrls);
+
             setState('success');
         } catch (err) {
             console.error(err);
@@ -94,9 +100,9 @@ export function useTranscribe() {
         setFiles([]);
         setTranscribedText('');
         setSessionId(null);
+        setSessionImages([]);
         setError(null);
         setState('idle');
-        // If we were on a session URL, remove it
         if (window.location.pathname.startsWith('/session/')) {
             window.history.pushState({}, '', '/');
         }
@@ -108,6 +114,7 @@ export function useTranscribe() {
         error,
         transcribedText,
         sessionId,
+        sessionImages,
         addFiles,
         removeFile,
         transcribe,

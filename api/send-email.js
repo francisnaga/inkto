@@ -1,5 +1,6 @@
 const { Resend } = require('resend');
 const { generateDocx } = require('./utils/docxGenerator');
+const { supabase } = require('./utils/supabase');
 
 module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -40,12 +41,9 @@ module.exports = async function handler(req, res) {
         </head>
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f9fafb; margin: 0; padding: 40px 20px; color: #111827;">
             <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
-                <!-- Header -->
                 <div style="background-color: #111827; padding: 24px 32px; text-align: center;">
                     <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 0.5px;">Inkto</h1>
                 </div>
-                
-                <!-- Body -->
                 <div style="padding: 32px;">
                     <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #374151;">
                         Your document transcription is complete. 
@@ -92,11 +90,18 @@ module.exports = async function handler(req, res) {
 
         if (error) {
             console.error('Resend error:', error);
-            // Translate common Resend errors
             if (error.statusCode === 403) {
                 return res.status(403).json({ error: 'Email sending failed. Please ensure your domain is verified in Resend to send to this address.' });
             }
             return res.status(500).json({ error: 'Failed to send email. Please try again later.' });
+        }
+
+        // If email sent successfully, update the document's email address so it appears in their history
+        if (sessionId) {
+            await supabase.from('documents')
+                .update({ email: recipientEmail.toLowerCase() })
+                .eq('id', sessionId)
+                .is('email', null); // Only set if not already set (prevents overtaking)
         }
 
         return res.json({ success: true });

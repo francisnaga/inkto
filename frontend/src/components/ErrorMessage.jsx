@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Coffee } from 'lucide-react';
 
 export default function ErrorMessage({ message, onRetry, onCancel }) {
     if (!message) return null;
@@ -33,7 +33,7 @@ export default function ErrorMessage({ message, onRetry, onCancel }) {
                     {message}
                 </div>
             </div>
-            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '8px', marginBottom: '16px' }}>
                 <button 
                     onClick={onCancel}
                     style={{
@@ -53,20 +53,72 @@ export default function ErrorMessage({ message, onRetry, onCancel }) {
                     onClick={onRetry}
                     style={{
                         padding: '10px 24px',
-                        background: '#F3F4F6',
+                        background: '#1C1917',
                         border: 'none',
                         borderRadius: '10px',
                         fontSize: '14px',
                         fontWeight: '600',
-                        color: '#374151',
+                        color: '#fff',
                         cursor: 'pointer',
-                        transition: 'background 0.2s'
+                        transition: 'opacity 0.2s'
                     }}
-                    onMouseOver={(e) => e.target.style.background = '#E5E7EB'}
-                    onMouseOut={(e) => e.target.style.background = '#F3F4F6'}
+                    onMouseOver={(e) => e.target.style.opacity = '0.9'}
+                    onMouseOut={(e) => e.target.style.opacity = '1'}
                 >
                     Try Again
                 </button>
+            </div>
+
+            {/* Tip Section for Error Page */}
+            <div style={{
+                background: '#F8FAFC',
+                border: '1px solid #E2E8F0',
+                borderRadius: '12px',
+                padding: '20px',
+                width: '100%',
+                boxSizing: 'border-box'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '8px' }}>
+                    <Coffee size={16} color="#475569" />
+                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Help us scale
+                    </span>
+                </div>
+                <p style={{ fontSize: '13px', color: '#64748B', margin: '0 0 14px', lineHeight: '1.5' }}>
+                    Running AI transcription models is very expensive. If Inkto is temporarily overloaded, a small tip helps us upgrade our servers and increase capacity.
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <a
+                        href="https://paystack.shop/pay/4h04eqpye7"
+                        target="_blank" rel="noopener noreferrer"
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            padding: '8px 14px', borderRadius: '8px',
+                            background: '#09A5DB', color: '#fff',
+                            textDecoration: 'none', fontSize: '13px', fontWeight: '600',
+                            transition: 'opacity 0.2s', boxShadow: '0 2px 8px rgba(9, 165, 219, 0.2)'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+                        onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                    >
+                        Tip via Paystack
+                    </a>
+                    <a
+                        href="https://paypal.me/frankyideal25"
+                        target="_blank" rel="noopener noreferrer"
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            padding: '8px 14px', borderRadius: '8px',
+                            background: '#003087', color: '#fff',
+                            textDecoration: 'none', fontSize: '13px', fontWeight: '600',
+                            transition: 'opacity 0.2s', boxShadow: '0 2px 8px rgba(0, 48, 135, 0.2)'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+                        onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                    >
+                        Tip via PayPal
+                    </a>
+                </div>
             </div>
         </div>
     );

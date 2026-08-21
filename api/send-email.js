@@ -58,7 +58,7 @@ module.exports = async function handler(req, res) {
                             Prefer to edit in your browser?
                         </p>
                         <p style="margin: 0 0 16px; font-size: 14px; color: #4b5563; line-height: 1.5;">
-                            You can securely view, edit, and copy this transcript online for the next 7 days using your session link.
+                            You can securely view, edit, and copy this transcript online indefinitely using your session link.
                         </p>
                         <a href="${sessionUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 600;">
                             Open in Inkto
@@ -100,7 +100,10 @@ module.exports = async function handler(req, res) {
         if (sessionId) {
             const db = require('./_utils/supabase').checkSupabase();
             await db.from('documents')
-                .update({ email: recipientEmail.toLowerCase() })
+                .update({ 
+                    email: recipientEmail.toLowerCase(),
+                    expires_at: new Date('2099-12-31T23:59:59.999Z').toISOString()
+                })
                 .eq('id', sessionId)
                 .is('email', null); // Only set if not already set (prevents overtaking)
         }

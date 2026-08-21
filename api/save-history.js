@@ -21,10 +21,13 @@ module.exports = async function handler(req, res) {
     try {
         const db = require('./_utils/supabase').checkSupabase();
 
-        // Update the document to tie it to the user's email
+        // Update the document to tie it to the user's email and extend expiration
         const { error } = await db
             .from('documents')
-            .update({ email: email.toLowerCase() })
+            .update({ 
+                email: email.toLowerCase(),
+                expires_at: new Date('2099-12-31T23:59:59.999Z').toISOString()
+            })
             .eq('id', sessionId);
 
         if (error) throw error;

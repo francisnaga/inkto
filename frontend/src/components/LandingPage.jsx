@@ -487,7 +487,7 @@ export default function LandingPage({ onGetStarted }) {
                         },
                         {
                             q: 'Is my document data private?',
-                            a: 'Documents are processed securely and automatically deleted after 7 days. No account is required, and your documents are never used for training models.'
+                            a: 'Yes. Unsaved documents are automatically deleted after 7 days for your privacy. Documents you explicitly save or email are kept securely in your history until you delete them. No account is required, and your documents are never used for training models.'
                         },
                     ].map((item, i) => (
                         <FAQItem key={i} q={item.q} a={item.a} />

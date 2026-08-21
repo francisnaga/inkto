@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, FileText, ChevronRight, Loader2, Clock, Mail } from 'lucide-react';
+import { ArrowLeft, FileText, ChevronRight, Loader2, Clock, Mail, Trash2 } from 'lucide-react';
 
 export default function History({ onBack, onSelectSession }) {
     const [history, setHistory] = useState([]);
@@ -10,6 +10,7 @@ export default function History({ onBack, onSelectSession }) {
     const [requesting, setRequesting] = useState(false);
     const [requestSent, setRequestSent] = useState(false);
     const [isAuthed, setIsAuthed] = useState(false);
+    const [deletingIds, setDeletingIds] = useState(new Set());
 
     useEffect(() => {
         fetchHistory();
@@ -55,6 +56,34 @@ export default function History({ onBack, onSelectSession }) {
             setError(err.message);
         } finally {
             setRequesting(false);
+        }
+    };
+
+    const handleDeleteSession = async (e, sessionId) => {
+        e.stopPropagation();
+        if (!confirm('Are you sure you want to permanently delete this document?')) return;
+        
+        setDeletingIds(prev => new Set(prev).add(sessionId));
+        try {
+            const res = await fetch('/api/delete-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ sessionId })
+            });
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to delete');
+            }
+            setHistory(prev => prev.filter(doc => doc.id !== sessionId));
+        } catch (err) {
+            alert('Could not delete session: ' + err.message);
+        } finally {
+            setDeletingIds(prev => {
+                const next = new Set(prev);
+                next.delete(sessionId);
+                return next;
+            });
         }
     };
 
@@ -188,24 +217,27 @@ export default function History({ onBack, onSelectSession }) {
                         const date = new Date(doc.createdAt);
                         const dateStr = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
                         const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                        const isDeleting = deletingIds.has(doc.id);
 
                         return (
                             <div
                                 key={doc.id}
-                                onClick={() => onSelectSession(doc.id)}
+                                onClick={() => !isDeleting && onSelectSession(doc.id)}
                                 style={{
                                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                     padding: '18px 20px', background: '#fff',
                                     border: '1px solid #E4E2DC', borderRadius: '14px',
-                                    cursor: 'pointer', transition: 'all 0.18s',
-                                    boxShadow: '0 1px 4px rgba(0,0,0,0.03)'
+                                    cursor: isDeleting ? 'wait' : 'pointer', transition: 'all 0.18s',
+                                    boxShadow: '0 1px 4px rgba(0,0,0,0.03)', opacity: isDeleting ? 0.6 : 1
                                 }}
                                 onMouseEnter={e => {
+                                    if (isDeleting) return;
                                     e.currentTarget.style.borderColor = '#C4BFB9';
                                     e.currentTarget.style.transform = 'translateY(-1px)';
                                     e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.07)';
                                 }}
                                 onMouseLeave={e => {
+                                    if (isDeleting) return;
                                     e.currentTarget.style.borderColor = '#E4E2DC';
                                     e.currentTarget.style.transform = 'translateY(0)';
                                     e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.03)';
@@ -235,7 +267,23 @@ export default function History({ onBack, onSelectSession }) {
                                         {doc.preview}
                                     </p>
                                 </div>
-                                <ChevronRight size={17} color="#C4BFB9" style={{ flexShrink: 0 }} />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <button 
+                                        onClick={(e) => handleDeleteSession(e, doc.id)}
+                                        disabled={isDeleting}
+                                        title="Delete document"
+                                        style={{
+                                            background: 'none', border: 'none', cursor: 'pointer',
+                                            padding: '6px', borderRadius: '6px', display: 'flex', alignItems: 'center',
+                                            color: '#A8A29E', transition: 'all 0.2s'
+                                        }}
+                                        onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = '#EF4444'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#A8A29E'; }}
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                    <ChevronRight size={17} color="#C4BFB9" style={{ flexShrink: 0 }} />
+                                </div>
                             </div>
                         );
                     })}

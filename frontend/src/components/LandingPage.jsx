@@ -61,12 +61,12 @@ function FAQItem({ q, a }) {
 }
 
 const FEATURES = [
-    { icon: <IconZap size={16} color="#2563EB" />, text: 'Reads messy handwriting accurately' },
+    { icon: <IconZap size={16} color="#2563EB" />, text: 'Handles messy handwriting' },
     { icon: <IconCheck size={16} color="#2563EB" />, text: 'Crossed out words removed automatically' },
     { icon: <IconFileText size={16} color="#2563EB" />, text: 'Exports to Word (.docx) or plain text' },
     { icon: <IconMail size={16} color="#2563EB" />, text: 'Email directly to yourself or a colleague' },
     { icon: <IconShield size={16} color="#2563EB" />, text: 'No password required' },
-    { icon: <IconClock size={16} color="#2563EB" />, text: 'Results in under 60 seconds' },
+    { icon: <IconClock size={16} color="#2563EB" />, text: 'Result in seconds' },
 ];
 
 const STEPS = [
@@ -254,7 +254,7 @@ export default function LandingPage({ onGetStarted }) {
                             </div>
                             <div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#94A3B8', letterSpacing: '0.08em' }}>STEP {s.n}</span>
+                                    <span style={{ fontSize: '11px', fontWeight: '800', color: '#94A3B8', letterSpacing: '0.08em' }}>{s.n}</span>
                                     <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0F172A', margin: 0, letterSpacing: '-0.2px' }}>{s.title}</h3>
                                 </div>
                                 <p style={{ fontSize: '14px', color: '#64748B', lineHeight: 1.65, margin: 0 }}>{s.desc}</p>

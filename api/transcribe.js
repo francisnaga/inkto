@@ -163,7 +163,24 @@ module.exports = async function handler(req, res) {
         if (anthropicKey) providersPass2.push(withTimeout(generateTranscription('anthropic', anthropicKey, dataBlocks, pass2UserText, 2), 45000, 'Anthropic'));
         if (geminiKey) providersPass2.push(withTimeout(generateTranscription('gemini', geminiKey, dataBlocks, pass2UserText, 2), 55000, 'Gemini'));
         
-        const finalText = await Promise.any(providersPass2);
+        let finalText = await Promise.any(providersPass2);
+
+        // Detect when AI says there's no handwritten text and normalise it
+        const noTextPhrases = [
+            'does not contain any handwritten',
+            'no handwritten text',
+            'cannot transcribe',
+            'no text to transcribe',
+            'does not appear to contain any text',
+            'the image does not contain',
+            'there is no text',
+            'no legible text',
+            'no written text'
+        ];
+        const isNoText = noTextPhrases.some(p => finalText.toLowerCase().includes(p));
+        if (isNoText) {
+            finalText = '[No handwritten text found in this document. Please upload a clear photo of a handwritten page.]';
+        }
 
         // Upload images to Supabase Storage and Save document to DB
         const sessionId = nanoid(21);

@@ -148,8 +148,10 @@ function App() {
     const { state, files, error, transcribedText, sessionId, sessionImages, addFiles, removeFile, transcribe, fetchSession, reset } = useTranscribe();
     const [customPrompt, setCustomPrompt] = useState('');
     const [promptFocused, setPromptFocused] = useState(false);
-    const [showLanding, setShowLanding] = useState(!localStorage.getItem('inkto_launched') && !window.location.pathname.startsWith('/session/') && window.location.pathname !== '/history');
-    const [showHistory, setShowHistory] = useState(window.location.pathname === '/history');
+    const isHistoryPath = window.location.pathname === '/history';
+    const isSessionPath = window.location.pathname.startsWith('/session/');
+    const [showLanding, setShowLanding] = useState(!localStorage.getItem('inkto_launched') && !isSessionPath && !isHistoryPath);
+    const [showHistory, setShowHistory] = useState(isHistoryPath);
 
     useEffect(() => {
         const path = window.location.pathname;

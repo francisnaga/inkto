@@ -58,7 +58,7 @@ module.exports = async function handler(req, res) {
         const cookieValue = signCookie(tokenData.email);
         res.setHeader('Set-Cookie', serializeCookie('inkto_auth', cookieValue, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: true,
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 7,
             path: '/'

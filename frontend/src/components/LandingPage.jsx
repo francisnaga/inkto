@@ -148,7 +148,7 @@ export default function LandingPage({ onGetStarted }) {
                     letterSpacing: '-2px', color: '#0F172A',
                     marginBottom: '24px'
                 }}>
-                    Handwritten legal docs,<br />
+                    Handwritten docs,<br />
                     <span style={{
                         background: 'linear-gradient(135deg, #2563EB, #0EA5E9)',
                         WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
@@ -163,7 +163,7 @@ export default function LandingPage({ onGetStarted }) {
                     maxWidth: '520px', margin: '0 auto 40px',
                     lineHeight: 1.65, fontWeight: 400
                 }}>
-                    Snap a photo of any handwritten legal document and Inkto converts it to clean, editable text. Crossed out words are removed automatically and insertions are placed in the correct location.
+                    Snap a photo of any handwritten document and Inkto converts it to clean, editable text. Crossed out words are removed automatically and insertions are placed in the correct location.
                 </p>
 
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -218,7 +218,7 @@ export default function LandingPage({ onGetStarted }) {
                     boxShadow: '0 24px 80px rgba(0,0,0,0.12)',
                     border: '1px solid #E2E8F0'
                 }}>
-                    <img src="/hero.jpg" alt="Inkto converting a handwritten legal document to clean text" style={{ width: '100%', display: 'block' }} />
+                    <img src="/hero.jpg" alt="Inkto converting a handwritten document to clean text" style={{ width: '100%', display: 'block' }} />
                 </div>
             </section>
 

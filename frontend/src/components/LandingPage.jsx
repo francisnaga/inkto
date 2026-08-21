@@ -193,23 +193,24 @@ export default function LandingPage({ onGetStarted }) {
                 {/* Hero Visual Demo */}
                 <div className="hero-visual-container" style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px',
-                    margin: '0 auto 48px', maxWidth: '800px'
+                    margin: '0 auto 48px', maxWidth: '860px'
                 }}>
                     {/* Before */}
                     <div style={{
-                        flex: '1 1 300px', background: '#FDFBF7', border: '1px solid #E4E2DC',
-                        borderRadius: '16px', padding: '32px 24px', boxShadow: '0 8px 24px rgba(0,0,0,0.04)',
-                        position: 'relative', overflow: 'hidden', textAlign: 'left'
+                        flex: '1 1 320px', borderRadius: '16px', overflow: 'hidden',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid #E4E2DC',
+                        position: 'relative'
                     }}>
-                        <div style={{ position: 'absolute', left: '24px', top: 0, bottom: 0, width: '2px', background: '#FCA5A5', opacity: 0.4 }} />
                         <div style={{
-                            fontFamily: "'Caveat', cursive", fontSize: '28px', color: '#1E3A8A',
-                            lineHeight: 1.5, paddingLeft: '16px', transform: 'rotate(-1deg)'
-                        }}>
-                            I swear that the <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>defendant</span> <span style={{ position: 'relative' }}>claimant<span style={{ position: 'absolute', bottom: '-16px', left: '50%', transform: 'translateX(-50%)', fontSize: '18px', color: '#1E3A8A' }}>^</span></span> was present.
-                        </div>
+                            position: 'absolute', top: '10px', left: '10px', zIndex: 2,
+                            background: 'rgba(0,0,0,0.55)', color: '#fff',
+                            fontSize: '11px', fontWeight: '700', padding: '4px 10px',
+                            borderRadius: '99px', letterSpacing: '0.06em', backdropFilter: 'blur(4px)'
+                        }}>BEFORE</div>
+                        <img src="/handwriting_before.jpg" alt="Handwritten affidavit with crossed-out words"
+                            style={{ width: '100%', display: 'block', objectFit: 'cover', aspectRatio: '4/3' }} />
                     </div>
-                    
+
                     {/* Arrow */}
                     <div className="hero-visual-arrow" style={{ color: '#94A3B8', flexShrink: 0 }}>
                         <IconArrowRight size={28} />
@@ -217,15 +218,21 @@ export default function LandingPage({ onGetStarted }) {
 
                     {/* After */}
                     <div style={{
-                        flex: '1 1 300px', background: '#fff', border: '1px solid #E2E8F0',
-                        borderRadius: '16px', padding: '32px 24px', boxShadow: '0 12px 32px rgba(0,0,0,0.08)',
-                        textAlign: 'left'
+                        flex: '1 1 320px', background: '#fff', border: '1px solid #E2E8F0',
+                        borderRadius: '16px', padding: '28px 28px', boxShadow: '0 12px 40px rgba(0,0,0,0.08)',
+                        textAlign: 'left', position: 'relative'
                     }}>
                         <div style={{
-                            fontFamily: "'EB Garamond', Georgia, serif", fontSize: '21px', color: '#0F172A',
-                            lineHeight: 1.6
+                            position: 'absolute', top: '10px', left: '10px',
+                            background: 'rgba(37,99,235,0.1)', color: '#2563EB',
+                            fontSize: '11px', fontWeight: '700', padding: '4px 10px',
+                            borderRadius: '99px', letterSpacing: '0.06em'
+                        }}>AFTER</div>
+                        <div style={{
+                            fontFamily: "'EB Garamond', Georgia, serif", fontSize: '20px', color: '#0F172A',
+                            lineHeight: 1.7, marginTop: '28px'
                         }}>
-                            I swear that the claimant was present.
+                            I hereby swear that the claimant was present at the scene on the 14th of March 2024. The said individual did not leave the premises before 6pm.
                         </div>
                     </div>
                 </div>
@@ -262,13 +269,22 @@ export default function LandingPage({ onGetStarted }) {
                     {/* Card A: Edits */}
                     <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '32px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
                         <h3 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 20px', color: '#0F172A', letterSpacing: '-0.3px' }}>Understands edits, not just characters</h3>
-                        <div style={{ background: '#FDFBF7', padding: '24px 20px', borderRadius: '12px', border: '1px solid #E4E2DC', marginBottom: '16px', position: 'relative', overflow: 'hidden' }}>
-                            <div style={{ position: 'absolute', left: '16px', top: 0, bottom: 0, width: '2px', background: '#FCA5A5', opacity: 0.4 }} />
-                            <div style={{ fontFamily: "'Caveat', cursive", fontSize: '26px', color: '#1E3A8A', paddingLeft: '12px', lineHeight: 1.2 }}>
-                                <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>ignore this</span> keep this
-                            </div>
+                        <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #E4E2DC', marginBottom: '16px', position: 'relative' }}>
+                            <div style={{
+                                position: 'absolute', top: '8px', left: '8px',
+                                background: 'rgba(0,0,0,0.5)', color: '#fff',
+                                fontSize: '10px', fontWeight: '700', padding: '3px 8px',
+                                borderRadius: '99px', zIndex: 1, backdropFilter: 'blur(4px)'
+                            }}>HANDWRITTEN INPUT</div>
+                            <img src="/handwriting_edits.jpg" alt="Handwritten text with crossed-out word" style={{ width: '100%', display: 'block', objectFit: 'cover', height: '140px' }} />
                         </div>
-                        <div style={{ background: '#F8FAFC', padding: '16px 20px', borderRadius: '12px', border: '1px solid #E2E8F0', fontFamily: "'EB Garamond', Georgia, serif", fontSize: '19px', color: '#0F172A' }}>
+                        <div style={{ background: '#F8FAFC', padding: '16px 20px', borderRadius: '12px', border: '1px solid #E2E8F0', fontFamily: "'EB Garamond', Georgia, serif", fontSize: '19px', color: '#0F172A', position: 'relative' }}>
+                            <div style={{
+                                position: 'absolute', top: '-10px', right: '14px',
+                                background: '#EFF6FF', color: '#2563EB',
+                                fontSize: '10px', fontWeight: '700', padding: '3px 8px',
+                                borderRadius: '99px'
+                            }}>CLEAN OUTPUT</div>
                             keep this
                         </div>
                     </div>
@@ -276,20 +292,30 @@ export default function LandingPage({ onGetStarted }) {
                     {/* Card B: Structure */}
                     <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '32px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
                         <h3 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 20px', color: '#0F172A', letterSpacing: '-0.3px' }}>Preserves document structure</h3>
-                        <div className="hero-visual-container" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                            <div style={{ flex: 1, background: '#FDFBF7', padding: '20px 16px', borderRadius: '12px', border: '1px solid #E4E2DC', position: 'relative', overflow: 'hidden', minWidth: '120px' }}>
-                                <div style={{ position: 'absolute', left: '16px', top: 0, bottom: 0, width: '2px', background: '#FCA5A5', opacity: 0.4 }} />
-                                <div style={{ fontFamily: "'Caveat', cursive", fontSize: '22px', color: '#1E3A8A', paddingLeft: '12px', lineHeight: 1.4 }}>
-                                    1. First item<br/>2. Second item
-                                </div>
+                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                            <div style={{ flex: 1, borderRadius: '12px', overflow: 'hidden', border: '1px solid #E4E2DC', position: 'relative' }}>
+                                <div style={{
+                                    position: 'absolute', top: '8px', left: '8px',
+                                    background: 'rgba(0,0,0,0.5)', color: '#fff',
+                                    fontSize: '10px', fontWeight: '700', padding: '3px 8px',
+                                    borderRadius: '99px', zIndex: 1, backdropFilter: 'blur(4px)'
+                                }}>INPUT</div>
+                                <img src="/handwriting_list.jpg" alt="Handwritten numbered list" style={{ width: '100%', display: 'block', objectFit: 'cover', height: '170px', objectPosition: 'top' }} />
                             </div>
-                            <div className="hero-visual-arrow" style={{ flexShrink: 0 }}>
+                            <div style={{ flexShrink: 0 }}>
                                 <IconArrowRight size={16} color="#94A3B8" />
                             </div>
-                            <div style={{ flex: 1, background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', fontFamily: "'EB Garamond', Georgia, serif", fontSize: '17px', color: '#0F172A', lineHeight: 1.5, minWidth: '120px' }}>
-                                <ol style={{ margin: 0, paddingLeft: '20px' }}>
-                                    <li style={{ marginBottom: '4px' }}>First item</li>
-                                    <li>Second item</li>
+                            <div style={{ flex: 1, background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0', fontFamily: "'EB Garamond', Georgia, serif", fontSize: '16px', color: '#0F172A', lineHeight: 1.5, position: 'relative' }}>
+                                <div style={{
+                                    position: 'absolute', top: '-10px', right: '10px',
+                                    background: '#EFF6FF', color: '#2563EB',
+                                    fontSize: '10px', fontWeight: '700', padding: '3px 8px',
+                                    borderRadius: '99px'
+                                }}>OUTPUT</div>
+                                <ol style={{ margin: 0, paddingLeft: '18px' }}>
+                                    <li style={{ marginBottom: '6px' }}>Exhibit A &mdash; sworn statement</li>
+                                    <li style={{ marginBottom: '6px' }}>Exhibit B &mdash; court notice</li>
+                                    <li>Exhibit C &mdash; police report</li>
                                 </ol>
                             </div>
                         </div>

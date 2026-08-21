@@ -30,9 +30,10 @@ module.exports = async function handler(req, res) {
         if (session && !error) {
             // Fetch image URLs from storage
             const { data: files } = await supabase.storage.from('inkto-images').list(id);
-            const imageUrls = (files || []).map(file =>
-                supabase.storage.from('inkto-images').getPublicUrl(`${id}/${file.name}`).data.publicUrl
-            );
+            const imageUrls = (files || [])
+                .filter(file => file.name !== '.emptyFolderPlaceholder')
+                .map(file => supabase.storage.from('inkto-images').getPublicUrl(`${id}/${file.name}`).data.publicUrl);
+
 
             return res.json({
                 success: true,

@@ -5,6 +5,77 @@ const IconCoffee = ({ size = 16, color = 'currentColor' }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>
 );
 
+const SourceDocument = ({ url, index }) => {
+    const [error, setError] = useState(false);
+    const isPdf = url.includes('.pdf');
+
+    if (error || isPdf) {
+        return (
+            <div style={{
+                background: '#fff', border: '1px solid #E4E2DC', borderRadius: '12px',
+                padding: '32px 24px', display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', gap: '12px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+            }}>
+                <div style={{
+                    width: '48px', height: '48px', borderRadius: '12px',
+                    background: '#F3F4F6', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center'
+                }}>
+                    <FileText size={24} color="#9CA3AF" />
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#4B5563' }}>
+                        {isPdf ? 'PDF Document' : 'Document Unavailable'}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '4px' }}>
+                        Page {index}
+                    </div>
+                </div>
+                {!error && isPdf && (
+                    <a href={url} target="_blank" rel="noopener noreferrer" style={{
+                        marginTop: '8px', fontSize: '12px', fontWeight: '600', color: '#2563EB', textDecoration: 'none',
+                        padding: '6px 12px', background: '#EFF6FF', borderRadius: '6px'
+                    }}>
+                        View PDF
+                    </a>
+                )}
+            </div>
+        );
+    }
+
+    return (
+        <div style={{
+            background: '#fff', border: '1px solid #E4E2DC', borderRadius: '12px',
+            overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+            display: 'flex', flexDirection: 'column'
+        }}>
+            <div style={{
+                background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '24px'
+            }}>
+                <img 
+                    src={url} 
+                    alt={`Page ${index}`} 
+                    onError={() => setError(true)}
+                    style={{ 
+                        maxWidth: '100%', maxHeight: '50vh', 
+                        objectFit: 'contain', 
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                        borderRadius: '4px'
+                    }} 
+                />
+            </div>
+            <div style={{ 
+                padding: '12px', background: '#fff', borderTop: '1px solid #F0EFEB', 
+                fontSize: '12px', color: '#6B7280', fontWeight: '600', textAlign: 'center' 
+            }}>
+                Page {index}
+            </div>
+        </div>
+    );
+};
+
 export default function OutputBox({ text, sessionId, images = [], onReset }) {
     const [value, setValue] = useState(text);
     const [copied, setCopied] = useState(false);
@@ -283,15 +354,7 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
                             Source Documents
                         </div>
                         {images.map((img, i) => (
-                            <div key={i} style={{
-                                background: '#fff', border: '1px solid #E4E2DC', borderRadius: '12px',
-                                overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
-                            }}>
-                                <img src={img} alt={`Page ${i+1}`} style={{ width: '100%', maxHeight: '60vh', objectFit: 'contain', display: 'block', background: '#F5F4F0' }} />
-                                <div style={{ padding: '8px 12px', background: '#FAFAF9', borderTop: '1px solid #F0EFEB', fontSize: '11px', color: '#A8A29E', fontWeight: '600', textAlign: 'center' }}>
-                                    Page {i+1}
-                                </div>
-                            </div>
+                            <SourceDocument key={i} url={img} index={i + 1} />
                         ))}
                     </div>
                 )}

@@ -177,7 +177,7 @@ module.exports = async function handler(req, res) {
             'no legible text',
             'no written text'
         ];
-        const isNoText = noTextPhrases.some(p => finalText.toLowerCase().includes(p));
+        const isNoText = finalText.length < 400 && noTextPhrases.some(p => finalText.toLowerCase().includes(p));
         if (isNoText) {
             finalText = '[No handwritten text found in this document. Please upload a clear photo of a handwritten page.]';
         }

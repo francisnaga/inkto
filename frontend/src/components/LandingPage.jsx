@@ -103,7 +103,8 @@ export default function LandingPage({ onGetStarted }) {
 
             {/* Navbar */}
             <nav style={{
-                position: 'sticky', top: 0, zIndex: 100,
+                position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+                boxSizing: 'border-box',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: '0 clamp(20px, 5vw, 60px)', height: '60px',
                 background: 'rgba(250,250,248,0.9)',
@@ -139,7 +140,7 @@ export default function LandingPage({ onGetStarted }) {
             {/* Hero */}
             <section style={{
                 maxWidth: '720px', margin: '0 auto',
-                padding: 'clamp(64px, 10vw, 100px) clamp(20px, 5vw, 40px) 56px',
+                padding: 'clamp(124px, 15vw, 160px) clamp(20px, 5vw, 40px) 56px',
                 textAlign: 'center'
             }}>
                 <h1 style={{

@@ -289,7 +289,7 @@ export default function LandingPage({ onGetStarted }) {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                     {[
                         { emoji: '⚖️', title: 'Legal documents', desc: 'Affidavits, sworn statements, court filings' },
-                        { emoji: '🏥', title: 'Medical notes', desc: 'Doctor's handwritten records and prescriptions' },
+                        { emoji: '🏥', title: 'Medical notes', desc: "Doctor's handwritten records and prescriptions" },
                         { emoji: '📚', title: 'Student notes', desc: 'Lecture notes, revision summaries' },
                         { emoji: '📋', title: 'Field reports', desc: 'Site surveys, inspection notes' },
                         { emoji: '✉️', title: 'Personal letters', desc: 'Correspondence, diaries, family documents' },

@@ -90,6 +90,7 @@ async function generateTranscription(provider, apiKey, dataBlocks, userText, pas
                 const res = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    signal: AbortSignal.timeout(26000), // Prevent hanging on overloaded models
                     body: JSON.stringify({
                         contents: [{ role: 'user', parts }],
                         systemInstruction: { role: 'system', parts: [{ text: prompt }] },

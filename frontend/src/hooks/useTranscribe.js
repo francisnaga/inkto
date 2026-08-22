@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { nanoid } from 'nanoid';
 
+const PAGE_CONCURRENCY = 3;
+
 export function useTranscribe() {
     const [state, setState] = useState('idle');
     const [files, setFiles] = useState([]);
@@ -53,36 +55,31 @@ export function useTranscribe() {
         setError(null);
 
         const generatedSessionId = nanoid(21);
-        // Vercel serverless functions have a hard 60s ceiling. Keep each AI call
-        // mapped to exactly one page so long PDFs/images cannot time out as a batch
-        // or let the model merge/repeat pages inside one response.
-        const BATCH_SIZE = 1;
-        const totalBatches = Math.ceil(files.length / BATCH_SIZE);
-        setBatchProgress({ current: 1, total: totalBatches });
+        const totalPages = files.length;
+        const concurrency = Math.min(PAGE_CONCURRENCY, totalPages);
+        setBatchProgress({ current: 0, total: totalPages, active: 0, concurrency });
 
-        let fullTranscript = '';
+        const pageBlocks = new Array(totalPages);
         const localUrls = files.map(file => URL.createObjectURL(file));
 
         try {
-            for (let i = 0; i < totalBatches; i++) {
-                setBatchProgress({ current: i + 1, total: totalBatches });
+            let nextIndex = 0;
+            let completed = 0;
+            let active = 0;
 
-                const batchFiles = files.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE);
+            const transcribePage = async (index) => {
+                const file = files[index];
+                const pageNumber = index + 1;
                 const formData = new FormData();
-                batchFiles.forEach(file => formData.append('files', file));
-                const pageNumber = i + 1;
+                formData.append('files', file);
 
                 if (customPrompt) formData.append('prompt', customPrompt);
                 formData.append('sessionId', generatedSessionId);
-                formData.append('startIndex', String(i * BATCH_SIZE));
+                formData.append('startIndex', String(index));
                 formData.append('pageNumber', String(pageNumber));
-                formData.append('totalPages', String(files.length));
-                formData.append('isFinalBatch', String(i === totalBatches - 1));
-                formData.append('totalFilesCount', String(files.length));
-                // Pass all previously collected text so the final batch can save a complete record
-                if (i === totalBatches - 1) {
-                    formData.append('fullTranscript', fullTranscript);
-                }
+                formData.append('totalPages', String(totalPages));
+                formData.append('isFinalBatch', 'false');
+                formData.append('totalFilesCount', String(totalPages));
 
                 const response = await fetch('/api/transcribe', {
                     method: 'POST',
@@ -96,12 +93,56 @@ export function useTranscribe() {
                 }
 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Transcription failed. Please try again.');
+                    throw new Error(data.details || data.error || `Page ${pageNumber} failed.`);
                 }
 
                 const pageText = (data.text || '').trim();
-                const pageBlock = `--- Page ${pageNumber} ---\n${pageText || '[No legible text found on this page.]'}`;
-                fullTranscript += (fullTranscript ? '\n\n' : '') + pageBlock;
+                pageBlocks[index] = `--- Page ${pageNumber} ---\n${pageText || '[No legible text found on this page.]'}`;
+            };
+
+            const runWorker = async () => {
+                while (nextIndex < totalPages) {
+                    const index = nextIndex++;
+                    active++;
+                    setBatchProgress({ current: completed, total: totalPages, active, concurrency });
+
+                    try {
+                        await transcribePage(index);
+                    } catch (err) {
+                        if (!String(err.message || '').includes('auth') && !String(err.message || '').includes('configured')) {
+                            try {
+                                await transcribePage(index);
+                            } catch (retryErr) {
+                                throw new Error(`Page ${index + 1} failed: ${retryErr.message}`);
+                            }
+                        } else {
+                            throw err;
+                        }
+                    } finally {
+                        active--;
+                    }
+
+                    completed++;
+                    setBatchProgress({ current: completed, total: totalPages, active, concurrency });
+                }
+            };
+
+            await Promise.all(Array.from({ length: concurrency }, runWorker));
+
+            const fullTranscript = pageBlocks.join('\n\n');
+
+            const saveResponse = await fetch('/api/finalize-transcription', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sessionId: generatedSessionId,
+                    text: fullTranscript,
+                    totalFilesCount: totalPages
+                })
+            });
+
+            if (!saveResponse.ok) {
+                console.warn('Could not save session history, but transcription completed.');
             }
 
             setTranscribedText(fullTranscript);

@@ -36,12 +36,15 @@ function ProcessingScreen({ pageCount, batchProgress }) {
     }, []);
 
     const step = LOADING_STEPS[stepIndex];
-    const batchElapsedFraction = isChunked ? ((batchProgress.current - 1) / batchProgress.total) : 0;
-    const batchProgressFraction = Math.min(0.95 / batchProgress?.total || 0.95, (elapsed / 75) * (1 / (batchProgress?.total || 1)));
-    const progressPct = Math.min(95, (batchElapsedFraction + batchProgressFraction) * 100);
+    const completedPages = batchProgress?.current || 0;
+    const activePages = batchProgress?.active || 0;
+    const concurrency = batchProgress?.concurrency || 1;
+    const progressPct = isChunked
+        ? Math.min(95, ((completedPages + Math.min(activePages, concurrency) * 0.35) / batchProgress.total) * 100)
+        : Math.min(95, (elapsed / 75) * 100);
 
     const estimateSecs = isChunked
-        ? `~${Math.round((batchProgress.total * 75) / 60)} min total for ${pageCount} pages`
+        ? `${completedPages}/${pageCount} pages complete${activePages ? ` · ${activePages} reading now` : ''}`
         : `Usually completes in 60 to 90 seconds`;
 
     return (
@@ -108,14 +111,14 @@ function ProcessingScreen({ pageCount, batchProgress }) {
                             borderRadius: '20px', padding: '4px 12px',
                             fontSize: '12px', fontWeight: '700', color: '#1D4ED8'
                         }}>
-                            Page {batchProgress.current} of {batchProgress.total}
+                            {completedPages} of {batchProgress.total} done
                         </div>
                         <div style={{
                             background: '#F3F4F6',
                             borderRadius: '20px', padding: '4px 10px',
                             fontSize: '11px', fontWeight: '600', color: '#6B7280'
                         }}>
-                            {pageCount} pages total
+                            {activePages} active
                         </div>
                     </div>
                 )}
@@ -125,7 +128,7 @@ function ProcessingScreen({ pageCount, batchProgress }) {
                     marginBottom: '6px', letterSpacing: '-0.3px'
                 }}>
                     {isChunked
-                        ? `Reading page ${batchProgress.current} of ${pageCount}...`
+                        ? `Reading pages in parallel...`
                         : `Reading ${pageCount} ${pageCount === 1 ? 'page' : 'pages'}...`
                     }
                 </h3>
@@ -169,8 +172,8 @@ function ProcessingScreen({ pageCount, batchProgress }) {
                 border: '1px solid #E5E7EB', borderRadius: '12px', padding: '14px 18px'
             }}>
                 <p style={{ fontSize: '12px', color: '#6B7280', margin: 0, lineHeight: '1.7' }}>
-                    <strong style={{ color: '#374151' }}>Two-pass accuracy check:</strong> After the initial transcription, a second AI pass verifies all numbers, dates, and proper nouns for legal-grade accuracy.
-                    {isChunked && <><br /><strong style={{ color: '#374151' }}>Large document mode:</strong> Processing one page at a time to preserve page order and avoid serverless timeouts.</>}
+                    <strong style={{ color: '#374151' }}>Page-safe transcription:</strong> Each page is read separately so long documents do not get merged, skipped, or repeated.
+                    {isChunked && <><br /><strong style={{ color: '#374151' }}>Large document mode:</strong> Several pages run at once, then Inkto rebuilds the result in the original page order.</>}
                 </p>
             </div>
         </div>

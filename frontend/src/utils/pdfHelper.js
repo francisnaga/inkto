@@ -18,9 +18,9 @@ export async function convertPdfToImages(file, onProgress) {
         const page = await pdf.getPage(i);
 
         
-        // Render a little above final upload size so compression keeps enough
-        // stroke detail for scanned legal handwriting.
-        const viewport = page.getViewport({ scale: 2.5 });
+        // Render above final upload size so compression keeps enough stroke
+        // detail without creating slow, oversized serverless payloads.
+        const viewport = page.getViewport({ scale: 2.0 });
         
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
@@ -33,7 +33,7 @@ export async function convertPdfToImages(file, onProgress) {
         }).promise;
         
         // Convert to blob and then to File
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
         if (!blob) throw new Error(`Could not render page ${i}`);
         const imageFile = new File([blob], `${file.name}-page-${i}.jpg`, { type: 'image/jpeg' });
         

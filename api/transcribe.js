@@ -51,26 +51,35 @@ function cleanSinglePageText(text) {
 
 // Call Gemini REST API directly — bypasses SDK OAuth bugs
 async function callGemini(apiKey, parts, timeoutMs) {
-    // Model chain: try primary first, fall back to lite
-    const models = ['gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+    // Model chain: prefer low-latency multimodal models, then fall back.
+    const models = ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.5-flash'];
+    const deadline = Date.now() + timeoutMs;
 
     for (const model of models) {
+        const remainingMs = deadline - Date.now();
+        if (remainingMs < 6000) break;
+
         try {
             const controller = new AbortController();
-            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            const modelTimeoutMs = Math.min(remainingMs, model.includes('lite') ? 24000 : 18000);
+            const timer = setTimeout(() => controller.abort(), modelTimeoutMs);
 
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                signal: controller.signal,
-                body: JSON.stringify({
-                    contents: [{ role: 'user', parts }],
-                    systemInstruction: { role: 'system', parts: [{ text: SYSTEM_PROMPT }] },
-                    generationConfig: { temperature: 0.1, maxOutputTokens: 8192 }
-                })
-            });
-            clearTimeout(timer);
+            let res;
+            try {
+                res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    signal: controller.signal,
+                    body: JSON.stringify({
+                        contents: [{ role: 'user', parts }],
+                        systemInstruction: { role: 'system', parts: [{ text: SYSTEM_PROMPT }] },
+                        generationConfig: { temperature: 0.1, maxOutputTokens: 4096 }
+                    })
+                });
+            } finally {
+                clearTimeout(timer);
+            }
 
             const data = await res.json();
             if (!res.ok) {
@@ -97,7 +106,7 @@ async function callGemini(apiKey, parts, timeoutMs) {
         }
     }
 
-    throw new Error('All Gemini models unavailable. Please try again in a moment.');
+    throw new Error('This page took too long to transcribe. Please retry, or upload a clearer/lower-resolution image for this page.');
 }
 
 module.exports = async function handler(req, res) {

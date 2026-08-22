@@ -1,10 +1,10 @@
 /**
  * Compresses and resizes an image File to reduce memory usage on mobile.
- * Target: max 1800px on longest side, JPEG quality 0.84.
+ * Target: max 1500px on longest side, JPEG quality 0.8.
  * Each page is uploaded separately, so we can preserve more handwriting detail
  * while still staying comfortably under serverless request limits.
  */
-export async function compressImage(file, maxDimension = 1800, quality = 0.84) {
+export async function compressImage(file, maxDimension = 1500, quality = 0.8) {
     return new Promise((resolve) => {
         const img = new Image();
         const objectUrl = URL.createObjectURL(file);

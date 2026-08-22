@@ -89,10 +89,28 @@ export default function History({ onBack, onSelectSession }) {
 
     if (loading) {
         return (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', gap: '16px' }}>
-                <Loader2 size={22} color="#A8A29E" style={{ animation: 'spin 1s linear infinite' }} />
-                <p style={{ color: '#A8A29E', fontSize: '14px', margin: 0 }}>Loading...</p>
-                <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 20px', animation: 'fadeIn 0.4s ease' }}>
+                <div style={{
+                    display: 'flex', gap: '8px', marginBottom: '24px'
+                }}>
+                    <div className="bounce-dot" style={{ width: '10px', height: '10px', background: '#1C1917', borderRadius: '50%', animationDelay: '0s' }} />
+                    <div className="bounce-dot" style={{ width: '10px', height: '10px', background: '#1C1917', borderRadius: '50%', animationDelay: '0.15s' }} />
+                    <div className="bounce-dot" style={{ width: '10px', height: '10px', background: '#1C1917', borderRadius: '50%', animationDelay: '0.3s' }} />
+                </div>
+                <div style={{
+                    fontSize: '18px', fontWeight: '700', color: '#1C1917', letterSpacing: '-0.2px',
+                    display: 'flex', alignItems: 'center', gap: '8px'
+                }}>
+                    Loading history...
+                </div>
+                <p style={{ fontSize: '13px', color: '#A8A29E', marginTop: '6px' }}>Fetching your past documents securely</p>
+                <style>{`
+                    @keyframes bounce-dot {
+                        0%, 100% { transform: translateY(0); opacity: 0.5; }
+                        50% { transform: translateY(-8px); opacity: 1; }
+                    }
+                    .bounce-dot { animation: bounce-dot 1s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+                `}</style>
             </div>
         );
     }

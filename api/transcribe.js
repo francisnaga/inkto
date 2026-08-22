@@ -235,7 +235,10 @@ module.exports = async function handler(req, res) {
     } catch (err) {
         console.error('Transcription failed:', err.errors || err.message);
         return res.status(500).json({
-            error: 'The transcription service is currently busy. Please try again in a few seconds.'
+            error: 'The transcription service is currently busy. Please try again in a few seconds.',
+            details: err.message,
+            stack: err.stack,
+            aggregateErrors: err.errors ? err.errors.map(e => e.message) : undefined
         });
     }
 };

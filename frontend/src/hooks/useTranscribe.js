@@ -1,12 +1,14 @@
 import { useState } from 'react';
+import { nanoid } from 'nanoid';
 
 export function useTranscribe() {
-    const [state, setState] = useState('idle'); // 'idle', 'uploading', 'processing', 'fetching_session', 'success', 'error'
+    const [state, setState] = useState('idle');
     const [files, setFiles] = useState([]);
     const [error, setError] = useState(null);
     const [transcribedText, setTranscribedText] = useState('');
     const [sessionId, setSessionId] = useState(null);
     const [sessionImages, setSessionImages] = useState([]);
+    const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
 
     const addFiles = (newFiles) => {
         setFiles(prev => [...prev, ...newFiles]);
@@ -15,10 +17,10 @@ export function useTranscribe() {
 
     const removeFile = (index) => {
         setFiles(prev => {
-            const newFiles = [...prev];
-            newFiles.splice(index, 1);
-            if (newFiles.length === 0) setState('idle');
-            return newFiles;
+            const next = [...prev];
+            next.splice(index, 1);
+            if (next.length === 0) setState('idle');
+            return next;
         });
     };
 
@@ -28,11 +30,7 @@ export function useTranscribe() {
         try {
             const response = await fetch(`/api/session?id=${id}`);
             const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to load session');
-            }
-
+            if (!response.ok) throw new Error(data.error || 'Failed to load session');
             setTranscribedText(data.session.text);
             setSessionId(data.session.id);
             setSessionImages(data.session.images || []);
@@ -46,7 +44,7 @@ export function useTranscribe() {
 
     const transcribe = async (customPrompt = '') => {
         if (files.length === 0) {
-            setError("Please add at least one file");
+            setError('Please add at least one file.');
             setState('error');
             return;
         }
@@ -54,40 +52,53 @@ export function useTranscribe() {
         setState('processing');
         setError(null);
 
-        const formData = new FormData();
-        files.forEach(file => {
-            formData.append('files', file);
-        });
-        
-        if (customPrompt) {
-            formData.append('prompt', customPrompt);
-        }
+        const generatedSessionId = nanoid(21);
+        const BATCH_SIZE = 5;
+        const totalBatches = Math.ceil(files.length / BATCH_SIZE);
+        setBatchProgress({ current: 1, total: totalBatches });
+
+        let fullTranscript = '';
+        const localUrls = files.map(file => URL.createObjectURL(file));
 
         try {
-            const response = await fetch('/api/transcribe', {
-                method: 'POST',
-                body: formData,
-            });
+            for (let i = 0; i < totalBatches; i++) {
+                setBatchProgress({ current: i + 1, total: totalBatches });
 
-            const rawText = await response.text();
-            let data = {};
-            try {
-                data = JSON.parse(rawText);
-            } catch {
-                throw new Error(`Server error (${response.status}). Please try again.`);
+                const batchFiles = files.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE);
+                const formData = new FormData();
+                batchFiles.forEach(file => formData.append('files', file));
+
+                if (customPrompt) formData.append('prompt', customPrompt);
+                formData.append('sessionId', generatedSessionId);
+                formData.append('startIndex', String(i * BATCH_SIZE));
+                formData.append('isFinalBatch', String(i === totalBatches - 1));
+                formData.append('totalFilesCount', String(files.length));
+                // Pass all previously collected text so the final batch can save a complete record
+                if (i === totalBatches - 1) {
+                    formData.append('fullTranscript', fullTranscript);
+                }
+
+                const response = await fetch('/api/transcribe', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const rawText = await response.text();
+                let data = {};
+                try { data = JSON.parse(rawText); } catch {
+                    throw new Error(`Server error (${response.status}). Please try again.`);
+                }
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Transcription failed. Please try again.');
+                }
+
+                fullTranscript += (fullTranscript ? '\n\n---\n\n' : '') + data.text;
             }
 
-            if (!response.ok) {
-                throw new Error(data.error || 'Transcription failed. Please try again.');
-            }
-
-            setTranscribedText(data.text);
-            if (data.sessionId) setSessionId(data.sessionId);
-            
-            // Generate object URLs for the local files so we can display them in the split pane
-            const localUrls = files.map(file => URL.createObjectURL(file));
+            setTranscribedText(fullTranscript);
+            setSessionId(generatedSessionId);
             setSessionImages(localUrls);
-
             setState('success');
         } catch (err) {
             console.error(err);
@@ -103,22 +114,11 @@ export function useTranscribe() {
         setSessionImages([]);
         setError(null);
         setState('idle');
+        setBatchProgress({ current: 0, total: 0 });
         if (window.location.pathname.startsWith('/session/')) {
             window.history.pushState({}, '', '/');
         }
     };
 
-    return {
-        state,
-        files,
-        error,
-        transcribedText,
-        sessionId,
-        sessionImages,
-        addFiles,
-        removeFile,
-        transcribe,
-        fetchSession,
-        reset
-    };
+    return { state, files, error, transcribedText, sessionId, sessionImages, batchProgress, addFiles, removeFile, transcribe, fetchSession, reset };
 }

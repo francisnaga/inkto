@@ -25,8 +25,10 @@ export default function UploadZone({ onFilesSelected }) {
             if (!isPdf && !isImage) { rejected.push(file.name); continue; }
             try {
                 if (isPdf) {
-                    setProcessingMsg(`Converting PDF…`);
-                    const images = await convertPdfToImages(file);
+                    setProcessingMsg(`Reading PDF…`);
+                    const images = await convertPdfToImages(file, (current, total) => {
+                        setProcessingMsg(`Converting PDF: page ${current} of ${total}…`);
+                    });
                     for (const img of images) finalFiles.push(await compressImage(img).catch(() => img));
                 } else {
                     finalFiles.push(await compressImage(file).catch(() => file));

@@ -3,13 +3,14 @@ import * as pdfjsLib from 'pdfjs-dist';
 // Set worker path to standard CDN or local path
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
-export async function convertPdfToImages(file) {
+export async function convertPdfToImages(file, onProgress) {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     
     const images = [];
     
     for (let i = 1; i <= pdf.numPages; i++) {
+        if (onProgress) onProgress(i, pdf.numPages);
         const page = await pdf.getPage(i);
         
         // Use a standard scale

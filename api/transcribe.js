@@ -83,7 +83,9 @@ async function generateTranscription(provider, apiKey, dataBlocks, userText, pas
             ...dataBlocks.map(b => ({ inlineData: { mimeType: b.source.media_type, data: b.source.data } })),
             { text: userText }
         ];
-        const modelChain = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
+        // Use known-good Gemini 2.0 Flash model with a fallback
+        const modelChain = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+        let lastErr = null;
         for (const model of modelChain) {
             try {
                 const response = await gemini.models.generateContent({
@@ -93,10 +95,13 @@ async function generateTranscription(provider, apiKey, dataBlocks, userText, pas
                 });
                 return response.text;
             } catch (err) {
-                console.warn(`Gemini ${model} failed:`, err.message.substring(0, 100));
+                lastErr = err;
+                console.warn(`Gemini ${model} failed:`, err.message.substring(0, 150));
+                // Brief pause before trying fallback model
+                await new Promise(r => setTimeout(r, 500));
             }
         }
-        throw new Error('All Gemini models failed');
+        throw lastErr || new Error('All Gemini models failed');
     }
 }
 
@@ -183,7 +188,10 @@ module.exports = async function handler(req, res) {
         }
 
         // Upload images to Supabase Storage and Save document to DB
-        const sessionId = nanoid(21);
+        const sessionId = (req.body && req.body.sessionId) ? req.body.sessionId : nanoid(21);
+        const startIndex = (req.body && req.body.startIndex) ? parseInt(req.body.startIndex, 10) : 0;
+        const isFinalBatch = (req.body && req.body.isFinalBatch === 'true');
+        const totalFilesCount = (req.body && req.body.totalFilesCount) ? parseInt(req.body.totalFilesCount, 10) : files.length;
         
         const db = require('./_utils/supabase').checkSupabase();
         
@@ -192,7 +200,7 @@ module.exports = async function handler(req, res) {
             const ext = file.mimetype === 'image/jpeg' ? 'jpg' : 
                         file.mimetype === 'image/png' ? 'png' : 
                         file.mimetype === 'application/pdf' ? 'pdf' : 'bin';
-            const filePath = `${sessionId}/${index}.${ext}`;
+            const filePath = `${sessionId}/${startIndex + index}.${ext}`;
             
             await db.storage.from('inkto-images').upload(filePath, file.buffer, {
                 contentType: file.mimetype,
@@ -200,22 +208,34 @@ module.exports = async function handler(req, res) {
             });
         }));
 
-        // Insert into postgres documents table (email is nullable)
-        const { error: dbError } = await db.from('documents').insert([{
-            id: sessionId,
-            transcript_text: finalText,
-            source_image_count: files.length
-        }]);
-
-        if (dbError) {
-            console.error('Failed to save to Supabase Postgres:', dbError);
+        // In a chunked scenario, we only want to save the complete document on the final batch.
+        if (!req.body || !req.body.sessionId) {
+            // Legacy/non-chunked request
+            const { error: dbError } = await db.from('documents').insert([{
+                id: sessionId,
+                transcript_text: finalText,
+                source_image_count: files.length
+            }]);
+            if (dbError) console.error('Failed to save to Supabase Postgres:', dbError);
+        } else if (isFinalBatch) {
+            // Chunked request: fullTranscript = all previous batches, finalText = this batch
+            const previousText = req.body.fullTranscript || '';
+            const completeTranscript = previousText
+                ? previousText + '\n\n---\n\n' + finalText
+                : finalText;
+            const { error: dbError } = await db.from('documents').insert([{
+                id: sessionId,
+                transcript_text: completeTranscript,
+                source_image_count: totalFilesCount
+            }]);
+            if (dbError) console.error('Failed to save chunked transcript to Postgres:', dbError);
         }
 
         return res.json({ success: true, text: finalText, sessionId });
     } catch (err) {
         console.error('Transcription failed:', err.errors || err.message);
         return res.status(500).json({
-            error: 'AI is temporarily unavailable. Please tap Try Again — it usually recovers quickly.'
+            error: 'The transcription service is currently busy. Please try again in a few seconds.'
         });
     }
 };

@@ -10,19 +10,20 @@ import History from './components/History';
 import { useTranscribe } from './hooks/useTranscribe';
 
 const LOADING_STEPS = [
-    { icon: '🔍', text: 'Scanning document structure…' },
-    { icon: '✍️', text: 'Analysing handwriting patterns…' },
-    { icon: '⚖️', text: 'Applying legal document rules…' },
-    { icon: '✂️', text: 'Removing crossed-out text…' },
-    { icon: '📝', text: 'Drafting initial transcript…' },
-    { icon: '🔍', text: 'Verifying numbers and proper nouns…' }, // Added for 2-pass accuracy
-    { icon: '✨', text: 'Finalising transcript…' },
+    { icon: '🔍', text: 'Scanning document structure...' },
+    { icon: '✍️', text: 'Analysing handwriting patterns...' },
+    { icon: '⚖️', text: 'Applying legal document rules...' },
+    { icon: '✂️', text: 'Removing crossed-out text...' },
+    { icon: '📝', text: 'Drafting initial transcript...' },
+    { icon: '🔍', text: 'Verifying numbers and proper nouns...' },
+    { icon: '✨', text: 'Finalising transcript...' },
 ];
 
-function ProcessingScreen({ pageCount }) {
+function ProcessingScreen({ pageCount, batchProgress }) {
     const [stepIndex, setStepIndex] = useState(0);
     const [elapsed, setElapsed] = useState(0);
     const startTime = useRef(Date.now());
+    const isChunked = batchProgress && batchProgress.total > 1;
 
     useEffect(() => {
         const stepTimer = setInterval(() => {
@@ -35,8 +36,15 @@ function ProcessingScreen({ pageCount }) {
     }, []);
 
     const step = LOADING_STEPS[stepIndex];
-    // With 2-pass verification it takes a bit longer, so stretch the bar duration
-    const progressPct = Math.min(95, (elapsed / 75) * 100); 
+    // Each batch takes ~60-90s, so scale the progress bar accordingly
+    const totalEstimatedTime = isChunked ? batchProgress.total * 75 : 75;
+    const batchElapsedFraction = isChunked ? ((batchProgress.current - 1) / batchProgress.total) : 0;
+    const batchProgressFraction = Math.min(0.95 / batchProgress?.total || 0.95, (elapsed / 75) * (1 / (batchProgress?.total || 1)));
+    const progressPct = Math.min(95, (batchElapsedFraction + batchProgressFraction) * 100);
+
+    const estimateSecs = isChunked
+        ? `~${Math.round((batchProgress.total * 75) / 60)} min total for ${pageCount} pages`
+        : `Usually completes in 60 to 90 seconds`;
 
     return (
         <div style={{ animation: 'fadeIn 0.35s ease' }}>
@@ -92,11 +100,36 @@ function ProcessingScreen({ pageCount }) {
                     }} />
                 </div>
 
+                {isChunked && (
+                    <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        gap: '6px', marginBottom: '12px'
+                    }}>
+                        <div style={{
+                            background: '#EFF6FF', border: '1px solid #BFDBFE',
+                            borderRadius: '20px', padding: '4px 12px',
+                            fontSize: '12px', fontWeight: '700', color: '#1D4ED8'
+                        }}>
+                            Batch {batchProgress.current} of {batchProgress.total}
+                        </div>
+                        <div style={{
+                            background: '#F3F4F6',
+                            borderRadius: '20px', padding: '4px 10px',
+                            fontSize: '11px', fontWeight: '600', color: '#6B7280'
+                        }}>
+                            {pageCount} pages total
+                        </div>
+                    </div>
+                )}
+
                 <h3 style={{
                     fontSize: '19px', fontWeight: '800', color: '#111827',
                     marginBottom: '6px', letterSpacing: '-0.3px'
                 }}>
-                    Reading {pageCount} {pageCount === 1 ? 'page' : 'pages'}…
+                    {isChunked
+                        ? `Reading pages ${((batchProgress.current - 1) * 5) + 1} to ${Math.min(batchProgress.current * 5, pageCount)}...`
+                        : `Reading ${pageCount} ${pageCount === 1 ? 'page' : 'pages'}...`
+                    }
                 </h3>
 
                 <div style={{
@@ -129,7 +162,7 @@ function ProcessingScreen({ pageCount }) {
                 </div>
 
                 <p style={{ fontSize: '12px', color: '#C4C4C4', margin: 0 }}>
-                    {elapsed < 5 ? 'Starting…' : `${elapsed}s elapsed · Usually completes in ~60-90s`}
+                    {elapsed < 5 ? 'Starting...' : `${elapsed}s elapsed · ${estimateSecs}`}
                 </p>
             </div>
 
@@ -138,7 +171,8 @@ function ProcessingScreen({ pageCount }) {
                 border: '1px solid #E5E7EB', borderRadius: '12px', padding: '14px 18px'
             }}>
                 <p style={{ fontSize: '12px', color: '#6B7280', margin: 0, lineHeight: '1.7' }}>
-                    <strong style={{ color: '#374151' }}>Accuracy Verification:</strong> After the initial transcription, a second AI pass strictly verifies all numbers, dates, and proper nouns against the original image to guarantee legal-grade accuracy.
+                    <strong style={{ color: '#374151' }}>Two-pass accuracy check:</strong> After the initial transcription, a second AI pass verifies all numbers, dates, and proper nouns for legal-grade accuracy.
+                    {isChunked && <><br /><strong style={{ color: '#374151' }}>Large document mode:</strong> Processing in batches of 5 pages to guarantee reliability and avoid timeouts.</>}
                 </p>
             </div>
         </div>
@@ -146,7 +180,7 @@ function ProcessingScreen({ pageCount }) {
 }
 
 function App() {
-    const { state, files, error, transcribedText, sessionId, sessionImages, addFiles, removeFile, transcribe, fetchSession, reset } = useTranscribe();
+    const { state, files, error, transcribedText, sessionId, sessionImages, batchProgress, addFiles, removeFile, transcribe, fetchSession, reset } = useTranscribe();
     const [customPrompt, setCustomPrompt] = useState('');
     const [promptFocused, setPromptFocused] = useState(false);
     
@@ -343,8 +377,8 @@ function App() {
                             </div>
                         )}
 
-                        {/* ── Processing ── */}
-                        {state === 'processing' && <ProcessingScreen pageCount={files.length} />}
+                        {/* Processing */}
+                        {state === 'processing' && <ProcessingScreen pageCount={files.length} batchProgress={batchProgress} />}
 
                         {/* ── Sleeker Fetching Animation ── */}
                         {state === 'fetching_session' && (

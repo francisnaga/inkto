@@ -12,46 +12,132 @@ const IconPayPal = ({ size = 16 }) => (
     </svg>
 );
 
-/* ── Source document thumbnail ── */
-const SourceDocument = ({ url, index }) => {
-    const [error, setError] = useState(false);
-    const isPdf = url.includes('.pdf');
-
-    if (error || isPdf) {
-        return (
-            <div style={{
-                background: '#fff', border: '1px solid #E4E2DC', borderRadius: '12px',
-                padding: '32px 24px', display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center', gap: '12px',
-            }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <FileText size={24} color="#9CA3AF" />
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#4B5563' }}>{isPdf ? 'PDF Document' : 'Unavailable'}</div>
-                    <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '4px' }}>Page {index}</div>
-                </div>
-                {isPdf && (
-                    <a href={url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', fontWeight: '600', color: '#2563EB', textDecoration: 'none', padding: '6px 12px', background: '#EFF6FF', borderRadius: '6px' }}>
-                        View PDF
-                    </a>
-                )}
-            </div>
-        );
-    }
+/* ── Source document filmstrip viewer ── */
+const FilmstripViewer = ({ images }) => {
+    const [selected, setSelected] = useState(0);
+    const [imgError, setImgError] = useState({});
+    const isPdf = images[selected]?.includes('.pdf') || imgError[selected];
 
     return (
-        <div style={{ background: '#fff', border: '1px solid #E4E2DC', borderRadius: '12px', overflow: 'hidden' }}>
-            <div style={{ background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                <img src={url} alt={`Page ${index}`} onError={() => setError(true)}
-                    style={{ maxWidth: '100%', maxHeight: '50vh', objectFit: 'contain', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', borderRadius: '4px' }} />
+        <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+            {/* Thumbnail strip */}
+            <div style={{
+                width: '80px', flexShrink: 0,
+                overflowY: 'auto', borderRight: '1px solid #E4E2DC',
+                background: '#F5F4F0', display: 'flex', flexDirection: 'column',
+                gap: '6px', padding: '10px 6px',
+            }}>
+                {images.map((url, i) => (
+                    <button
+                        key={i}
+                        onClick={() => setSelected(i)}
+                        style={{
+                            width: '68px', height: '88px', flexShrink: 0,
+                            border: i === selected ? '2px solid #1D4ED8' : '2px solid transparent',
+                            borderRadius: '8px', overflow: 'hidden',
+                            cursor: 'pointer', padding: 0, background: '#fff',
+                            boxShadow: i === selected ? '0 0 0 2px rgba(29,78,216,0.15)' : '0 1px 3px rgba(0,0,0,0.08)',
+                            transition: 'border-color 0.15s, box-shadow 0.15s',
+                            position: 'relative',
+                        }}
+                    >
+                        {url.includes('.pdf') || imgError[i] ? (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', background: '#EFF6FF' }}>
+                                <FileText size={18} color="#2563EB" />
+                                <span style={{ fontSize: '8px', fontWeight: '700', color: '#3B82F6' }}>PDF</span>
+                            </div>
+                        ) : (
+                            <img src={url} alt={`p.${i+1}`}
+                                onError={() => setImgError(prev => ({ ...prev, [i]: true }))}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        )}
+                        <div style={{
+                            position: 'absolute', bottom: '3px', left: '50%', transform: 'translateX(-50%)',
+                            background: 'rgba(0,0,0,0.55)', color: '#fff',
+                            fontSize: '8px', fontWeight: '700',
+                            padding: '1px 5px', borderRadius: '4px',
+                            backdropFilter: 'blur(4px)', whiteSpace: 'nowrap'
+                        }}>{i + 1}</div>
+                    </button>
+                ))}
             </div>
-            <div style={{ padding: '10px', background: '#fff', borderTop: '1px solid #F0EFEB', fontSize: '12px', color: '#6B7280', fontWeight: '600', textAlign: 'center' }}>
-                Page {index}
+
+            {/* Main preview */}
+            <div style={{
+                flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+                background: '#FAFAF9',
+            }}>
+                <div style={{
+                    padding: '10px 14px', borderBottom: '1px solid #E4E2DC',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    background: '#fff',
+                }}>
+                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#44403C' }}>
+                        Page {selected + 1} of {images.length}
+                    </span>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                            disabled={selected === 0}
+                            onClick={() => setSelected(s => Math.max(0, s - 1))}
+                            style={{
+                                width: '28px', height: '28px', border: '1px solid #E4E2DC',
+                                borderRadius: '6px', background: '#fff', cursor: selected === 0 ? 'not-allowed' : 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                opacity: selected === 0 ? 0.4 : 1, transition: 'opacity 0.15s'
+                            }}
+                        >
+                            <svg width="10" height="10" viewBox="0 0 10 10"><path d="M7 1L3 5L7 9" stroke="#44403C" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg>
+                        </button>
+                        <button
+                            disabled={selected === images.length - 1}
+                            onClick={() => setSelected(s => Math.min(images.length - 1, s + 1))}
+                            style={{
+                                width: '28px', height: '28px', border: '1px solid #E4E2DC',
+                                borderRadius: '6px', background: '#fff', cursor: selected === images.length - 1 ? 'not-allowed' : 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                opacity: selected === images.length - 1 ? 0.4 : 1, transition: 'opacity 0.15s'
+                            }}
+                        >
+                            <svg width="10" height="10" viewBox="0 0 10 10"><path d="M3 1L7 5L3 9" stroke="#44403C" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div style={{
+                    flex: 1, overflowY: 'auto', display: 'flex',
+                    alignItems: 'flex-start', justifyContent: 'center',
+                    padding: '20px',
+                }}>
+                    {isPdf ? (
+                        <div style={{
+                            display: 'flex', flexDirection: 'column',
+                            alignItems: 'center', justifyContent: 'center',
+                            gap: '12px', padding: '48px', textAlign: 'center',
+                            background: '#fff', borderRadius: '12px',
+                            border: '1px solid #E4E2DC', width: '100%',
+                        }}>
+                            <FileText size={40} color="#9CA3AF" />
+                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#4B5563' }}>PDF Document</div>
+                            <div style={{ fontSize: '12px', color: '#9CA3AF' }}>Page {selected + 1}</div>
+                        </div>
+                    ) : (
+                        <img
+                            src={images[selected]}
+                            alt={`Page ${selected + 1}`}
+                            onError={() => setImgError(prev => ({ ...prev, [selected]: true }))}
+                            style={{
+                                maxWidth: '100%', borderRadius: '8px',
+                                boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+                                display: 'block',
+                            }}
+                        />
+                    )}
+                </div>
             </div>
         </div>
     );
 };
+
 
 /* ── Format picker modal for Inbox ── */
 function InboxModal({ onClose, onSend }) {
@@ -532,9 +618,13 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
         return (
             <div style={{ animation: 'fadeIn 0.4s ease' }} className="desktop-split">
                 {images.length > 0 && (
-                    <div className="left-pane" style={{ background: '#FAFAF9', borderRight: '1px solid #E4E2DC', overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                        <div style={{ fontSize: '13px', fontWeight: '700', color: '#78716C', marginBottom: '-8px' }}>Source Documents</div>
-                        {images.map((img, i) => <SourceDocument key={i} url={img} index={i + 1} />)}
+                    <div className="left-pane" style={{ background: '#FAFAF9', borderRight: '1px solid #E4E2DC', overflow: 'hidden', padding: 0, display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ padding: '12px 16px', borderBottom: '1px solid #E4E2DC', background: '#fff', flexShrink: 0 }}>
+                            <span style={{ fontSize: '12px', fontWeight: '700', color: '#78716C', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Source Documents</span>
+                        </div>
+                        <div style={{ flex: 1, overflow: 'hidden' }}>
+                            <FilmstripViewer images={images} />
+                        </div>
                     </div>
                 )}
 

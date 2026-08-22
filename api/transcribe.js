@@ -34,12 +34,19 @@ CRITICAL TRANSCRIPTION RULES:
 2. INSERTIONS & CARETS: When a writer uses a caret (^), a triangle/chevron mark (∧), or writes text above a line to insert a word, you MUST include that inserted word at the exact correct position in the sentence.
 3. ABSOLUTE ACCURACY: Transcribe all remaining text exactly as written. Preserve all original spelling, capitalisation, punctuation, abbreviations, numbering, and paragraph structure. Do not "fix" grammar if it was written incorrectly.
 4. UNCLEAR WORDS: Do not hallucinate words. If a word is genuinely illegible, transcribe your best logical guess based on the legal context and add [?] immediately after it.
-5. MULTIPLE PAGES: Treat them as sequential pages of one document, separated by: --- Page X ---
+5. PAGE BOUNDARIES: Only transcribe the image(s) provided in the current request. Never repeat earlier pages, never invent missing pages, and never add page headings unless the user explicitly asks for headings.
 6. STRUCTURED OUTPUT: If the document contains numbered or lettered lists, preserve the exact numbering on distinct lines. If the document contains label/value pairs or itemized accounting (e.g. "12mm rods = N163,800"), format them as distinct structured lines so they can be parsed as tables, rather than merging them into prose.
 7. NO CHATTER: Output ONLY the clean, final transcribed text. No preamble, no commentary, no markdown formatting (unless it was in the text).`;
 
 function sanitize(str) {
     return (str || '').replace(/[^\x20-\x7E]/g, '').trim();
+}
+
+function cleanSinglePageText(text) {
+    return (text || '')
+        .replace(/^\s*-{2,}\s*Page\s+\d+\s*-{2,}\s*/i, '')
+        .replace(/^\s*Page\s+\d+\s*:?\s*/i, '')
+        .trim();
 }
 
 // Call Gemini REST API directly — bypasses SDK OAuth bugs
@@ -109,7 +116,7 @@ module.exports = async function handler(req, res) {
             try {
                 const count = await redis.incr(rlKey);
                 if (count === 1) await redis.expire(rlKey, 3600);
-                if (count > 10) return res.status(429).json({ error: 'Too many requests. Please try again in an hour.' });
+                if (count > 120) return res.status(429).json({ error: 'Too many pages processed from this network in the last hour. Please try again later.' });
             } catch (err) { console.error('Rate limit error:', err); }
         }
     }
@@ -138,13 +145,22 @@ module.exports = async function handler(req, res) {
         };
     });
 
+    const startIndex = req.body?.startIndex ? parseInt(req.body.startIndex, 10) : 0;
+    const requestedPageNumber = req.body?.pageNumber ? parseInt(req.body.pageNumber, 10) : startIndex + 1;
+    const totalFilesCount = req.body?.totalFilesCount ? parseInt(req.body.totalFilesCount, 10) : files.length;
+    const totalPages = req.body?.totalPages ? parseInt(req.body.totalPages, 10) : totalFilesCount;
+    const isSinglePageRequest = files.length === 1;
+
     const userInstructions = req.body?.prompt ? `\n\nAdditional instructions: ${req.body.prompt}` : '';
-    parts.push({ text: `Transcribe all pages of this handwritten document.${userInstructions}` });
+    const pageInstruction = isSinglePageRequest
+        ? `Transcribe exactly this one page. It is page ${requestedPageNumber} of ${totalPages}. Output only the text visible on this page. Do not output a page heading. Do not repeat any previous page or continue into any next page.${userInstructions}`
+        : `Transcribe these ${files.length} pages in the exact order provided, starting at page ${requestedPageNumber} of ${totalPages}. Do not repeat pages or invent missing pages.${userInstructions}`;
+    parts.push({ text: pageInstruction });
 
     try {
         // Single-pass transcription — fast, lean, reliable
         // Reserve 50s for the AI call (leaving 10s headroom under Vercel's 60s limit)
-        const finalText = await callGemini(geminiKey, parts, 50000);
+        const finalText = cleanSinglePageText(await callGemini(geminiKey, parts, 50000));
 
         // Detect blank/no-text responses
         const noTextPhrases = [
@@ -165,9 +181,7 @@ module.exports = async function handler(req, res) {
 
         // Save to Supabase
         const sessionId = req.body?.sessionId || nanoid(21);
-        const startIndex = req.body?.startIndex ? parseInt(req.body.startIndex, 10) : 0;
         const isFinalBatch = req.body?.isFinalBatch === 'true';
-        const totalFilesCount = req.body?.totalFilesCount ? parseInt(req.body.totalFilesCount, 10) : files.length;
 
         try {
             const { checkSupabase } = require('./_utils/supabase');
@@ -197,7 +211,10 @@ module.exports = async function handler(req, res) {
             } else if (isFinalBatch) {
                 // Final chunk: combine and save
                 const prev = req.body.fullTranscript || '';
-                const complete = prev ? prev + '\n\n---\n\n' + outputText : outputText;
+                const currentPageBlock = isSinglePageRequest
+                    ? `--- Page ${requestedPageNumber} ---\n${outputText}`
+                    : outputText;
+                const complete = prev ? `${prev}\n\n${currentPageBlock}` : currentPageBlock;
                 const { error: dbErr } = await db.from('documents').insert([{
                     id: sessionId,
                     transcript_text: complete,

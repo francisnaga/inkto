@@ -184,7 +184,7 @@ function CompactList({ files, previews, onRemove, showAll, setShowAll }) {
                     marginLeft: 'auto', fontSize: '11px', color: '#60A5FA', fontWeight: '600',
                     background: 'rgba(37,99,235,0.1)', padding: '2px 8px', borderRadius: '20px'
                 }}>
-                    ~{Math.ceil(files.length / 5)} batches
+                    {files.length} page calls
                 </span>
             </div>
 

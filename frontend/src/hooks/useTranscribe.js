@@ -53,7 +53,10 @@ export function useTranscribe() {
         setError(null);
 
         const generatedSessionId = nanoid(21);
-        const BATCH_SIZE = 5;
+        // Vercel serverless functions have a hard 60s ceiling. Keep each AI call
+        // mapped to exactly one page so long PDFs/images cannot time out as a batch
+        // or let the model merge/repeat pages inside one response.
+        const BATCH_SIZE = 1;
         const totalBatches = Math.ceil(files.length / BATCH_SIZE);
         setBatchProgress({ current: 1, total: totalBatches });
 
@@ -67,10 +70,13 @@ export function useTranscribe() {
                 const batchFiles = files.slice(i * BATCH_SIZE, (i + 1) * BATCH_SIZE);
                 const formData = new FormData();
                 batchFiles.forEach(file => formData.append('files', file));
+                const pageNumber = i + 1;
 
                 if (customPrompt) formData.append('prompt', customPrompt);
                 formData.append('sessionId', generatedSessionId);
                 formData.append('startIndex', String(i * BATCH_SIZE));
+                formData.append('pageNumber', String(pageNumber));
+                formData.append('totalPages', String(files.length));
                 formData.append('isFinalBatch', String(i === totalBatches - 1));
                 formData.append('totalFilesCount', String(files.length));
                 // Pass all previously collected text so the final batch can save a complete record
@@ -93,7 +99,9 @@ export function useTranscribe() {
                     throw new Error(data.error || 'Transcription failed. Please try again.');
                 }
 
-                fullTranscript += (fullTranscript ? '\n\n---\n\n' : '') + data.text;
+                const pageText = (data.text || '').trim();
+                const pageBlock = `--- Page ${pageNumber} ---\n${pageText || '[No legible text found on this page.]'}`;
+                fullTranscript += (fullTranscript ? '\n\n' : '') + pageBlock;
             }
 
             setTranscribedText(fullTranscript);

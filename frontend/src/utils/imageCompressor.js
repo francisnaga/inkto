@@ -1,10 +1,11 @@
 /**
  * Compresses and resizes an image File to reduce memory usage on mobile.
- * Target: max 1200px on longest side, JPEG quality 0.75
- * This prevents "low memory" crashes and keeps payloads under Vercel's 4.5MB limit.
+ * Target: max 1800px on longest side, JPEG quality 0.84.
+ * Each page is uploaded separately, so we can preserve more handwriting detail
+ * while still staying comfortably under serverless request limits.
  */
-export async function compressImage(file, maxDimension = 1200, quality = 0.75) {
-    return new Promise((resolve, reject) => {
+export async function compressImage(file, maxDimension = 1800, quality = 0.84) {
+    return new Promise((resolve) => {
         const img = new Image();
         const objectUrl = URL.createObjectURL(file);
 

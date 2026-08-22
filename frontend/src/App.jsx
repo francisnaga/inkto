@@ -36,8 +36,6 @@ function ProcessingScreen({ pageCount, batchProgress }) {
     }, []);
 
     const step = LOADING_STEPS[stepIndex];
-    // Each batch takes ~60-90s, so scale the progress bar accordingly
-    const totalEstimatedTime = isChunked ? batchProgress.total * 75 : 75;
     const batchElapsedFraction = isChunked ? ((batchProgress.current - 1) / batchProgress.total) : 0;
     const batchProgressFraction = Math.min(0.95 / batchProgress?.total || 0.95, (elapsed / 75) * (1 / (batchProgress?.total || 1)));
     const progressPct = Math.min(95, (batchElapsedFraction + batchProgressFraction) * 100);
@@ -110,7 +108,7 @@ function ProcessingScreen({ pageCount, batchProgress }) {
                             borderRadius: '20px', padding: '4px 12px',
                             fontSize: '12px', fontWeight: '700', color: '#1D4ED8'
                         }}>
-                            Batch {batchProgress.current} of {batchProgress.total}
+                            Page {batchProgress.current} of {batchProgress.total}
                         </div>
                         <div style={{
                             background: '#F3F4F6',
@@ -127,7 +125,7 @@ function ProcessingScreen({ pageCount, batchProgress }) {
                     marginBottom: '6px', letterSpacing: '-0.3px'
                 }}>
                     {isChunked
-                        ? `Reading pages ${((batchProgress.current - 1) * 5) + 1} to ${Math.min(batchProgress.current * 5, pageCount)}...`
+                        ? `Reading page ${batchProgress.current} of ${pageCount}...`
                         : `Reading ${pageCount} ${pageCount === 1 ? 'page' : 'pages'}...`
                     }
                 </h3>
@@ -172,7 +170,7 @@ function ProcessingScreen({ pageCount, batchProgress }) {
             }}>
                 <p style={{ fontSize: '12px', color: '#6B7280', margin: 0, lineHeight: '1.7' }}>
                     <strong style={{ color: '#374151' }}>Two-pass accuracy check:</strong> After the initial transcription, a second AI pass verifies all numbers, dates, and proper nouns for legal-grade accuracy.
-                    {isChunked && <><br /><strong style={{ color: '#374151' }}>Large document mode:</strong> Processing in batches of 5 pages to guarantee reliability and avoid timeouts.</>}
+                    {isChunked && <><br /><strong style={{ color: '#374151' }}>Large document mode:</strong> Processing one page at a time to preserve page order and avoid serverless timeouts.</>}
                 </p>
             </div>
         </div>

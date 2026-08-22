@@ -1,5 +1,4 @@
 const Anthropic = require('@anthropic-ai/sdk');
-const { GoogleGenAI } = require('@google/genai');
 const multer = require('multer');
 const { Redis } = require('@upstash/redis');
 const { nanoid } = require('nanoid');
@@ -78,7 +77,6 @@ async function generateTranscription(provider, apiKey, dataBlocks, userText, pas
         });
         return response.content[0].text;
     } else {
-        const gemini = new GoogleGenAI({ apiKey });
         const parts = [
             ...dataBlocks.map(b => ({ inlineData: { mimeType: b.source.media_type, data: b.source.data } })),
             { text: userText }
@@ -88,15 +86,26 @@ async function generateTranscription(provider, apiKey, dataBlocks, userText, pas
         let lastErr = null;
         for (const model of modelChain) {
             try {
-                const response = await gemini.models.generateContent({
-                    model,
-                    contents: [{ role: 'user', parts }],
-                    config: { systemInstruction: prompt, temperature: 0.1 }
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ role: 'user', parts }],
+                        systemInstruction: { role: 'system', parts: [{ text: prompt }] },
+                        generationConfig: { temperature: 0.1 }
+                    })
                 });
-                return response.text;
+                
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error?.message || JSON.stringify(data));
+                }
+                
+                return data.candidates[0].content.parts[0].text;
             } catch (err) {
                 lastErr = err;
-                console.warn(`Gemini ${model} failed:`, err.message.substring(0, 150));
+                console.warn(`Gemini ${model} REST API failed:`, err.message.substring(0, 150));
                 // Brief pause before trying fallback model
                 await new Promise(r => setTimeout(r, 500));
             }

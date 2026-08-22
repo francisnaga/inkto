@@ -83,8 +83,8 @@ async function generateTranscription(provider, apiKey, dataBlocks, userText, pas
             ...dataBlocks.map(b => ({ inlineData: { mimeType: b.source.media_type, data: b.source.data } })),
             { text: userText }
         ];
-        // Use known-good Gemini 2.0 Flash model with a fallback
-        const modelChain = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+        // Use known-good Gemini 3.7 Flash model with a fallback
+        const modelChain = ['gemini-3.7-flash', 'gemini-3.5-flash-lite'];
         let lastErr = null;
         for (const model of modelChain) {
             try {

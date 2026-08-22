@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { HelpCircle, Sparkles, History as HistoryIcon, ArrowRight } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 import UploadZone from './components/UploadZone';
 import ThumbnailGrid from './components/ThumbnailGrid';
 import OutputBox from './components/OutputBox';
@@ -201,7 +202,12 @@ function App() {
         fetchSession(id);
     };
 
-    if (showLanding) return <LandingPage onGetStarted={handleGetStarted} />;
+    if (showLanding) return (
+        <>
+            <LandingPage onGetStarted={handleGetStarted} />
+            <Analytics />
+        </>
+    );
 
     return (
         <div className={state === 'success' ? 'app-container-desktop' : 'app-container'}>
@@ -382,6 +388,7 @@ function App() {
                     </>
                 )}
             </main>
+            <Analytics />
         </div>
     );
 }

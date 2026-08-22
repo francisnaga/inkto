@@ -1,11 +1,9 @@
-const Anthropic = require('@anthropic-ai/sdk');
 const multer = require('multer');
 const { Redis } = require('@upstash/redis');
 const { nanoid } = require('nanoid');
-const { supabase } = require('./_utils/supabase');
 
 // ---- Redis Setup ----
-const redis = process.env.UPSTASH_REDIS_REST_KV_REST_API_URL 
+const redis = process.env.UPSTASH_REDIS_REST_KV_REST_API_URL
     ? new Redis({ url: process.env.UPSTASH_REDIS_REST_KV_REST_API_URL, token: process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN })
     : null;
 
@@ -28,7 +26,7 @@ function runMiddleware(req, res, fn) {
     });
 }
 
-const SYSTEM_PROMPT_PASS_1 = `You are a world-class legal document transcription AI specialising in messy handwritten Nigerian court documents, affidavits, and police reports. 
+const SYSTEM_PROMPT = `You are a world-class legal document transcription AI specialising in messy handwritten Nigerian court documents, affidavits, and police reports.
 Your sole purpose is to produce a flawless, 100% accurate text transcription of the provided image(s).
 
 CRITICAL TRANSCRIPTION RULES:
@@ -40,79 +38,59 @@ CRITICAL TRANSCRIPTION RULES:
 6. STRUCTURED OUTPUT: If the document contains numbered or lettered lists, preserve the exact numbering on distinct lines. If the document contains label/value pairs or itemized accounting (e.g. "12mm rods = N163,800"), format them as distinct structured lines so they can be parsed as tables, rather than merging them into prose.
 7. NO CHATTER: Output ONLY the clean, final transcribed text. No preamble, no commentary, no markdown formatting (unless it was in the text).`;
 
-const SYSTEM_PROMPT_PASS_2 = `You are a strict accuracy verification AI. 
-You are given the original handwritten images AND a draft transcription.
-Your task is to re-check EVERY number, amount, date, and proper noun in the draft against the images.
-Correct any mismatches. Ensure absolute perfection for financial and legal figures.
-If the document contains lists or itemized accounts, ensure they remain distinctly formatted on separate lines.
-Return ONLY the final corrected transcript text. No preamble or commentary.`;
-
 function sanitize(str) {
     return (str || '').replace(/[^\x20-\x7E]/g, '').trim();
 }
 
-// Wraps a promise with a timeout that rejects after ms milliseconds
-function withTimeout(promise, ms, label) {
-    return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
-        promise.then(
-            val => { clearTimeout(timer); resolve(val); },
-            err => { clearTimeout(timer); reject(err); }
-        );
-    });
-}
+// Call Gemini REST API directly — bypasses SDK OAuth bugs
+async function callGemini(apiKey, parts, timeoutMs) {
+    // Model chain: try primary first, fall back to lite
+    const models = ['gemini-3.5-flash', 'gemini-3.5-flash-lite'];
 
-// Generate with specific provider
-async function generateTranscription(provider, apiKey, dataBlocks, userText, pass) {
-    const prompt = pass === 2 ? SYSTEM_PROMPT_PASS_2 : SYSTEM_PROMPT_PASS_1;
-    
-    if (provider === 'anthropic') {
-        const anthropic = new Anthropic.default({ apiKey });
-        const response = await anthropic.messages.create({
-            model: 'claude-3-5-sonnet-20241022',
-            max_tokens: 8192,
-            temperature: 0.1,
-            system: prompt,
-            messages: [{ role: 'user', content: [...dataBlocks, { type: 'text', text: userText }] }]
-        });
-        return response.content[0].text;
-    } else {
-        const parts = [
-            ...dataBlocks.map(b => ({ inlineData: { mimeType: b.source.media_type, data: b.source.data } })),
-            { text: userText }
-        ];
-        // Use known-good Gemini 3.7 Flash model with a fallback
-        const modelChain = ['gemini-3.7-flash', 'gemini-3.5-flash-lite'];
-        let lastErr = null;
-        for (const model of modelChain) {
-            try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    signal: AbortSignal.timeout(26000), // Prevent hanging on overloaded models
-                    body: JSON.stringify({
-                        contents: [{ role: 'user', parts }],
-                        systemInstruction: { role: 'system', parts: [{ text: prompt }] },
-                        generationConfig: { temperature: 0.1 }
-                    })
-                });
-                
-                const data = await res.json();
-                if (!res.ok) {
-                    throw new Error(data.error?.message || JSON.stringify(data));
+    for (const model of models) {
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal,
+                body: JSON.stringify({
+                    contents: [{ role: 'user', parts }],
+                    systemInstruction: { role: 'system', parts: [{ text: SYSTEM_PROMPT }] },
+                    generationConfig: { temperature: 0.1, maxOutputTokens: 8192 }
+                })
+            });
+            clearTimeout(timer);
+
+            const data = await res.json();
+            if (!res.ok) {
+                const msg = data.error?.message || JSON.stringify(data);
+                console.warn(`[Inkto] Gemini ${model} error ${res.status}: ${msg.substring(0, 200)}`);
+                // 503 = overloaded, try next model. 401/403 = bad key, stop trying.
+                if (res.status === 401 || res.status === 403) {
+                    throw new Error(`Gemini auth error: ${msg}`);
                 }
-                
-                return data.candidates[0].content.parts[0].text;
-            } catch (err) {
-                lastErr = err;
-                console.warn(`Gemini ${model} REST API failed:`, err.message.substring(0, 150));
-                // Brief pause before trying fallback model
-                await new Promise(r => setTimeout(r, 500));
+                continue; // try next model
             }
+
+            const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!text) throw new Error('Gemini returned an empty response');
+            console.log(`[Inkto] Success with ${model}`);
+            return text;
+
+        } catch (err) {
+            const isAbort = err.name === 'AbortError';
+            console.warn(`[Inkto] Gemini ${model} ${isAbort ? 'timed out' : 'failed'}: ${err.message?.substring(0, 150)}`);
+            // If auth error, don't bother trying next model
+            if (err.message?.includes('auth error')) throw err;
+            // Otherwise try next model
         }
-        throw lastErr || new Error('All Gemini models failed');
     }
+
+    throw new Error('All Gemini models unavailable. Please try again in a moment.');
 }
 
 module.exports = async function handler(req, res) {
@@ -125,7 +103,7 @@ module.exports = async function handler(req, res) {
 
     // ---- IP Rate Limiting ----
     if (redis) {
-        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+        const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
         if (ip !== 'unknown') {
             const rlKey = `rate_limit:transcribe:${ip}`;
             try {
@@ -136,7 +114,7 @@ module.exports = async function handler(req, res) {
         }
     }
 
-    try { await runMiddleware(req, res, upload.array('files', 30)); } 
+    try { await runMiddleware(req, res, upload.array('files', 30)); }
     catch (err) { return res.status(400).json({ error: `Upload error: ${err.message}` }); }
 
     const files = req.files;
@@ -144,43 +122,31 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'No valid files received.' });
     }
 
-    const dataBlocks = files.map(file => {
-        let mediaType = file.mimetype === 'image/jpg' ? 'image/jpeg' : file.mimetype;
+    const geminiKey = sanitize(process.env.GEMINI_API_KEY);
+    if (!geminiKey) {
+        return res.status(500).json({ error: 'Service is not configured. Please contact support.' });
+    }
+
+    // Build image parts for Gemini
+    const parts = files.map(file => {
+        let mimeType = file.mimetype === 'image/jpg' ? 'image/jpeg' : file.mimetype;
         return {
-            type: mediaType === 'application/pdf' ? 'document' : 'image',
-            source: { type: 'base64', media_type: mediaType, data: file.buffer.toString('base64') }
+            inlineData: {
+                mimeType,
+                data: file.buffer.toString('base64')
+            }
         };
     });
 
-    const userInstructions = req.body && req.body.prompt ? `Additional instructions: ${req.body.prompt}` : '';
-    const pass1UserText = `Transcribe all pages of this handwritten document. ${userInstructions}`;
-
-    const anthropicKey = sanitize(process.env.ANTHROPIC_API_KEY);
-    const geminiKey = sanitize(process.env.GEMINI_API_KEY);
-
-    if (!anthropicKey && !geminiKey) {
-        return res.status(500).json({ error: 'No API keys configured on the server.' });
-    }
+    const userInstructions = req.body?.prompt ? `\n\nAdditional instructions: ${req.body.prompt}` : '';
+    parts.push({ text: `Transcribe all pages of this handwritten document.${userInstructions}` });
 
     try {
-        let draftText = '';
-        const providers = [];
-        
-        // PASS 1
-        if (anthropicKey) providers.push(withTimeout(generateTranscription('anthropic', anthropicKey, dataBlocks, pass1UserText, 1), 45000, 'Anthropic'));
-        if (geminiKey) providers.push(withTimeout(generateTranscription('gemini', geminiKey, dataBlocks, pass1UserText, 1), 55000, 'Gemini'));
-        
-        draftText = await Promise.any(providers);
-        
-        // PASS 2 (Accuracy Verification)
-        const pass2UserText = `Here is the draft transcript:\n\n---\n${draftText}\n---\n\nPlease verify and correct it according to the instructions.`;
-        const providersPass2 = [];
-        if (anthropicKey) providersPass2.push(withTimeout(generateTranscription('anthropic', anthropicKey, dataBlocks, pass2UserText, 2), 45000, 'Anthropic'));
-        if (geminiKey) providersPass2.push(withTimeout(generateTranscription('gemini', geminiKey, dataBlocks, pass2UserText, 2), 55000, 'Gemini'));
-        
-        let finalText = await Promise.any(providersPass2);
+        // Single-pass transcription — fast, lean, reliable
+        // Reserve 50s for the AI call (leaving 10s headroom under Vercel's 60s limit)
+        const finalText = await callGemini(geminiKey, parts, 50000);
 
-        // Detect when AI says there's no handwritten text and normalise it
+        // Detect blank/no-text responses
         const noTextPhrases = [
             'does not contain any handwritten',
             'no handwritten text',
@@ -193,62 +159,64 @@ module.exports = async function handler(req, res) {
             'no written text'
         ];
         const isNoText = finalText.length < 400 && noTextPhrases.some(p => finalText.toLowerCase().includes(p));
-        if (isNoText) {
-            finalText = '[No handwritten text found in this document. Please upload a clear photo of a handwritten page.]';
+        const outputText = isNoText
+            ? '[No handwritten text found in this document. Please upload a clear photo of a handwritten page.]'
+            : finalText;
+
+        // Save to Supabase
+        const sessionId = req.body?.sessionId || nanoid(21);
+        const startIndex = req.body?.startIndex ? parseInt(req.body.startIndex, 10) : 0;
+        const isFinalBatch = req.body?.isFinalBatch === 'true';
+        const totalFilesCount = req.body?.totalFilesCount ? parseInt(req.body.totalFilesCount, 10) : files.length;
+
+        try {
+            const { checkSupabase } = require('./_utils/supabase');
+            const db = checkSupabase();
+
+            // Upload images
+            await Promise.all(files.map(async (file, index) => {
+                const ext = file.mimetype === 'image/jpeg' ? 'jpg'
+                    : file.mimetype === 'image/png' ? 'png'
+                    : file.mimetype === 'application/pdf' ? 'pdf' : 'bin';
+                const filePath = `${sessionId}/${startIndex + index}.${ext}`;
+                await db.storage.from('inkto-images').upload(filePath, file.buffer, {
+                    contentType: file.mimetype,
+                    upsert: true
+                });
+            }));
+
+            // Save transcript
+            if (!req.body?.sessionId) {
+                // Non-chunked: save immediately
+                const { error: dbErr } = await db.from('documents').insert([{
+                    id: sessionId,
+                    transcript_text: outputText,
+                    source_image_count: files.length
+                }]);
+                if (dbErr) console.error('Supabase insert error:', dbErr);
+            } else if (isFinalBatch) {
+                // Final chunk: combine and save
+                const prev = req.body.fullTranscript || '';
+                const complete = prev ? prev + '\n\n---\n\n' + outputText : outputText;
+                const { error: dbErr } = await db.from('documents').insert([{
+                    id: sessionId,
+                    transcript_text: complete,
+                    source_image_count: totalFilesCount
+                }]);
+                if (dbErr) console.error('Supabase chunked insert error:', dbErr);
+            }
+        } catch (dbErr) {
+            // DB failure should not kill the response — user still gets their transcript
+            console.error('Supabase error (non-fatal):', dbErr.message);
         }
 
-        // Upload images to Supabase Storage and Save document to DB
-        const sessionId = (req.body && req.body.sessionId) ? req.body.sessionId : nanoid(21);
-        const startIndex = (req.body && req.body.startIndex) ? parseInt(req.body.startIndex, 10) : 0;
-        const isFinalBatch = (req.body && req.body.isFinalBatch === 'true');
-        const totalFilesCount = (req.body && req.body.totalFilesCount) ? parseInt(req.body.totalFilesCount, 10) : files.length;
-        
-        const db = require('./_utils/supabase').checkSupabase();
-        
-        // Upload images asynchronously
-        await Promise.all(files.map(async (file, index) => {
-            const ext = file.mimetype === 'image/jpeg' ? 'jpg' : 
-                        file.mimetype === 'image/png' ? 'png' : 
-                        file.mimetype === 'application/pdf' ? 'pdf' : 'bin';
-            const filePath = `${sessionId}/${startIndex + index}.${ext}`;
-            
-            await db.storage.from('inkto-images').upload(filePath, file.buffer, {
-                contentType: file.mimetype,
-                upsert: true
-            });
-        }));
+        return res.json({ success: true, text: outputText, sessionId });
 
-        // In a chunked scenario, we only want to save the complete document on the final batch.
-        if (!req.body || !req.body.sessionId) {
-            // Legacy/non-chunked request
-            const { error: dbError } = await db.from('documents').insert([{
-                id: sessionId,
-                transcript_text: finalText,
-                source_image_count: files.length
-            }]);
-            if (dbError) console.error('Failed to save to Supabase Postgres:', dbError);
-        } else if (isFinalBatch) {
-            // Chunked request: fullTranscript = all previous batches, finalText = this batch
-            const previousText = req.body.fullTranscript || '';
-            const completeTranscript = previousText
-                ? previousText + '\n\n---\n\n' + finalText
-                : finalText;
-            const { error: dbError } = await db.from('documents').insert([{
-                id: sessionId,
-                transcript_text: completeTranscript,
-                source_image_count: totalFilesCount
-            }]);
-            if (dbError) console.error('Failed to save chunked transcript to Postgres:', dbError);
-        }
-
-        return res.json({ success: true, text: finalText, sessionId });
     } catch (err) {
-        console.error('Transcription failed:', err.errors || err.message);
+        console.error('[Inkto] Transcription failed:', err.message);
         return res.status(500).json({
-            error: 'The transcription service is currently busy. Please try again in a few seconds.',
-            details: err.message,
-            stack: err.stack,
-            aggregateErrors: err.errors ? err.errors.map(e => e.message) : undefined
+            error: 'Transcription failed. Please try again.',
+            details: err.message
         });
     }
 };

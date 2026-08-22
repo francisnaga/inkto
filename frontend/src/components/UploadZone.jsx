@@ -33,7 +33,14 @@ export default function UploadZone({ onFilesSelected }) {
                 } else {
                     finalFiles.push(await compressImage(file).catch(() => file));
                 }
-            } catch { finalFiles.push(file); }
+            } catch (err) {
+                console.error("File processing error:", err);
+                if (isPdf) {
+                    rejected.push(`${file.name} (PDF processing failed)`);
+                } else {
+                    finalFiles.push(file);
+                }
+            }
         }
 
         if (rejected.length > 0) setRejectedFiles(rejected);

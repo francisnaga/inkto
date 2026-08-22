@@ -1,7 +1,8 @@
 import * as pdfjsLib from 'pdfjs-dist';
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
-// Set worker path to standard CDN or local path
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Use local worker bundled by Vite
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 export async function convertPdfToImages(file, onProgress) {
     const arrayBuffer = await file.arrayBuffer();
@@ -11,7 +12,11 @@ export async function convertPdfToImages(file, onProgress) {
     
     for (let i = 1; i <= pdf.numPages; i++) {
         if (onProgress) onProgress(i, pdf.numPages);
+        // Yield to the event loop so the UI can update the progress text
+        await new Promise(resolve => setTimeout(resolve, 10));
+        
         const page = await pdf.getPage(i);
+
         
         // Use a standard scale
         const viewport = page.getViewport({ scale: 2.0 });

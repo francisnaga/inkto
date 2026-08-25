@@ -1,10 +1,12 @@
-/* eslint-disable */
+﻿/* eslint-disable */
 // @ts-nocheck
 'use client';
+import dynamic from 'next/dynamic';
+const RichEditor = dynamic(() => import('./rich-editor'), { ssr: false });
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Copy, Check, RotateCcw, FileText, FileDown, ChevronUp, Mail, Pen, X, File } from 'lucide-react';
+import { Copy, Check, RotateCcw, FileText, FileDown, ChevronUp, Mail, Pen, X, File, Image as ImageIcon } from 'lucide-react';
 
-/* ── Inline SVGs ── */
+/* â”€â”€ Inline SVGs â”€â”€ */
 const IconPaystack = ({ size = 16 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><path d="M4 17h6v4H4v-4zM14 17h6v4h-6v-4zM4 10h6v4H4v-4zM14 10h6v4h-6v-4zM4 3h6v4H4V3z" /></svg>
 );
@@ -15,7 +17,7 @@ const IconPayPal = ({ size = 16 }) => (
     </svg>
 );
 
-/* ── Source document filmstrip viewer ── */
+/* â”€â”€ Source document filmstrip viewer â”€â”€ */
 const FilmstripViewer = ({ images }) => {
     const [selected, setSelected] = useState(0);
     const [imgError, setImgError] = useState({});
@@ -142,7 +144,7 @@ const FilmstripViewer = ({ images }) => {
 };
 
 
-/* ── Format picker modal for Inbox ── */
+/* â”€â”€ Format picker modal for Inbox â”€â”€ */
 function InboxModal({ onClose, onSend }) {
     const [selected, setSelected] = useState({ docx: true, pdf: false });
 
@@ -260,7 +262,7 @@ function InboxModal({ onClose, onSend }) {
     );
 }
 
-/* ── Download helper (works on mobile too) ── */
+/* â”€â”€ Download helper (works on mobile too) â”€â”€ */
 async function downloadFile(endpoint, text, filename, fallbackMsg) {
     try {
         const res = await fetch(endpoint, {
@@ -289,7 +291,7 @@ async function downloadFile(endpoint, text, filename, fallbackMsg) {
     }
 }
 
-/* ── Main component ── */
+/* â”€â”€ Main component â”€â”€ */
 export default function OutputBox({ text, sessionId, images = [], onReset }) {
     const [value, setValue] = useState(text);
     const [copied, setCopied] = useState(false);
@@ -403,7 +405,7 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
 
     const scrollToTop = () => textareaRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
 
-    /* ── Email row ── */
+    /* â”€â”€ Email row â”€â”€ */
     const emailRow = (
         <div style={{
             background: '#fff', border: '1px solid #E4E2DC',
@@ -486,7 +488,7 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
         </div>
     );
 
-    /* ── Toolbar ── */
+    /* â”€â”€ Toolbar â”€â”€ */
     const toolbar = (
         <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -558,7 +560,7 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
         </div>
     );
 
-    /* ── Tip banner ── */
+    /* â”€â”€ Tip banner â”€â”€ */
     const tipBanner = (
         <div style={{ marginTop: '8px', marginBottom: '14px', background: '#FFFBEB', border: '1px solid #FEF3C7', borderRadius: '10px', padding: '16px', textAlign: 'center' }}>
             <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#92400E', lineHeight: '1.5', fontWeight: '500' }}>
@@ -575,7 +577,7 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
         </div>
     );
 
-    /* ── Shared textarea styles ── */
+    /* â”€â”€ Shared textarea styles â”€â”€ */
     const textareaStyleMobile = {
         display: 'block', width: '100%', height: isNoText ? 'auto' : '380px',
         minHeight: isNoText ? '80px' : undefined,
@@ -591,14 +593,14 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
     const textareaStyleDesktop = {
         ...textareaStyleMobile,
         height: isNoText ? 'auto' : undefined,
-        minHeight: isNoText ? '80px' : '60vh',
+        minHeight: isNoText ? '80px' : '65vh',
         padding: '40px 48px',
         fontSize: isNoText ? '15px' : '18px',
         lineHeight: '2.1',
         resize: isNoText ? 'none' : 'vertical',
     };
 
-    /* ── Status badge ── */
+    /* â”€â”€ Status badge â”€â”€ */
     const statusBadge = (
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
             <div style={{
@@ -606,7 +608,7 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
                 background: isNoText ? '#F59E0B' : '#15803D', color: '#fff',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '800',
             }}>
-                {isNoText ? '!' : '✓'}
+                {isNoText ? '!' : 'âœ“'}
             </div>
             <span style={{ fontSize: '13px', fontWeight: '700', color: '#44403C' }}>
                 {isNoText ? 'No text found' : 'Transcription complete'}
@@ -616,7 +618,7 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
         </div>
     );
 
-    /* ── Desktop layout ── */
+    /* â”€â”€ Desktop layout â”€â”€ */
     if (isDesktop) {
         return (
             <div style={{ animation: 'fadeIn 0.4s ease' }} className="desktop-split">
@@ -639,14 +641,10 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
                         <div style={{ background: '#fff', border: '1px solid #E4E2DC', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: '10px' }}>
                             {toolbar}
                             <div style={{ position: 'relative' }}>
-                                <textarea
-                                    ref={textareaRef}
-                                    value={value}
+                                <RichEditor
+                                    content={value}
                                     onChange={handleChange}
-                                    onScroll={e => setShowScrollTop(e.target.scrollTop > 160)}
-                                    spellCheck={false}
                                     readOnly={!isEditing || isNoText}
-                                    onClick={() => { if (!isEditing && !isNoText) { setIsEditing(true); setTimeout(() => textareaRef.current?.focus(), 50); } }}
                                     style={textareaStyleDesktop}
                                 />
                                 {showScrollTop && (
@@ -672,7 +670,7 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
         );
     }
 
-    /* ── Mobile layout ── */
+    /* â”€â”€ Mobile layout â”€â”€ */
     return (
         <div style={{ animation: 'fadeIn 0.4s ease' }}>
             {statusBadge}
@@ -681,16 +679,12 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
             <div style={{ background: '#fff', border: '1px solid #E4E2DC', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: '10px' }}>
                 {toolbar}
                 <div style={{ position: 'relative' }}>
-                    <textarea
-                        ref={textareaRef}
-                        value={value}
-                        onChange={handleChange}
-                        onScroll={e => setShowScrollTop(e.target.scrollTop > 160)}
-                        spellCheck={false}
-                        readOnly={!isEditing || isNoText}
-                        onClick={() => { if (!isEditing && !isNoText) { setIsEditing(true); setTimeout(() => textareaRef.current?.focus(), 50); } }}
-                        style={textareaStyleMobile}
-                    />
+                    <RichEditor
+                                    content={value}
+                                    onChange={handleChange}
+                                    readOnly={!isEditing || isNoText}
+                                    style={textareaStyleMobile}
+                                />
                     {showScrollTop && (
                         <button onClick={scrollToTop} style={{ position: 'absolute', bottom: '12px', right: '12px', width: '32px', height: '32px', background: 'rgba(28,25,23,0.65)', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
                             <ChevronUp size={15} color="white" />
@@ -711,3 +705,6 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
         </div>
     );
 }
+
+
+

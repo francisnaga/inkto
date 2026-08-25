@@ -24,7 +24,7 @@ export default function AppPage() {
   }, []);
 
   // Called when user taps "Save as PDF" inside scanner
-  const handleScanComplete = useCallback((pages: File[], pdfBlob: Blob) => {
+  const handleScanComplete = useCallback(async (pages: File[], pdfBlob: Blob) => {
     setShowScanner(false);
     // Revoke any old URL
     if (savedPdfUrl) URL.revokeObjectURL(savedPdfUrl);
@@ -35,6 +35,19 @@ export default function AppPage() {
     // Trigger browser download immediately
     const a = document.createElement('a');
     a.href = url; a.download = name; a.click();
+
+    // Save to cloud history (Phase 1 Requirement)
+    try {
+      const formData = new FormData();
+      formData.append('file', pdfBlob, name);
+      formData.append('title', name);
+      await fetch('/api/save-scan', {
+        method: 'POST',
+        body: formData
+      });
+    } catch (e) {
+      console.error('Failed to sync scan to history:', e);
+    }
   }, [savedPdfUrl]);
 
   // Called when user taps "Convert to Text" inside scanner
@@ -152,3 +165,4 @@ export default function AppPage() {
     </>
   );
 }
+

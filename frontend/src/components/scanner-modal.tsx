@@ -141,13 +141,33 @@ export default function ScannerModal({ onScanComplete, onConvertToText, onClose 
   useEffect(() => {
     let dead = false;
     (async () => {
+      // 1. Load OpenCV.js
+      await loadScript('https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.9.0-release.2/dist/opencv.min.js');
+      
+      // 2. Wait for cv.Mat (OpenCV.js runtime initialized)
+      await new Promise<void>(res => {
+        const check = () => {
+          if (window.cv && window.cv.Mat) {
+            res();
+          } else {
+            setTimeout(check, 100);
+          }
+        };
+        check();
+      });
+
+      if (dead) return;
+
+      // 3. Load jscanify and jspdf
       await loadScript('https://unpkg.com/jscanify@1.3.1/src/jscanify.js');
       await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-      await Promise.race([
-        new Promise<void>(res => { const t = setInterval(() => { if (window.cv?.Mat) { clearInterval(t); res(); } }, 200); }),
-        new Promise<void>(res => setTimeout(res, 10000)),
-      ]);
-      if (!dead) { if (window.jscanify) scannerRef.current = new window.jscanify(); setScannerReady(true); }
+
+      if (!dead) {
+        if (window.jscanify) {
+          scannerRef.current = new window.jscanify();
+        }
+        setScannerReady(true);
+      }
     })();
     return () => { dead = true; };
   }, []);
@@ -189,11 +209,29 @@ export default function ScannerModal({ onScanComplete, onConvertToText, onClose 
       try {
         const contour = scannerRef.current.findPaperContour(tmp);
         if (contour && !contour.empty?.()) {
-          const pts: Pt[] = scannerRef.current.getCornerPoints(contour); contour.delete?.();
-          if (pts?.length === 4) { lastQuadRef.current = sortCorners(pts); setDocDetected(true); }
-          else { lastQuadRef.current = null; setDocDetected(false); }
-        } else { contour?.delete?.(); lastQuadRef.current = null; setDocDetected(false); }
-      } catch { lastQuadRef.current = null; setDocDetected(false); }
+          const cornersObj = scannerRef.current.getCornerPoints(contour);
+          contour.delete?.();
+          if (cornersObj && cornersObj.topLeftCorner) {
+            lastQuadRef.current = [
+              cornersObj.topLeftCorner,
+              cornersObj.topRightCorner,
+              cornersObj.bottomRightCorner,
+              cornersObj.bottomLeftCorner
+            ];
+            setDocDetected(true);
+          } else {
+            lastQuadRef.current = null;
+            setDocDetected(false);
+          }
+        } else {
+          contour?.delete?.();
+          lastQuadRef.current = null;
+          setDocDetected(false);
+        }
+      } catch (err) {
+        lastQuadRef.current = null;
+        setDocDetected(false);
+      }
     }, 250);
     detIntRef.current = id;
     return () => clearInterval(id);
@@ -291,8 +329,24 @@ export default function ScannerModal({ onScanComplete, onConvertToText, onClose 
     if (!src || !corners) return;
     setProcessing(true); setProcMsg('Applying perspective correction…'); await new Promise(r => setTimeout(r, 40));
     let corrected: HTMLCanvasElement;
-    try { corrected = window.cv?.Mat ? perspectiveWarp(src, corners) : (scannerRef.current?.extractPaper(src, src.width, src.height) ?? src); }
-    catch { corrected = src; }
+    try {
+      if (scannerRef.current) {
+        const [tl, tr, br, bl] = corners;
+        const { w, h } = quadSize(corners);
+        corrected = scannerRef.current.extractPaper(src, w, h, {
+          topLeftCorner: tl,
+          topRightCorner: tr,
+          bottomRightCorner: br,
+          bottomLeftCorner: bl
+        });
+        if (!corrected) corrected = src;
+      } else {
+        corrected = src;
+      }
+    } catch (err) {
+      console.error("extractPaper failed:", err);
+      corrected = src;
+    }
     baseRef.current = corrected;
     setProcMsg('Enhancing image…'); await new Promise(r => setTimeout(r, 40));
     const enhanced = enhance(corrected, 'auto'); setEnhanceMode('auto');

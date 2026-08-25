@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import {
-  Clock, FileText, ScanLine, Search, Trash2, Pencil, Check, X, ExternalLink,
+  Clock, FileText, ScanLine, Search, Trash2, Pencil, Check, X, ExternalLink, Loader2,
 } from 'lucide-react';
 
 interface HistoryEntry {
@@ -72,7 +72,27 @@ export default function HistoryPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [convertingId, setConvertingId] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleConvertScan = async (entry: HistoryEntry) => {
+    if (!entry.fileUrl) return;
+    setConvertingId(entry.id);
+    try {
+      const res = await fetch('/api/transcribe-past', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileUrl: entry.fileUrl, title: entry.title }),
+        credentials: 'include'
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Conversion failed');
+      window.location.href = `/app?doc=${data.id}`;
+    } catch (e: any) {
+      alert(e.message || 'Could not convert scan. Please try again.');
+      setConvertingId(null);
+    }
+  };
 
   const fetchHistory = useCallback(async (q = '') => {
     setFetching(true);
@@ -284,6 +304,24 @@ export default function HistoryPage() {
                           <ExternalLink className="w-3 h-3" /> View PDF
                         </Button>
                       </a>
+                    )}
+                    {entry.type === 'scan' && entry.fileUrl && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleConvertScan(entry)}
+                        disabled={convertingId !== null}
+                        className="flex-1 h-8 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-medium hover:text-white"
+                      >
+                        {convertingId === entry.id ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin" /> Converting…
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="w-3 h-3" /> Convert to Text
+                          </>
+                        )}
+                      </Button>
                     )}
                   </div>
                 )}

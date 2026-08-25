@@ -34,6 +34,7 @@ module.exports = async function handler(req, res) {
         case 'send-otp': return require('../backend/send-otp.js')(req, res);
         case 'session': return require('../backend/session.js')(req, res);
         case 'transcribe': return require('../backend/transcribe.js')(req, res);
+        case 'transcribe-past': return require('../backend/transcribe-past.js')(req, res);
         case 'user-status': return require('../backend/user-status.js')(req, res);
         case 'user-templates': return require('../backend/user-templates.js')(req, res);
         case 'verify': return require('../backend/verify.js')(req, res);

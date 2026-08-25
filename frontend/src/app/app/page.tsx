@@ -1,6 +1,6 @@
 'use client';
 
-import { Camera, Mic, X, Download, Loader2 } from 'lucide-react';
+import { Camera, Mic, X, Download, Loader2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranscribe } from '@/hooks/useTranscribe';
 import { useState, useEffect, useCallback, Suspense } from 'react';
@@ -170,39 +170,49 @@ function AppPageContent() {
           </p>
         </header>
 
-        <div className="flex-1 flex flex-col items-center justify-center gap-6 mb-12">
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 w-full max-w-sm mx-auto px-4 mb-8">
 
-          {/* Primary: Scan button */}
-          {cameraSupported ? (
-            <button
-              onClick={() => setShowScanner(true)}
-              className="w-48 h-48 rounded-[2rem] flex flex-col items-center justify-center gap-4 bg-primary text-primary-foreground shadow-lg hover:shadow-xl active:scale-95 transition-all"
-            >
-              <Camera className="w-16 h-16" strokeWidth={1.5} />
-              <span className="text-xl font-semibold">Scan</span>
-            </button>
-          ) : (
-            <label htmlFor="file-upload-camera"
-              className="w-48 h-48 rounded-[2rem] flex flex-col items-center justify-center gap-4 bg-primary text-primary-foreground shadow-lg hover:shadow-xl active:scale-95 transition-all cursor-pointer">
-              <Camera className="w-16 h-16" strokeWidth={1.5} />
-              <span className="text-xl font-semibold">Scan</span>
-            </label>
-          )}
+          {/* Action 1: Scan Document (PDF Scan) */}
+          <button
+            onClick={() => setShowScanner(true)}
+            className="w-full p-5 bg-card border rounded-2xl flex items-center gap-4 hover:bg-muted/40 active:scale-[0.99] transition-all text-left shadow-sm"
+          >
+            <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center shrink-0">
+              <Camera className="w-6 h-6 text-blue-600 dark:text-blue-400" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="font-bold text-base text-foreground">Scan Document to PDF</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Crop, flatten, enhance, and save as PDF</p>
+            </div>
+          </button>
 
-          {/* Secondary: upload existing */}
-          <label htmlFor="file-upload" className="text-sm text-muted-foreground underline underline-offset-2 cursor-pointer hover:text-foreground transition-colors">
-            or upload existing file / PDF
+          {/* Action 2: Convert Handwriting / Image to Text */}
+          <label
+            htmlFor="file-upload"
+            className="w-full p-5 bg-card border rounded-2xl flex items-center gap-4 hover:bg-muted/40 active:scale-[0.99] transition-all text-left shadow-sm cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center shrink-0">
+              <FileText className="w-6 h-6 text-amber-600 dark:text-amber-400" strokeWidth={1.5} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-base text-foreground">Convert Handwriting to Text</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Translate raw photos, galleries, or PDFs to Word</p>
+            </div>
           </label>
 
-          {/* Dictate */}
-          <Button
-            variant="outline"
+          {/* Action 3: Voice Dictation */}
+          <button
             onClick={() => setShowDictate(true)}
-            className="w-32 h-32 rounded-[1.5rem] flex flex-col items-center justify-center gap-3 border-2 hover:bg-muted active:scale-95 transition-all"
+            className="w-full p-5 bg-card border rounded-2xl flex items-center gap-4 hover:bg-muted/40 active:scale-[0.99] transition-all text-left shadow-sm"
           >
-            <Mic className="w-10 h-10 text-primary" strokeWidth={1.5} />
-            <span className="text-sm font-semibold">Dictate</span>
-          </Button>
+            <div className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/50 flex items-center justify-center shrink-0">
+              <Mic className="w-6 h-6 text-green-600 dark:text-green-400" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="font-bold text-base text-foreground">Voice Dictation</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Dictate voice note and transcribe with Gemini</p>
+            </div>
+          </button>
         </div>
 
         {/* Last PDF saved banner */}

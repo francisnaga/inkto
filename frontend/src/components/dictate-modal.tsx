@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import Link from 'next/link';
 import { X, Mic, Square, RefreshCw, Loader2, CloudLightning } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { saveOfflineRecording } from '@/lib/indexeddb';
@@ -236,9 +237,15 @@ export default function DictateModal({ onClose, onTranscribeComplete }: DictateM
           )}
 
           {status === 'error' && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center', width: '100%' }}>
               <p style={{ fontSize: 13, color: '#DC2626', fontWeight: 600, margin: 0 }}>{errorMessage || 'An error occurred.'}</p>
-              <Button onClick={startRecording} size="sm" className="gap-1.5"><RefreshCw size={14} /> Retry</Button>
+              {errorMessage?.toLowerCase().includes('sign in') ? (
+                <Link href="/login" className="w-full">
+                  <Button size="sm" className="w-full">Sign In</Button>
+                </Link>
+              ) : (
+                <Button onClick={startRecording} size="sm" className="gap-1.5"><RefreshCw size={14} /> Retry</Button>
+              )}
             </div>
           )}
         </div>

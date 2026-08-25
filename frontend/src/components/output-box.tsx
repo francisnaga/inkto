@@ -4,7 +4,7 @@
 import dynamic from 'next/dynamic';
 const RichEditor = dynamic(() => import('./rich-editor'), { ssr: false });
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Copy, Check, RotateCcw, FileText, FileDown, ChevronUp, Mail, Pen, X, File, Image as ImageIcon } from 'lucide-react';
+import { Copy, Check, RotateCcw, FileText, FileDown, ChevronUp, Mail, Pen, X, File, Image as ImageIcon, Bookmark } from 'lucide-react';
 
 /* â”€â”€ Inline SVGs â”€â”€ */
 const IconPaystack = ({ size = 16 }) => (
@@ -311,6 +311,22 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
 
     const isNoText = value.startsWith('[No handwritten text found');
 
+    const handleSaveTemplate = async () => {
+        const title = prompt('Enter a title for this custom template:');
+        if (!title || !title.trim()) return;
+        try {
+            const res = await fetch('/api/user-templates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, content: value })
+            });
+            if (!res.ok) throw new Error('Save template failed');
+            alert('Saved to \"My Templates\" in the Templates tab!');
+        } catch (e) {
+            alert(e.message || 'Failed to save template. Please try again.');
+        }
+    };
+
     useEffect(() => {
         const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
         window.addEventListener('resize', handleResize);
@@ -540,6 +556,21 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
                 }}>
                     <File size={12} color="#DC2626" />
                     {isDesktop ? 'PDF' : 'PDF'}
+                </button>
+
+                {/* Save as Template */}
+                <button onClick={handleSaveTemplate} title="Save as custom template" style={{
+                    display: 'flex', alignItems: 'center', gap: isDesktop ? '6px' : '0',
+                    padding: isDesktop ? '6px 12px' : '0',
+                    width: isDesktop ? 'auto' : '32px', height: '32px',
+                    justifyContent: 'center', flexShrink: 0,
+                    background: '#F5F4F0',
+                    color: '#57534E',
+                    border: 'none', borderRadius: '7px', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit',
+                    fontSize: '12px', fontWeight: '700', whiteSpace: 'nowrap',
+                }}>
+                    <Bookmark size={14} color="#57534E" />
+                    {isDesktop && <span>Save Template</span>}
                 </button>
 
                 {/* Copy */}

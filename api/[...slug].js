@@ -35,6 +35,7 @@ module.exports = async function handler(req, res) {
         case 'session': return require('../backend/session.js')(req, res);
         case 'transcribe': return require('../backend/transcribe.js')(req, res);
         case 'user-status': return require('../backend/user-status.js')(req, res);
+        case 'user-templates': return require('../backend/user-templates.js')(req, res);
         case 'verify': return require('../backend/verify.js')(req, res);
         default:
             return res.status(404).json({ error: 'Endpoint not found: ' + action });

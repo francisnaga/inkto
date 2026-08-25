@@ -108,7 +108,7 @@ function AccountPageContent() {
           <li>✓ Unlimited document scanning</li>
           <li>{isPro ? '✓ Unlimited text conversions' : '✓ 5 text conversions per day'}</li>
           <li>{isPro ? '✓ Unlimited history' : '✓ 7-day history'}</li>
-          <li className={isPro ? '' : 'text-muted-foreground/60'}>{isPro ? '✓ Voice-to-text (coming soon)' : '✗ Voice-to-text'}</li>
+          <li className={isPro ? '' : 'text-muted-foreground/60'}>{isPro ? '✓ Voice-to-text dictation' : '✗ Voice-to-text dictation'}</li>
         </ul>
         
         {!isPro && (
@@ -131,13 +131,30 @@ function AccountPageContent() {
       </div>
 
       {/* Settings */}
-      <div className="rounded-xl border divide-y mb-6">
+      <div className="rounded-xl border divide-y mb-6 bg-card">
         <a
           href="mailto:support@inkto.jointaccount.org"
           className="flex items-center justify-between p-4 text-sm font-medium hover:bg-muted/40 transition-colors"
         >
           Report an issue <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </a>
+        <Link
+          href="/privacy"
+          className="flex items-center justify-between p-4 text-sm font-medium hover:bg-muted/40 transition-colors"
+        >
+          Privacy Policy <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        </Link>
+        <Link
+          href="/terms"
+          className="flex items-center justify-between p-4 text-sm font-medium hover:bg-muted/40 transition-colors"
+        >
+          Terms of Service <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        </Link>
+      </div>
+
+      {/* General Disclaimer */}
+      <div className="mb-6 text-[10px] text-muted-foreground text-center leading-relaxed px-4">
+        Inkto is a document productivity tool, not a law firm, and does not provide legal advice. All AI-generated text and transcripts must be carefully verified before use.
       </div>
 
       {/* Sign out */}

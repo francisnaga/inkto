@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { ChevronRight, FileText, Search, FileDown, File, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/auth-context';
+import { ChevronRight, FileText, Search, FileDown, File, Loader2, Trash2, Bookmark } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
@@ -200,6 +201,7 @@ interface Category {
 }
 
 export default function TemplatesPage() {
+  const { user } = useAuth();
   const [view, setView] = useState<View>('categories');
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
   const [activeTemplate, setActiveTemplate] = useState<Template | null>(null);
@@ -213,6 +215,45 @@ export default function TemplatesPage() {
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [draftPrompt, setDraftPrompt] = useState('');
   const [isDrafting, setIsDrafting] = useState(false);
+
+  const [userTemplates, setUserTemplates] = useState<any[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+
+  const fetchUserTemplates = async () => {
+    if (!user) return;
+    setLoadingTemplates(true);
+    try {
+      const res = await fetch('/api/user-templates', { credentials: 'include' });
+      const data = await res.json();
+      if (data.templates) setUserTemplates(data.templates);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserTemplates();
+  }, [user]);
+
+  const handleDeleteUserTemplate = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Delete this template?')) return;
+    try {
+      const res = await fetch(`/api/user-templates?id=${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      if (res.ok) {
+        setUserTemplates(prev => prev.filter(t => t.id !== id));
+      } else {
+        throw new Error();
+      }
+    } catch {
+      alert('Failed to delete template.');
+    }
+  };
 
   const handleCategorySelect = (cat: Category) => {
     setActiveCategory(cat);
@@ -462,21 +503,63 @@ export default function TemplatesPage() {
           )}
         </div>
       ) : (
-        /* Category grid */
-        <div className="grid grid-cols-2 gap-3">
-          {TEMPLATE_CATEGORIES.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => handleCategorySelect(cat)}
-              className="p-4 rounded-xl border bg-card text-left hover:bg-muted/40 transition-colors active:scale-[0.98]"
-            >
-              <div className="text-2xl mb-2">{cat.icon}</div>
-              <p className="text-sm font-semibold leading-tight">{cat.name}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {cat.templates.length} templates
-              </p>
-            </button>
-          ))}
+        <div className="space-y-6">
+          {/* Category grid */}
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Categories</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {TEMPLATE_CATEGORIES.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => handleCategorySelect(cat)}
+                  className="p-4 rounded-xl border bg-card text-left hover:bg-muted/40 transition-colors active:scale-[0.98]"
+                >
+                  <div className="text-2xl mb-2">{cat.icon}</div>
+                  <p className="text-sm font-semibold leading-tight">{cat.name}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {cat.templates.length} templates
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Private Templates section */}
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">My Templates</h3>
+            {!user ? (
+              <div className="p-4 rounded-xl border border-dashed text-center bg-card">
+                <p className="text-xs text-muted-foreground mb-2">Sign in to save and reuse your own custom legal templates.</p>
+              </div>
+            ) : loadingTemplates ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              </div>
+            ) : userTemplates.length === 0 ? (
+              <div className="p-6 rounded-xl border border-dashed text-center bg-card">
+                <p className="text-xs text-muted-foreground">You haven't saved any custom templates yet.</p>
+                <p className="text-[10px] text-muted-foreground/80 mt-1">Tap "Save Template" in the Editor screen to save one.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {userTemplates.map(t => (
+                  <div key={t.id} className="p-4 rounded-xl border bg-card flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{t.title}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase mt-0.5 font-medium">Custom Template</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" className="h-8 text-xs px-2" onClick={() => handleUseBlank({ ...t, name: t.title })}>Use</Button>
+                      <Button size="sm" variant="outline" className="h-8 text-xs px-2" onClick={() => setFittingTemplate({ ...t, name: t.title })}>Fit</Button>
+                      <button onClick={(e) => handleDeleteUserTemplate(t.id, e)} className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors" title="Delete">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

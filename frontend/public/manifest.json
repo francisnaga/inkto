@@ -1,28 +1,21 @@
 {
-  "name": "Inkto — Handwriting to Text",
+  "name": "Inkto - Legal Document Transcriber",
   "short_name": "Inkto",
-  "description": "Convert handwritten documents and scanned pages to clean, editable text instantly.",
+  "description": "Convert handwritten and scanned legal documents to editable text.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F5F4F0",
-  "theme_color": "#0F172A",
-  "orientation": "portrait-primary",
-  "scope": "/",
-  "lang": "en",
+  "background_color": "#ffffff",
+  "theme_color": "#111827",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/assets/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/assets/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
-  ],
-  "categories": ["utilities", "productivity"],
-  "screenshots": []
+  ]
 }

@@ -117,6 +117,84 @@ module.exports = async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+    // ---- Auth & Tier Check (server-side, Rule 6: cannot be bypassed via API) ----
+    const parseCookie = (str) => {
+        if (!str) return {};
+        return str.split(';').reduce((res, c) => {
+            const idx = c.indexOf('='); if (idx < 0) return res;
+            const key = c.slice(0, idx).trim();
+            const val = c.slice(idx + 1).trim();
+            try { res[key] = decodeURIComponent(val); } catch { res[key] = val; }
+            return res;
+        }, {});
+    };
+
+    const verifyCookie = (cookieValue) => {
+        if (!cookieValue) return null;
+        const lastColon = cookieValue.lastIndexOf(':');
+        const secondLastColon = cookieValue.lastIndexOf(':', lastColon - 1);
+        if (lastColon < 0 || secondLastColon < 0) return null;
+        const email = cookieValue.slice(0, secondLastColon);
+        const expiresStr = cookieValue.slice(secondLastColon + 1, lastColon);
+        const signature = cookieValue.slice(lastColon + 1);
+        const expires = parseInt(expiresStr, 10);
+        if (!email || isNaN(expires) || Date.now() > expires) return null;
+        const data = `${email}:${expires}`;
+        const COOKIE_SECRET = process.env.COOKIE_SECRET || process.env.SUPABASE_ANON_KEY || 'inkto-default-secret';
+        const expectedSig = require('crypto').createHmac('sha256', COOKIE_SECRET).update(data).digest('hex');
+        if (signature.length !== expectedSig.length) return null;
+        try {
+            if (!require('crypto').timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) return null;
+        } catch { return null; }
+        return email;
+    };
+
+    const cookies = parseCookie(req.headers.cookie || '');
+    const userEmail = verifyCookie(cookies.inkto_auth);
+
+    if (!userEmail) {
+        return res.status(401).json({ error: 'Please sign in to convert documents.', requireAuth: true });
+    }
+
+    // ---- Free-tier daily limit: 5 conversions/day (server-side per Rule 6) ----
+    // This is only enforced for non-finalize calls (actual AI calls, not the save step)
+    const isFinalize = req.headers['content-type']?.includes('application/json') && req.body?.action === 'finalize';
+
+    if (!isFinalize) {
+        try {
+            const db = require('./_utils/supabase').checkSupabase();
+
+            // Check subscription status
+            const { data: userRow } = await db
+                .from('users')
+                .select('subscription_status, plan_expires_at')
+                .eq('email', userEmail)
+                .single();
+
+            const isPaid = userRow?.subscription_status === 'active' && userRow?.plan_expires_at && new Date(userRow.plan_expires_at) > new Date();
+
+            if (!isPaid) {
+                // Count today's AI transcription calls for this user
+                const today = new Date(); today.setHours(0, 0, 0, 0);
+                const { count } = await db
+                    .from('documents')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('email', userEmail)
+                    .gte('created_at', today.toISOString());
+
+                if (count !== null && count >= 5) {
+                    return res.status(429).json({
+                        error: 'You have used your 5 free conversions for today. Upgrade to Pro for unlimited access.',
+                        limitReached: true
+                    });
+                }
+            }
+        } catch (err) {
+            // DB check failure should not block the request if it's a temporary error
+            console.error('Tier check error (non-fatal):', err.message);
+        }
+    }
+
     // ---- IP Rate Limiting ----
     if (redis) {
         const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
@@ -213,6 +291,7 @@ module.exports = async function handler(req, res) {
                 // Non-chunked: save immediately
                 const { error: dbErr } = await db.from('documents').insert([{
                     id: sessionId,
+                    email: userEmail,
                     transcript_text: outputText,
                     source_image_count: files.length
                 }]);
@@ -226,6 +305,7 @@ module.exports = async function handler(req, res) {
                 const complete = prev ? `${prev}\n\n${currentPageBlock}` : currentPageBlock;
                 const { error: dbErr } = await db.from('documents').insert([{
                     id: sessionId,
+                    email: userEmail,
                     transcript_text: complete,
                     source_image_count: totalFilesCount
                 }]);

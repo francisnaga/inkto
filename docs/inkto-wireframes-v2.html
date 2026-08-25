@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Inkto — Complete Wireframe Set</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: #f2f2f2;
+    padding: 48px 24px;
+    color: #1a1a1a;
+  }
+  .header { max-width: 1400px; margin: 0 auto 8px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  .subtitle { font-size: 13px; color: #777; margin-top: 4px; margin-bottom: 8px; }
+  .note {
+    font-size: 12px; color: #a15c00; background: #fff6e6;
+    border: 1px solid #ffd88a; border-radius: 6px; padding: 8px 12px;
+    max-width: 1400px; margin: 0 auto 32px;
+  }
+  .section {
+    max-width: 1400px; margin: 0 auto 48px;
+  }
+  .section-title {
+    font-size: 15px; font-weight: 700; color: #333;
+    border-bottom: 2px solid #333; padding-bottom: 6px; margin-bottom: 20px;
+  }
+  .grid {
+    display: flex; flex-wrap: wrap; gap: 24px;
+  }
+  .phone {
+    width: 240px; background: #fff;
+    border: 2.5px solid #222; border-radius: 22px;
+    padding: 8px; flex-shrink: 0;
+  }
+  .screen-label {
+    text-align: center; font-size: 11px; font-weight: 700;
+    color: #222; margin-bottom: 6px; text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .screen-tag {
+    display: block; text-align: center; font-size: 9px; font-weight: 400;
+    color: #999; text-transform: none; margin-top: 1px;
+  }
+  .screen {
+    background: #fcfcfc; border: 1px solid #ddd; border-radius: 10px;
+    min-height: 420px; display: flex; flex-direction: column;
+    padding: 8px; gap: 6px;
+  }
+  .box {
+    border: 1px dashed #bbb; background: #f4f4f4; color: #777;
+    font-size: 9.5px; padding: 7px; text-align: center;
+    border-radius: 5px; line-height: 1.4;
+  }
+  .box.big { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 90px; }
+  .box.btn { background: #e2e2e2; border-style: solid; border-color: #999; font-weight: 600; color: #222; padding: 10px; }
+  .box.btn.primary { background: #1a1a1a; color: #fff; border: none; }
+  .box.warn { border-color: #d33; color: #b30000; background: #fff0f0; font-weight: 600; }
+  .box.success { border-color: #2a8a2a; color: #1c6b1c; background: #eefaee; }
+  .row { display: flex; gap: 5px; }
+  .row > .box { flex: 1; }
+  .navbar { display: flex; justify-content: space-around; border-top: 1px solid #ddd; padding-top: 6px; margin-top: auto; }
+  .nav-item { font-size: 8px; color: #888; text-align: center; flex: 1; }
+  .nav-item .icon { width: 18px; height: 18px; background: #ccc; border-radius: 4px; margin: 0 auto 2px; }
+  .nav-item.active .icon { background: #1a1a1a; }
+  .nav-item.active { color: #1a1a1a; font-weight: 700; }
+  .split { display: flex; gap: 5px; flex: 1; }
+  .split > .box { flex: 1; }
+  .list-item { display: flex; gap: 6px; border: 1px solid #ddd; border-radius: 5px; padding: 5px; font-size: 8.5px; color: #555; align-items: center; }
+  .list-item .thumb { width: 20px; height: 20px; background: #ddd; border-radius: 4px; flex-shrink: 0; }
+  .chip-row { display: flex; gap: 3px; flex-wrap: wrap; }
+  .chip { font-size: 7.5px; background: #eee; border: 1px solid #ccc; border-radius: 10px; padding: 2px 7px; color: #666; }
+  .chip.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+  .toggle-row { display: flex; gap: 4px; background: #eee; border-radius: 6px; padding: 3px; }
+  .toggle-row .box { border: none; background: transparent; flex: 1; padding: 5px; }
+  .toggle-row .box.on { background: #fff; border-radius: 4px; font-weight: 700; color: #222; }
+  .dot-progress { display: flex; gap: 3px; justify-content: center; }
+  .dot { width: 5px; height: 5px; border-radius: 50%; background: #ccc; }
+  .dot.on { background: #1a1a1a; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Inkto — Complete Wireframe Set</h1>
+  <p class="subtitle">Structure &amp; layout only, organized by flow. Not final visual design — colors, type, and motion come in a separate design pass once this structure is approved.</p>
+</div>
+<div class="note">Grouped into 7 flow sections below. Pair with <strong>inkto-complete-flowchart.mermaid</strong> (screen order/logic) and <strong>inkto-ux-interaction-notes.md</strong> (states, animation, settings detail this static wireframe can't show).</div>
+
+<!-- SECTION 1: AUTH -->
+<div class="section">
+  <div class="section-title">1 — Onboarding &amp; Auth</div>
+  <div class="grid">
+
+    <div class="phone">
+      <div class="screen-label">Email Entry<span class="screen-tag">First launch / expired session</span></div>
+      <div class="screen">
+        <div class="box big">Inkto logo</div>
+        <div class="box">Handwriting, scans &amp; voice — typed in seconds.</div>
+        <div class="box">Email address [input]</div>
+        <div class="box btn primary">Continue</div>
+        <div class="box">No password needed</div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">OTP Entry</div>
+      <div class="screen">
+        <div class="box">← Back</div>
+        <div class="box">Code sent to you@email.com</div>
+        <div class="box big">[ 6-digit code input ]</div>
+        <div class="box btn primary">Verify</div>
+        <div class="box">Resend code (60s)</div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">OTP Error State</div>
+      <div class="screen">
+        <div class="box">← Back</div>
+        <div class="box big">[ 6-digit code input ]</div>
+        <div class="box warn">⚠ Incorrect code. 2 attempts left.</div>
+        <div class="box btn primary">Verify</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SECTION 2: HOME & CAPTURE -->
+<div class="section">
+  <div class="section-title">2 — Home &amp; Capture</div>
+  <div class="grid">
+
+    <div class="phone">
+      <div class="screen-label">Home</div>
+      <div class="screen">
+        <div class="box">Good morning — Inkto</div>
+        <div class="box big">[ CAPTURE ]<br>big central button</div>
+        <div class="row">
+          <div class="box btn">🎙 Record</div>
+          <div class="box btn">📁 Import</div>
+        </div>
+        <div class="box">Recent (2) — mini preview</div>
+        <div class="navbar">
+          <div class="nav-item active"><div class="icon"></div>Home</div>
+          <div class="nav-item"><div class="icon"></div>Templates</div>
+          <div class="nav-item"><div class="icon"></div>History</div>
+          <div class="nav-item"><div class="icon"></div>Account</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">Camera</div>
+      <div class="screen">
+        <div class="box">✕ Close &nbsp;&nbsp;&nbsp; Flash: off</div>
+        <div class="box big">[ live camera view,<br>document outline guide ]</div>
+        <div class="dot-progress"><div class="dot on"></div><div class="dot"></div><div class="dot"></div></div>
+        <div class="row">
+          <div class="box">Page 1 of 1</div>
+        </div>
+        <div class="box btn primary">◉ Capture</div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">Multi-Page Prompt</div>
+      <div class="screen">
+        <div class="box big">✓ Page captured</div>
+        <div class="box">Add another page?</div>
+        <div class="row">
+          <div class="box btn">+ Add Page</div>
+          <div class="box btn primary">Done</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">Review &amp; Enhance</div>
+      <div class="screen">
+        <div class="box">← Back &nbsp;&nbsp;&nbsp; Retake</div>
+        <div class="box big">[ cropped/corrected<br>preview, drag corners<br>to adjust ]</div>
+        <div class="box">Enhance: Auto ✓ / Off</div>
+        <div class="row">
+          <div class="box btn">Save as-is</div>
+          <div class="box btn primary">Convert to Word</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">Converting (Loading)</div>
+      <div class="screen">
+        <div class="box big">⟳ Reading your document...<br>(spinner)</div>
+        <div class="box">Usually takes a few seconds</div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">Conversion Error State</div>
+      <div class="screen">
+        <div class="box big">⚠</div>
+        <div class="box warn">Couldn't process this document. Try retaking the photo in better light.</div>
+        <div class="box btn primary">Retake</div>
+        <div class="box btn">Try Again</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SECTION 3: COMPARISON / EDITOR -->
+<div class="section">
+  <div class="section-title">3 — Comparison View &amp; Editor</div>
+  <div class="grid">
+
+    <div class="phone">
+      <div class="screen-label">Comparison — Side by Side</div>
+      <div class="screen">
+        <div class="box">Transcript &nbsp; [Editing] &nbsp; .docx</div>
+        <div class="toggle-row">
+          <div class="box on">Split</div>
+          <div class="box">Original</div>
+          <div class="box">Result</div>
+        </div>
+        <div class="split">
+          <div class="box big">ORIGINAL<br>[ scanned image ]</div>
+          <div class="box big">RESULT<br>[ Word-formatted<br>editable text ]</div>
+        </div>
+        <div class="row">
+          <div class="box">✉ Send</div>
+          <div class="box">💾 Save</div>
+          <div class="box">📋 Copy</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">Editor — Result Only</div>
+      <div class="screen">
+        <div class="box">Transcript &nbsp; [Editing] &nbsp; .docx</div>
+        <div class="toggle-row">
+          <div class="box">Split</div>
+          <div class="box on">Result</div>
+          <div class="box">Original</div>
+        </div>
+        <div class="box big">[ editable Word-style text,<br>real headings/lists/tables<br>rendered, not plain text ]</div>
+        <div class="row">
+          <div class="box">✉ Send</div>
+          <div class="box">💾 Save</div>
+          <div class="box">📋 Copy</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">Send/Save Panel (expanded)</div>
+      <div class="screen">
+        <div class="box">Email address [input, prefilled if known]</div>
+        <div class="row">
+          <div class="box btn">Send to Inbox</div>
+          <div class="box btn primary">Save to History</div>
+        </div>
+        <div class="box success">✓ Sent! Check your inbox.</div>
+        <div class="box">Includes .docx attachment + link to continue editing on another device</div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">Export Format Sheet</div>
+      <div class="screen">
+        <div class="box">Export as</div>
+        <div class="box btn">📄 Word (.docx)</div>
+        <div class="box btn">📄 PDF (.pdf)</div>
+        <div class="box">Saved to device — accessible offline</div>
+        <div class="box btn primary">Done</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SECTION 4: VOICE & DRAFTING -->
+<div class="section">
+  <div class="section-title">4 — Voice &amp; Drafting (Phase 1.5)</div>
+  <div class="grid">
+
+    <div class="phone">
+      <div class="screen-label">Voice — Ready</div>
+      <div class="screen">
+        <div class="box">← Back</div>
+        <div class="box big">🎙<br>Tap to start recording</div>
+        <div class="box">Dictation or upload existing audio</div>
+        <div class="box btn">Upload audio file</div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">Voice — Recording</div>
+      <div class="screen">
+        <div class="box">● Recording...</div>
+        <div class="box big">[ live waveform ]</div>
+        <div class="box">00:42</div>
+        <div class="box btn primary">⏹ Stop &amp; Transcribe</div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">Drafting — Input</div>
+      <div class="screen">
+        <div class="box">← Back &nbsp;&nbsp; New Draft</div>
+        <div class="box">Category: Tenancy Agreement ▾</div>
+        <div class="box big">Describe what you need:<br>[ text area ]</div>
+        <div class="box btn primary">Generate Draft</div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">Drafting — Review Required</div>
+      <div class="screen">
+        <div class="box warn">⚠ AI-generated draft — review carefully before use. Not a substitute for legal judgment.</div>
+        <div class="box big">[ draft opens in\nEditor for review ]</div>
+        <div class="box btn primary">I've Reviewed — Continue</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SECTION 5: TEMPLATES -->
+<div class="section">
+  <div class="section-title">5 — Templates</div>
+  <div class="grid">
+
+    <div class="phone">
+      <div class="screen-label">Templates — Browse</div>
+      <div class="screen">
+        <div class="box">🔍 Search templates</div>
+        <div class="chip-row">
+          <div class="chip active">All</div>
+          <div class="chip">Affidavits</div>
+          <div class="chip">Agreements</div>
+          <div class="chip">Letters</div>
+          <div class="chip">Pleadings</div>
+        </div>
+        <div class="list-item"><div class="thumb"></div>Tenancy Agreement</div>
+        <div class="list-item"><div class="thumb"></div>Affidavit of Age</div>
+        <div class="list-item"><div class="thumb"></div>Power of Attorney</div>
+        <div class="box btn primary">✨ AI-Fit My Content</div>
+        <div class="navbar">
+          <div class="nav-item"><div class="icon"></div>Home</div>
+          <div class="nav-item active"><div class="icon"></div>Templates</div>
+          <div class="nav-item"><div class="icon"></div>History</div>
+          <div class="nav-item"><div class="icon"></div>Account</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">AI-Fit — Source Select</div>
+      <div class="screen">
+        <div class="box">← Back</div>
+        <div class="box">Fitting into: Tenancy Agreement</div>
+        <div class="box btn">📁 Pick from History</div>
+        <div class="box btn">📷 New Capture</div>
+        <div class="box btn">🎙 New Recording</div>
+        <div class="box btn primary">Continue</div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">Templates — Empty Category</div>
+      <div class="screen">
+        <div class="box big">No templates in "Litigation" yet</div>
+        <div class="box">More being added — check back soon</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SECTION 6: HISTORY -->
+<div class="section">
+  <div class="section-title">6 — History</div>
+  <div class="grid">
+
+    <div class="phone">
+      <div class="screen-label">History — List</div>
+      <div class="screen">
+        <div class="box">🔍 Search my documents</div>
+        <div class="chip-row">
+          <div class="chip active">All</div>
+          <div class="chip">Scans</div>
+          <div class="chip">Text</div>
+          <div class="chip">Voice</div>
+        </div>
+        <div class="list-item"><div class="thumb"></div>Culvert Account — Aug 24</div>
+        <div class="list-item"><div class="thumb"></div>Tenancy draft — Aug 22</div>
+        <div class="list-item"><div class="thumb"></div>Client call notes — Aug 20</div>
+        <div class="navbar">
+          <div class="nav-item"><div class="icon"></div>Home</div>
+          <div class="nav-item"><div class="icon"></div>Templates</div>
+          <div class="nav-item active"><div class="icon"></div>History</div>
+          <div class="nav-item"><div class="icon"></div>Account</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">History — Empty State</div>
+      <div class="screen">
+        <div class="box big">No documents yet</div>
+        <div class="box">Scan, dictate, or draft something — it'll show up here once saved.</div>
+        <div class="box btn primary">Capture your first document</div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">History — Rename Entry</div>
+      <div class="screen">
+        <div class="box">← Back</div>
+        <div class="box">Title [editable, tap to rename]</div>
+        <div class="box">Type: Scan &nbsp; Date: Aug 24</div>
+        <div class="box">Expires in 5 days</div>
+        <div class="box btn primary">Open</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SECTION 7: ACCOUNT & PAYWALL -->
+<div class="section">
+  <div class="section-title">7 — Account &amp; Subscription</div>
+  <div class="grid">
+
+    <div class="phone">
+      <div class="screen-label">Account — Free Tier</div>
+      <div class="screen">
+        <div class="box">you@email.com</div>
+        <div class="box">Plan: Free &nbsp; (3/5 conversions used today)</div>
+        <div class="box btn primary">Upgrade to Pro</div>
+        <div class="box">Default export: Word</div>
+        <div class="box">History retention: 7 days</div>
+        <div class="box">Log out</div>
+        <div class="navbar">
+          <div class="nav-item"><div class="icon"></div>Home</div>
+          <div class="nav-item"><div class="icon"></div>Templates</div>
+          <div class="nav-item"><div class="icon"></div>History</div>
+          <div class="nav-item active"><div class="icon"></div>Account</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">Upgrade / Paywall</div>
+      <div class="screen">
+        <div class="box">✕ Close</div>
+        <div class="box big">Inkto Pro<br>$8/month</div>
+        <div class="box">✓ Unlimited conversions</div>
+        <div class="box">✓ Voice-to-text (2hr/mo)</div>
+        <div class="box">✓ 90-day history</div>
+        <div class="box btn primary">Continue to Payment</div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">Daily Limit Reached (inline)</div>
+      <div class="screen">
+        <div class="box big">You've used all 5 free conversions today</div>
+        <div class="box">Resets in 6 hours, or upgrade for unlimited</div>
+        <div class="box btn primary">Upgrade to Pro</div>
+        <div class="box btn">Wait for reset</div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="screen-label">Account — Pro Tier</div>
+      <div class="screen">
+        <div class="box">you@email.com</div>
+        <div class="box success">Plan: Pro — renews Sep 24</div>
+        <div class="box">Voice used: 42 / 120 min this month</div>
+        <div class="box">Manage subscription</div>
+        <div class="box">Default export: Word</div>
+        <div class="box">History retention: 90 days</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

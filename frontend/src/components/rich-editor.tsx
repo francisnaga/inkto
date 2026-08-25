@@ -3,7 +3,7 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useEffect, useRef } from 'react';
 
-export default function RichEditor({ content, readOnly, onChange, style }) {
+export default function RichEditor({ content, readOnly, onChange, style }: { content: string, readOnly: boolean, onChange: (val: string) => void, style?: React.CSSProperties }) {
     const isFirstRender = useRef(true);
     const editor = useEditor({
         extensions: [StarterKit],

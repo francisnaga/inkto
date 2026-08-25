@@ -1,21 +1,30 @@
-﻿'use client';
+'use client';
 
-import { Camera, Mic, X, Download } from 'lucide-react';
+import { Camera, Mic, X, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranscribe } from '@/hooks/useTranscribe';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 const ThumbnailGrid = dynamic(() => import('@/components/thumbnail-grid'), { ssr: false });
 const OutputBox     = dynamic(() => import('@/components/output-box'), { ssr: false });
 const ScannerModal  = dynamic(() => import('@/components/scanner-modal'), { ssr: false });
 
-export default function AppPage() {
-  const { state, files, error, transcribedText, sessionId, sessionImages, addFiles, removeFile, transcribe, reset } = useTranscribe();
+function AppPageContent() {
+  const { state, files, error, transcribedText, sessionId, sessionImages, addFiles, removeFile, transcribe, reset, fetchSession } = useTranscribe();
   const [showScanner, setShowScanner] = useState(false);
   const [cameraSupported, setCameraSupported] = useState(false);
   const [savedPdfUrl, setSavedPdfUrl] = useState<string | null>(null);
   const [savedPdfName, setSavedPdfName] = useState('');
+  const searchParams = useSearchParams();
+  const docId = searchParams.get('doc');
+
+  useEffect(() => {
+    if (docId) {
+      fetchSession(docId);
+    }
+  }, [docId, fetchSession]);
 
   useEffect(() => {
     const isSecure = window.location.protocol === 'https:' ||
@@ -61,6 +70,15 @@ export default function AppPage() {
     addFiles(Array.from(e.target.files));
     if (e.target) e.target.value = '';
   };
+
+  if (state === 'fetching_session') {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground font-medium">Loading document...</p>
+      </div>
+    );
+  }
 
   if (state === 'success') {
     return <OutputBox text={transcribedText} sessionId={sessionId} images={sessionImages} onReset={reset} />;
@@ -163,6 +181,18 @@ export default function AppPage() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function AppPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    }>
+      <AppPageContent />
+    </Suspense>
   );
 }
 

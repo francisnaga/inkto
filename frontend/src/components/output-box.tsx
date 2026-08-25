@@ -1,4 +1,4 @@
-﻿/* eslint-disable */
+/* eslint-disable */
 // @ts-nocheck
 'use client';
 import dynamic from 'next/dynamic';
@@ -560,22 +560,8 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
         </div>
     );
 
-    /* â”€â”€ Tip banner â”€â”€ */
-    const tipBanner = (
-        <div style={{ marginTop: '8px', marginBottom: '14px', background: '#FFFBEB', border: '1px solid #FEF3C7', borderRadius: '10px', padding: '16px', textAlign: 'center' }}>
-            <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#92400E', lineHeight: '1.5', fontWeight: '500' }}>
-                Did Inkto save you time? Consider tipping the creator to keep the servers running.
-            </p>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <a href="https://paystack.shop/pay/4h04eqpye7" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#10B981', color: '#fff', textDecoration: 'none', padding: '9px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: '700' }}>
-                    <IconPaystack size={14} /> Tip (NGN)
-                </a>
-                <a href="https://paypal.me/frankyideal25" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#F59E0B', color: '#fff', textDecoration: 'none', padding: '9px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: '700' }}>
-                    <IconPayPal size={14} /> Tip (USD)
-                </a>
-            </div>
-        </div>
-    );
+    /* ── Tip banner ── */
+    const tipBanner = null;
 
     /* â”€â”€ Shared textarea styles â”€â”€ */
     const textareaStyleMobile = {

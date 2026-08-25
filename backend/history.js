@@ -59,24 +59,41 @@ module.exports = async function handler(req, res) {
     try {
         const db = require('./_utils/supabase').checkSupabase();
 
-        const { data, error } = await db
+        const search = req.query?.search?.trim() || '';
+
+        let query = db
             .from('documents')
-            .select('id, transcript_text, source_image_count, created_at, expires_at')
+            .select('id, title, transcript_text, source_image_count, created_at, expires_at, type, file_url')
             .eq('email', email)
             .order('created_at', { ascending: false });
 
+        const { data, error } = await query;
+
         if (error) throw error;
 
-        const validDocs = (data || []).filter(doc => new Date(doc.expires_at) > new Date());
+        let validDocs = (data || []).filter(doc => new Date(doc.expires_at) > new Date());
+
+        if (search) {
+            const q = search.toLowerCase();
+            validDocs = validDocs.filter(doc =>
+                (doc.title || '').toLowerCase().includes(q) ||
+                (doc.transcript_text || '').toLowerCase().includes(q)
+            );
+        }
 
         const history = validDocs.map(doc => {
             const lines = (doc.transcript_text || '').split('\n').filter(Boolean);
-            const preview = lines.length > 0 ? lines[0].substring(0, 100) : 'No text';
+            const autoTitle = lines.length > 0 ? lines[0].substring(0, 80) : (doc.type === 'scan' ? 'Scan' : 'Untitled');
+            const preview = lines.length > 0 ? lines[0].substring(0, 100) : '';
             return {
                 id: doc.id,
+                title: doc.title || autoTitle,
                 preview: preview + (lines[0] && lines[0].length > 100 ? '...' : ''),
                 createdAt: doc.created_at,
-                sourceImageCount: doc.source_image_count
+                sourceImageCount: doc.source_image_count || 0,
+                type: doc.type || 'transcription',
+                fileUrl: doc.file_url || null,
+                hasText: !!(doc.transcript_text),
             };
         });
 

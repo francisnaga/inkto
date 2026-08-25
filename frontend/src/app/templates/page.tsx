@@ -1,9 +1,32 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronRight, FileText, Search } from 'lucide-react';
+import { ChevronRight, FileText, Search, FileDown, File } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+
+async function downloadFile(endpoint: string, text: string, filename: string, fallbackMsg: string) {
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) {
+      const ct = res.headers.get('content-type') || '';
+      const msg = ct.includes('json') ? (await res.json()).error : await res.text();
+      throw new Error(msg || fallbackMsg);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (err: any) {
+    alert(err.message || fallbackMsg);
+  }
+}
 
 // ── Template data ──────────────────────────────────────────────────────────
 const TEMPLATE_CATEGORIES = [
@@ -134,6 +157,31 @@ _______________________
       },
     ],
   },
+  {
+    id: 'pleadings',
+    name: 'Pleadings',
+    icon: '⚖️',
+    templates: [
+      {
+        id: 'general-pleading',
+        name: 'General Court Pleading',
+        content: `IN THE [COURT NAME] COURT OF NIGERIA
+IN THE [JUDICIAL DIVISION] JUDICIAL DIVISION
+HOLDEN AT [CITY]
+
+SUIT NO: [SUIT NUMBER]
+
+BETWEEN:
+[PLAINTIFF/CLAIMANT NAME] ....................................... CLAIMANT
+
+AND
+
+[DEFENDANT NAME] ............................................. DEFENDANT
+
+[Pleading template placeholder — content will be added by developer]`
+      }
+    ]
+  }
 ];
 
 type View = 'categories' | 'list' | 'editor';
@@ -207,30 +255,53 @@ export default function TemplatesPage() {
           placeholder="Template content will appear here..."
         />
 
-        <div className="mt-4 flex gap-3">
-          <Button
-            className="flex-1 h-12"
-            onClick={() => {
-              const blob = new Blob([editorContent], { type: 'text/plain' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `${activeTemplate.name}.txt`;
-              a.click();
-              URL.revokeObjectURL(url);
-            }}
-          >
-            Save as Text
-          </Button>
-          <Button
-            variant="outline"
-            className="flex-1 h-12"
-            onClick={() => {
-              navigator.clipboard.writeText(editorContent).catch(() => {});
-            }}
-          >
-            Copy
-          </Button>
+        <div className="mt-4 space-y-2">
+          <div className="flex gap-2">
+            <Button
+              className="flex-1 h-11 text-xs font-semibold gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => {
+                const date = new Date().toISOString().slice(0, 10);
+                downloadFile('/api/download-docx', editorContent, `${activeTemplate.name}-${date}.docx`, 'Could not generate Word document.');
+              }}
+            >
+              <FileDown className="w-3.5 h-3.5" /> Word (.docx)
+            </Button>
+            <Button
+              className="flex-1 h-11 text-xs font-semibold gap-1.5 bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => {
+                const date = new Date().toISOString().slice(0, 10);
+                downloadFile('/api/download-pdf', editorContent, `${activeTemplate.name}-${date}.pdf`, 'Could not generate PDF.');
+              }}
+            >
+              <File className="w-3.5 h-3.5" /> PDF
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1 h-11 text-xs font-semibold gap-1.5"
+              onClick={() => {
+                const blob = new Blob([editorContent], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${activeTemplate.name}.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+            >
+              Plain Text
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1 h-11 text-xs font-semibold"
+              onClick={() => {
+                navigator.clipboard.writeText(editorContent).catch(() => {});
+              }}
+            >
+              Copy Content
+            </Button>
+          </div>
         </div>
       </div>
     );

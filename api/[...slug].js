@@ -16,6 +16,7 @@ module.exports = async function handler(req, res) {
     switch (action) {
         case 'aggregate-rating': return require('../backend/aggregate-rating.js')(req, res);
         case 'checkout': return require('../backend/checkout.js')(req, res);
+        case 'delete-document': return require('../backend/delete-document.js')(req, res);
         case 'delete-session': return require('../backend/delete-session.js')(req, res);
         case 'download-docx': return require('../backend/download-docx.js')(req, res);
         case 'download-pdf': return require('../backend/download-pdf.js')(req, res);
@@ -24,6 +25,7 @@ module.exports = async function handler(req, res) {
         case 'logout': return require('../backend/logout.js')(req, res);
         case 'paystack-webhook': return require('../backend/paystack-webhook.js')(req, res);
         case 'rate': return require('../backend/rate.js')(req, res);
+        case 'rename-document': return require('../backend/rename-document.js')(req, res);
         case 'request-history-link': return require('../backend/request-history-link.js')(req, res);
         case 'save-history': return require('../backend/save-history.js')(req, res);
         case 'save-scan': return require('../backend/save-scan.js')(req, res);

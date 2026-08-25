@@ -10,10 +10,12 @@ import dynamic from 'next/dynamic';
 const ThumbnailGrid = dynamic(() => import('@/components/thumbnail-grid'), { ssr: false });
 const OutputBox     = dynamic(() => import('@/components/output-box'), { ssr: false });
 const ScannerModal  = dynamic(() => import('@/components/scanner-modal'), { ssr: false });
+const DictateModal  = dynamic(() => import('@/components/dictate-modal'), { ssr: false });
 
 function AppPageContent() {
   const { state, files, error, transcribedText, sessionId, sessionImages, addFiles, removeFile, transcribe, reset, fetchSession } = useTranscribe();
   const [showScanner, setShowScanner] = useState(false);
+  const [showDictate, setShowDictate] = useState(false);
   const [cameraSupported, setCameraSupported] = useState(false);
   const [savedPdfUrl, setSavedPdfUrl] = useState<string | null>(null);
   const [savedPdfName, setSavedPdfName] = useState('');
@@ -25,6 +27,39 @@ function AppPageContent() {
       fetchSession(docId);
     }
   }, [docId, fetchSession]);
+
+  // Check and sync offline voice recordings
+  useEffect(() => {
+    const syncOfflineRecordings = async () => {
+      if (!navigator.onLine) return;
+      try {
+        const { getOfflineRecordings, deleteOfflineRecording } = await import('@/lib/indexeddb');
+        const offline = await getOfflineRecordings();
+        if (offline.length === 0) return;
+
+        for (const item of offline) {
+          const formData = new FormData();
+          formData.append('files', item.blob, 'offline-dictation.wav');
+          
+          const res = await fetch('/api/transcribe', {
+            method: 'POST',
+            body: formData
+          });
+          if (res.ok) {
+            await deleteOfflineRecording(item.id);
+          }
+        }
+      } catch (e) {
+        console.error('Offline sync failed:', e);
+      }
+    };
+
+    syncOfflineRecordings();
+
+    const handleOnline = () => syncOfflineRecordings();
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, []);
 
   useEffect(() => {
     const isSecure = window.location.protocol === 'https:' ||
@@ -117,6 +152,16 @@ function AppPageContent() {
         />
       )}
 
+      {showDictate && (
+        <DictateModal
+          onClose={() => setShowDictate(false)}
+          onTranscribeComplete={(text, id) => {
+            setShowDictate(false);
+            fetchSession(id);
+          }}
+        />
+      )}
+
       <div className="flex flex-col h-full pt-12 pb-4 animate-in fade-in">
         <header className="mb-10 text-center">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Inkto</h1>
@@ -149,11 +194,14 @@ function AppPageContent() {
             or upload existing file / PDF
           </label>
 
-          {/* Dictate (coming soon) */}
-          <Button variant="outline" disabled
-            className="w-32 h-32 rounded-[1.5rem] flex flex-col items-center justify-center gap-3 border-2 opacity-50">
-            <Mic className="w-10 h-10" strokeWidth={1.5} />
-            <span className="text-sm font-medium">Dictate<br/><span className="text-xs font-normal">(coming soon)</span></span>
+          {/* Dictate */}
+          <Button
+            variant="outline"
+            onClick={() => setShowDictate(true)}
+            className="w-32 h-32 rounded-[1.5rem] flex flex-col items-center justify-center gap-3 border-2 hover:bg-muted active:scale-95 transition-all"
+          >
+            <Mic className="w-10 h-10 text-primary" strokeWidth={1.5} />
+            <span className="text-sm font-semibold">Dictate</span>
           </Button>
         </div>
 

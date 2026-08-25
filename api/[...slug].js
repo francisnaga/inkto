@@ -20,6 +20,7 @@ module.exports = async function handler(req, res) {
         case 'delete-session': return require('../backend/delete-session.js')(req, res);
         case 'download-docx': return require('../backend/download-docx.js')(req, res);
         case 'download-pdf': return require('../backend/download-pdf.js')(req, res);
+        case 'draft': return require('../backend/draft.js')(req, res);
         case 'finalize-transcription': return require('../backend/finalize-transcription.js')(req, res);
         case 'history': return require('../backend/history.js')(req, res);
         case 'logout': return require('../backend/logout.js')(req, res);

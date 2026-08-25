@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronRight, FileText, Search, FileDown, File } from 'lucide-react';
+import { ChevronRight, FileText, Search, FileDown, File, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
@@ -205,6 +205,14 @@ export default function TemplatesPage() {
   const [activeTemplate, setActiveTemplate] = useState<Template | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [editorContent, setEditorContent] = useState('');
+  
+  const [fittingTemplate, setFittingTemplate] = useState<Template | null>(null);
+  const [fittingInput, setFittingInput] = useState('');
+  const [isFitting, setIsFitting] = useState(false);
+
+  const [showDraftModal, setShowDraftModal] = useState(false);
+  const [draftPrompt, setDraftPrompt] = useState('');
+  const [isDrafting, setIsDrafting] = useState(false);
 
   const handleCategorySelect = (cat: Category) => {
     setActiveCategory(cat);
@@ -215,6 +223,62 @@ export default function TemplatesPage() {
     setActiveTemplate(template);
     setEditorContent(template.content || `[Content for ${template.name}]`);
     setView('editor');
+  };
+
+  const handleRunAiFit = async () => {
+    if (!fittingTemplate) return;
+    setIsFitting(true);
+    try {
+      const res = await fetch('/api/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'fit',
+          userContent: fittingInput,
+          templateContent: fittingTemplate.content || ''
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'AI-Fit failed');
+      
+      setActiveTemplate(fittingTemplate);
+      setEditorContent(data.text);
+      setView('editor');
+      setFittingTemplate(null);
+      setFittingInput('');
+    } catch (e: any) {
+      alert(e.message || 'Fitting failed. Please try again.');
+    } finally {
+      setIsFitting(false);
+    }
+  };
+
+  const handleRunDraft = async () => {
+    if (!draftPrompt.trim()) return;
+    setIsDrafting(true);
+    try {
+      const res = await fetch('/api/draft', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'draft',
+          prompt: draftPrompt
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Drafting failed');
+
+      // Seed a virtual active template for display
+      setActiveTemplate({ id: 'ai-draft', name: 'Generated Draft' });
+      setEditorContent(data.text);
+      setView('editor');
+      setShowDraftModal(false);
+      setDraftPrompt('');
+    } catch (e: any) {
+      alert(e.message || 'Drafting failed. Please try again.');
+    } finally {
+      setIsDrafting(false);
+    }
   };
 
   const handleBack = () => {
@@ -343,11 +407,9 @@ export default function TemplatesPage() {
                   size="sm"
                   variant="outline"
                   className="flex-1"
-                  disabled
-                  title="AI-fit is a Phase 1.5 feature"
+                  onClick={() => setFittingTemplate(template)}
                 >
                   AI-Fit
-                  <span className="ml-1 text-[10px] text-muted-foreground">(soon)</span>
                 </Button>
               </div>
             </div>
@@ -364,6 +426,10 @@ export default function TemplatesPage() {
         <h1 className="text-2xl font-bold tracking-tight">Templates</h1>
         <p className="text-muted-foreground mt-1 text-sm">Standard legal document templates.</p>
       </header>
+
+      <Button onClick={() => setShowDraftModal(true)} className="w-full h-11 mb-5 bg-stone-900 hover:bg-stone-800 text-white font-semibold rounded-xl gap-2">
+        ✍ Draft Document from Scratch
+      </Button>
 
       {/* Search */}
       <div className="relative mb-5">
@@ -389,7 +455,7 @@ export default function TemplatesPage() {
                 <p className="text-sm font-semibold mb-3">{t.name}</p>
                 <div className="flex gap-2">
                   <Button size="sm" className="flex-1" onClick={() => { setActiveCategory(t.category); handleUseBlank(t); }}>Use Blank</Button>
-                  <Button size="sm" variant="outline" className="flex-1" disabled>AI-Fit <span className="ml-1 text-[10px]">(soon)</span></Button>
+                  <Button size="sm" variant="outline" className="flex-1" onClick={() => setFittingTemplate(t)}>AI-Fit</Button>
                 </div>
               </div>
             ))
@@ -411,6 +477,74 @@ export default function TemplatesPage() {
               </p>
             </button>
           ))}
+        </div>
+      )}
+
+      {/* AI-Fit Input Modal */}
+      {fittingTemplate && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: '#fff', color: '#1c1917', borderRadius: 24, width: '100%', maxWidth: 440, padding: 28, position: 'relative', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: '-0.3px' }}>AI-Fit: {fittingTemplate.name}</h3>
+            <p style={{ fontSize: 13, color: '#78716c', margin: 0, lineHeight: 1.5 }}>
+              Paste or type your raw notes, dictated details, or transcribed text. Gemini will restructure it exactly into the template's clause order and formatting.
+            </p>
+            <textarea
+              value={fittingInput}
+              onChange={e => setFittingInput(e.target.value)}
+              style={{ width: '100%', height: 160, padding: 12, border: '1px solid #e4e2dc', borderRadius: 12, resize: 'none', background: '#fafaf9', fontSize: 14, outline: 'none' }}
+              placeholder="E.g., Landlord is Alhaji Tunde Cole. Tenant is Dr. Emeka Obi. Rent is N1,200,000 per annum starting October 1st..."
+              disabled={isFitting}
+            />
+            {isFitting ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 16, paddingBottom: 16, gap: 12 }}>
+                <Loader2 size={32} className="animate-spin text-primary" />
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#78716c' }}>AI is restructuring your document…</span>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 10 }}>
+                <Button variant="outline" style={{ flex: 1 }} onClick={() => setFittingTemplate(null)}>
+                  Cancel
+                </Button>
+                <Button style={{ flex: 1 }} onClick={handleRunAiFit} disabled={!fittingInput.trim()}>
+                  Align to Template
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* AI Draft Document Modal */}
+      {showDraftModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: '#fff', color: '#1c1917', borderRadius: 24, width: '100%', maxWidth: 440, padding: 28, position: 'relative', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: '-0.3px' }}>Draft Document</h3>
+            <p style={{ fontSize: 13, color: '#78716c', margin: 0, lineHeight: 1.5 }}>
+              Describe the legal document you wish to draft from scratch. Gemini will produce a comprehensive professional draft under Nigerian legal syntax.
+            </p>
+            <textarea
+              value={draftPrompt}
+              onChange={e => setDraftPrompt(e.target.value)}
+              style={{ width: '100%', height: 160, padding: 12, border: '1px solid #e4e2dc', borderRadius: 12, resize: 'none', background: '#fafaf9', fontSize: 14, outline: 'none' }}
+              placeholder="E.g., A tenancy agreement for a 3-bedroom flat in Lekki Phase 1, landlord is Alhaji Cole, tenant is Dr Emeka, rent N3,500,000/year, 2-year term..."
+              disabled={isDrafting}
+            />
+            {isDrafting ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 16, paddingBottom: 16, gap: 12 }}>
+                <Loader2 size={32} className="animate-spin text-primary" />
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#78716c' }}>Gemini is drafting your document…</span>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 10 }}>
+                <Button variant="outline" style={{ flex: 1 }} onClick={() => setShowDraftModal(false)}>
+                  Cancel
+                </Button>
+                <Button style={{ flex: 1 }} onClick={handleRunDraft} disabled={!draftPrompt.trim()}>
+                  Generate Draft
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

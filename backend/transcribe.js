@@ -12,7 +12,10 @@ const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 25 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
-        const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'image/gif', 'application/pdf'];
+        const allowed = [
+            'image/jpeg', 'image/png', 'image/webp', 'image/jpg', 'image/gif', 'application/pdf',
+            'audio/wav', 'audio/mp3', 'audio/mpeg', 'audio/m4a', 'audio/webm', 'audio/3gpp', 'audio/ogg', 'audio/aac', 'audio/x-m4a', 'audio/mp4'
+        ];
         cb(null, allowed.includes(file.mimetype));
     }
 });
@@ -38,6 +41,16 @@ CRITICAL TRANSCRIPTION RULES:
 6. STRUCTURED OUTPUT: If the document contains numbered or lettered lists, preserve the exact numbering on distinct lines. If the document contains label/value pairs or itemized accounting (e.g. "12mm rods = N163,800"), format them as distinct structured lines so they can be parsed as tables, rather than merging them into prose.
 7. NO CHATTER: Output ONLY the clean, final transcribed text. No preamble, no commentary, no markdown formatting (unless it was in the text).`;
 
+const VOICE_SYSTEM_PROMPT = `You are a world-class legal transcription AI specialising in transcribing Nigerian legal recordings, dictation, and court proceedings.
+Your sole purpose is to produce a verbatim, 100% accurate text transcription of the provided audio.
+
+CRITICAL VOICE TRANSCRIPTION RULES:
+1. VERBATIM ACCURACY: Transcribe the audio exactly as spoken. Do not paraphrase, summarize, or alter statements.
+2. NIGERIAN CONTEXT: Accurately transcribe Nigerian names, legal terms, places, case names, and citations (e.g., FSC, Supreme Court, Laws of the Federation of Nigeria).
+3. CODE SWITCHING & PIDGIN: If speakers use Nigerian Pidgin or switch into local languages, transcribe those phrases accurately as spoken.
+4. FILLER WORDS: Clean up basic vocal filler words (like "um", "ah", "you know") to make it readable, unless in formal testimony where exact phrasing matters.
+5. NO CHATTER: Output ONLY the clean transcribed text. No preamble, no commentary, no markdown formatting.`;
+
 function sanitize(str) {
     return (str || '').replace(/[^\x20-\x7E]/g, '').trim();
 }
@@ -50,9 +63,9 @@ function cleanSinglePageText(text) {
 }
 
 // Call Gemini REST API directly — bypasses SDK OAuth bugs
-async function callGemini(apiKey, parts, timeoutMs) {
+async function callGemini(apiKey, parts, timeoutMs, systemPrompt = SYSTEM_PROMPT) {
     // Model chain: prefer low-latency multimodal models, then fall back.
-    const models = ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.5-flash'];
+    const models = ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
     const deadline = Date.now() + timeoutMs;
 
     for (const model of models) {
@@ -73,7 +86,7 @@ async function callGemini(apiKey, parts, timeoutMs) {
                     signal: controller.signal,
                     body: JSON.stringify({
                         contents: [{ role: 'user', parts }],
-                        systemInstruction: { role: 'system', parts: [{ text: SYSTEM_PROMPT }] },
+                        systemInstruction: { role: 'system', parts: [{ text: systemPrompt }] },
                         generationConfig: { temperature: 0.1, maxOutputTokens: 4096 }
                     })
                 });
@@ -221,7 +234,9 @@ module.exports = async function handler(req, res) {
         return res.status(500).json({ error: 'Service is not configured. Please contact support.' });
     }
 
-    // Build image parts for Gemini
+    const isAudio = files.some(file => file.mimetype.includes('audio') || file.mimetype.includes('mpeg') || file.mimetype.includes('webm') || file.mimetype.includes('wav'));
+
+    // Build image or audio parts for Gemini
     const parts = files.map(file => {
         let mimeType = file.mimetype === 'image/jpg' ? 'image/jpeg' : file.mimetype;
         return {
@@ -239,32 +254,38 @@ module.exports = async function handler(req, res) {
     const isSinglePageRequest = files.length === 1;
 
     const userInstructions = req.body?.prompt ? `\n\nAdditional instructions: ${req.body.prompt}` : '';
-    const pageInstruction = isSinglePageRequest
-        ? `Transcribe exactly this one page. It is page ${requestedPageNumber} of ${totalPages}. Output only the text visible on this page. Do not output a page heading. Do not repeat any previous page or continue into any next page.${userInstructions}`
-        : `Transcribe these ${files.length} pages in the exact order provided, starting at page ${requestedPageNumber} of ${totalPages}. Do not repeat pages or invent missing pages.${userInstructions}`;
+    const pageInstruction = isAudio
+        ? `Transcribe this audio recording verbatim. Output only the transcribed text.${userInstructions}`
+        : (isSinglePageRequest
+            ? `Transcribe exactly this one page. It is page ${requestedPageNumber} of ${totalPages}. Output only the text visible on this page. Do not output a page heading. Do not repeat any previous page or continue into any next page.${userInstructions}`
+            : `Transcribe these ${files.length} pages in the exact order provided, starting at page ${requestedPageNumber} of ${totalPages}. Do not repeat pages or invent missing pages.${userInstructions}`);
     parts.push({ text: pageInstruction });
 
     try {
         // Single-pass transcription — fast, lean, reliable
         // Reserve 50s for the AI call (leaving 10s headroom under Vercel's 60s limit)
-        const finalText = cleanSinglePageText(await callGemini(geminiKey, parts, 50000));
+        const systemPrompt = isAudio ? VOICE_SYSTEM_PROMPT : SYSTEM_PROMPT;
+        const finalText = cleanSinglePageText(await callGemini(geminiKey, parts, 50000, systemPrompt));
 
-        // Detect blank/no-text responses
-        const noTextPhrases = [
-            'does not contain any handwritten',
-            'no handwritten text',
-            'cannot transcribe',
-            'no text to transcribe',
-            'does not appear to contain any text',
-            'the image does not contain',
-            'there is no text',
-            'no legible text',
-            'no written text'
-        ];
-        const isNoText = finalText.length < 400 && noTextPhrases.some(p => finalText.toLowerCase().includes(p));
-        const outputText = isNoText
-            ? '[No handwritten text found in this document. Please upload a clear photo of a handwritten page.]'
-            : finalText;
+        // Detect blank/no-text responses (only for images)
+        let outputText = finalText;
+        if (!isAudio) {
+            const noTextPhrases = [
+                'does not contain any handwritten',
+                'no handwritten text',
+                'cannot transcribe',
+                'no text to transcribe',
+                'does not appear to contain any text',
+                'the image does not contain',
+                'there is no text',
+                'no legible text',
+                'no written text'
+            ];
+            const isNoText = finalText.length < 400 && noTextPhrases.some(p => finalText.toLowerCase().includes(p));
+            outputText = isNoText
+                ? '[No handwritten text found in this document. Please upload a clear photo of a handwritten page.]'
+                : finalText;
+        }
 
         // Save to Supabase
         const sessionId = req.body?.sessionId || nanoid(21);
@@ -274,26 +295,39 @@ module.exports = async function handler(req, res) {
             const { checkSupabase } = require('./_utils/supabase');
             const db = checkSupabase();
 
-            // Upload images
-            await Promise.all(files.map(async (file, index) => {
-                const ext = file.mimetype === 'image/jpeg' ? 'jpg'
-                    : file.mimetype === 'image/png' ? 'png'
-                    : file.mimetype === 'application/pdf' ? 'pdf' : 'bin';
-                const filePath = `${sessionId}/${startIndex + index}.${ext}`;
-                await db.storage.from('inkto-images').upload(filePath, file.buffer, {
-                    contentType: file.mimetype,
+            // Upload media to storage
+            let audioUrl = null;
+            if (isAudio) {
+                const ext = files[0].mimetype.split('/').pop() || 'mp3';
+                const filePath = `${sessionId}/audio.${ext}`;
+                await db.storage.from('inkto-images').upload(filePath, files[0].buffer, {
+                    contentType: files[0].mimetype,
                     upsert: true
                 });
-            }));
+                audioUrl = db.storage.from('inkto-images').getPublicUrl(filePath).data.publicUrl;
+            } else {
+                await Promise.all(files.map(async (file, index) => {
+                    const ext = file.mimetype === 'image/jpeg' ? 'jpg'
+                        : file.mimetype === 'image/png' ? 'png'
+                        : file.mimetype === 'application/pdf' ? 'pdf' : 'bin';
+                    const filePath = `${sessionId}/${startIndex + index}.${ext}`;
+                    await db.storage.from('inkto-images').upload(filePath, file.buffer, {
+                        contentType: file.mimetype,
+                        upsert: true
+                    });
+                }));
+            }
 
             // Save transcript
-            if (!req.body?.sessionId) {
-                // Non-chunked: save immediately
+            if (!req.body?.sessionId || isAudio) {
+                // Non-chunked / Audio: save immediately
                 const { error: dbErr } = await db.from('documents').insert([{
                     id: sessionId,
                     email: userEmail,
                     transcript_text: outputText,
-                    source_image_count: files.length
+                    source_image_count: isAudio ? 0 : files.length,
+                    type: isAudio ? 'voice' : 'transcription',
+                    audio_url: audioUrl
                 }]);
                 if (dbErr) console.error('Supabase insert error:', dbErr);
             } else if (isFinalBatch) {
@@ -307,7 +341,8 @@ module.exports = async function handler(req, res) {
                     id: sessionId,
                     email: userEmail,
                     transcript_text: complete,
-                    source_image_count: totalFilesCount
+                    source_image_count: totalFilesCount,
+                    type: 'transcription'
                 }]);
                 if (dbErr) console.error('Supabase chunked insert error:', dbErr);
             }

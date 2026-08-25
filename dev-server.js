@@ -15,10 +15,10 @@ require('dotenv').config({ path: '.env' });
 // Route API requests to the functions in /api
 app.use('/api', async (req, res) => {
     const apiPath = req.path.replace(/^\//, '').split('?')[0];
-    let filePath = path.join(__dirname, 'api', `${apiPath}.js`);
+    let filePath = path.join(__dirname, 'backend', `${apiPath}.js`);
     
     if (!fs.existsSync(filePath)) {
-        filePath = path.join(__dirname, 'api', apiPath, 'index.js');
+        filePath = path.join(__dirname, 'backend', apiPath, 'index.js');
     }
 
     if (fs.existsSync(filePath)) {
@@ -42,7 +42,7 @@ app.use('/', createProxyMiddleware({ target: 'http://localhost:3001', changeOrig
 const PORT = 3000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`\n======================================================`);
-    console.log(`🚀 Inkto Local Dev Server running at:`);
+    console.log(`ðŸš€ Inkto Local Dev Server running at:`);
     console.log(`- Local:   http://localhost:${PORT}`);
     
     // Print local network IP

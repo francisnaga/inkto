@@ -13,7 +13,7 @@ const ScannerModal  = dynamic(() => import('@/components/scanner-modal'), { ssr:
 const DictateModal  = dynamic(() => import('@/components/dictate-modal'), { ssr: false });
 
 function AppPageContent() {
-  const { state, files, error, transcribedText, sessionId, sessionImages, addFiles, removeFile, transcribe, reset, fetchSession } = useTranscribe();
+  const { state, files, error, transcribedText, sessionId, sessionImages, audioUrl, addFiles, removeFile, transcribe, reset, fetchSession } = useTranscribe();
   const [showScanner, setShowScanner] = useState(false);
   const [showDictate, setShowDictate] = useState(false);
   const [cameraSupported, setCameraSupported] = useState(false);
@@ -116,7 +116,7 @@ function AppPageContent() {
   }
 
   if (state === 'success') {
-    return <OutputBox text={transcribedText} sessionId={sessionId} images={sessionImages} onReset={reset} />;
+    return <OutputBox text={transcribedText} sessionId={sessionId} images={sessionImages} audioUrl={audioUrl} onReset={reset} />;
   }
 
   if (state === 'uploading' || state === 'processing') {

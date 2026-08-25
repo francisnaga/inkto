@@ -4,7 +4,7 @@
 import dynamic from 'next/dynamic';
 const RichEditor = dynamic(() => import('./rich-editor'), { ssr: false });
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Copy, Check, RotateCcw, FileText, FileDown, ChevronUp, Mail, Pen, X, File, Image as ImageIcon, Bookmark } from 'lucide-react';
+import { Copy, Check, RotateCcw, FileText, FileDown, ChevronUp, Mail, Pen, X, File, Image as ImageIcon, Bookmark, Mic, Loader2 } from 'lucide-react';
 
 /* â”€â”€ Inline SVGs â”€â”€ */
 const IconPaystack = ({ size = 16 }) => (
@@ -292,7 +292,7 @@ async function downloadFile(endpoint, text, filename, fallbackMsg) {
 }
 
 /* â”€â”€ Main component â”€â”€ */
-export default function OutputBox({ text, sessionId, images = [], onReset }) {
+export default function OutputBox({ text, sessionId, images = [], audioUrl = null, onReset }) {
     const [value, setValue] = useState(text);
     const [copied, setCopied] = useState(false);
     const [showScrollTop, setShowScrollTop] = useState(false);
@@ -305,9 +305,147 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
     const [emailFocused, setEmailFocused] = useState(false);
     const [showInboxModal, setShowInboxModal] = useState(false);
 
+    const [isConvertingVoice, setIsConvertingVoice] = useState(false);
+    const [voiceProgressStep, setVoiceProgressStep] = useState(1);
+    const [voiceError, setVoiceError] = useState(null);
+
     const textareaRef = useRef(null);
     const debounceTimer = useRef(null);
     const [deferredValue, setDeferredValue] = useState(text);
+
+    const handleConvertVoice = async () => {
+        if (!audioUrl) {
+            alert("No audio URL found for this recording.");
+            return;
+        }
+        setIsConvertingVoice(true);
+        setVoiceProgressStep(1);
+        setVoiceError(null);
+
+        const t1 = setTimeout(() => setVoiceProgressStep(2), 800);
+        const t2 = setTimeout(() => setVoiceProgressStep(3), 2000);
+        const t3 = setTimeout(() => setVoiceProgressStep(4), 3800);
+
+        try {
+            const res = await fetch('/api/transcribe-past', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: sessionId, fileUrl: audioUrl, title: 'Voice Dictation' })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Conversion failed');
+            
+            clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
+            setVoiceProgressStep(4);
+            await new Promise(r => setTimeout(r, 600));
+
+            setValue(data.text);
+            setIsConvertingVoice(false);
+        } catch (e: any) {
+            clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
+            setVoiceError(e.message || 'ASR transcription failed.');
+            setIsConvertingVoice(false);
+        }
+    };
+
+    const renderRawAudioDashboard = () => {
+        if (isConvertingVoice) {
+            return (
+                <div style={{ padding: '40px', background: '#FAFAF9', borderRadius: '12px', border: '1px solid #E4E2DC', margin: '20px 0', textAlign: 'left' }}>
+                    <p style={{ fontWeight: '700', fontSize: '15px', color: '#1C1917', textAlign: 'center', marginBottom: '20px' }}>
+                        Transcribing voice recording…
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '320px', margin: '0 auto' }}>
+                        {/* Step 1 */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
+                            {voiceProgressStep > 1 ? (
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>✓</div>
+                            ) : (
+                                <Loader2 size={16} className="animate-spin text-primary shrink-0" />
+                            )}
+                            <span style={{ fontWeight: voiceProgressStep >= 1 ? '600' : 'normal', color: voiceProgressStep >= 1 ? '#1C1917' : '#78716C' }}>
+                                Packaging audio file
+                            </span>
+                        </div>
+                        {/* Step 2 */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
+                            {voiceProgressStep > 2 ? (
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>✓</div>
+                            ) : voiceProgressStep === 2 ? (
+                                <Loader2 size={16} className="animate-spin text-primary shrink-0" />
+                            ) : (
+                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '1.5px solid #D6D3D1', shrink: 0 }} />
+                            )}
+                            <span style={{ fontWeight: voiceProgressStep >= 2 ? '600' : 'normal', color: voiceProgressStep >= 2 ? '#1C1917' : '#78716C' }}>
+                                Connecting to speech engines
+                            </span>
+                        </div>
+                        {/* Step 3 */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
+                            {voiceProgressStep > 3 ? (
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>✓</div>
+                            ) : voiceProgressStep === 3 ? (
+                                <Loader2 size={16} className="animate-spin text-primary shrink-0" />
+                            ) : (
+                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '1.5px solid #D6D3D1', shrink: 0 }} />
+                            )}
+                            <span style={{ fontWeight: voiceProgressStep >= 3 ? '600' : 'normal', color: voiceProgressStep >= 3 ? '#1C1917' : '#78716C' }}>
+                                Analyzing vocabulary & dialect
+                            </span>
+                        </div>
+                        {/* Step 4 */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
+                            {voiceProgressStep === 4 ? (
+                                <Loader2 size={16} className="animate-spin text-primary shrink-0" />
+                            ) : (
+                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '1.5px solid #D6D3D1', shrink: 0 }} />
+                            )}
+                            <span style={{ fontWeight: voiceProgressStep >= 4 ? '600' : 'normal', color: voiceProgressStep >= 4 ? '#1C1917' : '#78716C' }}>
+                                Generating legal transcription
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div style={{ padding: '36px 24px', background: '#FAFAF9', borderRadius: '16px', border: '1px solid #E4E2DC', margin: '20px 0', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Mic size={24} color="#D97706" />
+                </div>
+                <div>
+                    <h4 style={{ fontWeight: '700', fontSize: '16px', color: '#1C1917', margin: '0 0 6px 0' }}>Raw Voice Dictation</h4>
+                    <p style={{ fontSize: '13px', color: '#78716C', margin: 0, maxWidth: '280px', lineHeight: 1.5 }}>
+                        You saved this voice recording. You can listen to the audio below or convert it to editable text now.
+                    </p>
+                </div>
+
+                {audioUrl && (
+                    <audio src={audioUrl} controls style={{ width: '100%', maxWidth: '320px', marginTop: '8px' }} />
+                )}
+
+                {voiceError && (
+                    <p style={{ fontSize: '12px', fontWeight: '600', color: '#DC2626', margin: 0 }}>
+                        {voiceError}
+                    </p>
+                )}
+
+                <button
+                    onClick={handleConvertVoice}
+                    style={{
+                        padding: '12px 24px', background: '#2563EB', color: '#fff',
+                        border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+                        boxShadow: '0 4px 12px rgba(37,99,235,0.18)', transition: 'all 0.2s',
+                        fontFamily: 'inherit'
+                    }}
+                >
+                    <FileText size={16} /> Convert to Editable Text
+                </button>
+            </div>
+        );
+    };
 
     const isNoText = value.startsWith('[No handwritten text found');
 
@@ -658,13 +796,17 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
                         <div style={{ background: '#fff', border: '1px solid #E4E2DC', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: '10px' }}>
                             {toolbar}
                             <div style={{ position: 'relative' }}>
-                                <RichEditor
-                                    content={value}
-                                    onChange={handleChange}
-                                    readOnly={!isEditing || isNoText}
-                                    style={textareaStyleDesktop}
-                                />
-                                {showScrollTop && (
+                                {value.startsWith('[Raw voice dictation') ? (
+                                    renderRawAudioDashboard()
+                                ) : (
+                                    <RichEditor
+                                        content={value}
+                                        onChange={handleChange}
+                                        readOnly={!isEditing || isNoText}
+                                        style={textareaStyleDesktop}
+                                    />
+                                )}
+                                {showScrollTop && !value.startsWith('[Raw voice dictation') && (
                                     <button onClick={scrollToTop} style={{ position: 'absolute', bottom: '16px', right: '16px', width: '36px', height: '36px', background: 'rgba(28,25,23,0.65)', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
                                         <ChevronUp size={16} color="white" />
                                     </button>
@@ -696,13 +838,17 @@ export default function OutputBox({ text, sessionId, images = [], onReset }) {
             <div style={{ background: '#fff', border: '1px solid #E4E2DC', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: '10px' }}>
                 {toolbar}
                 <div style={{ position: 'relative' }}>
-                    <RichEditor
-                                    content={value}
-                                    onChange={handleChange}
-                                    readOnly={!isEditing || isNoText}
-                                    style={textareaStyleMobile}
-                                />
-                    {showScrollTop && (
+                    {value.startsWith('[Raw voice dictation') ? (
+                        renderRawAudioDashboard()
+                    ) : (
+                        <RichEditor
+                            content={value}
+                            onChange={handleChange}
+                            readOnly={!isEditing || isNoText}
+                            style={textareaStyleMobile}
+                        />
+                    )}
+                    {showScrollTop && !value.startsWith('[Raw voice dictation') && (
                         <button onClick={scrollToTop} style={{ position: 'absolute', bottom: '12px', right: '12px', width: '32px', height: '32px', background: 'rgba(28,25,23,0.65)', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
                             <ChevronUp size={15} color="white" />
                         </button>

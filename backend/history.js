@@ -63,7 +63,7 @@ module.exports = async function handler(req, res) {
 
         let query = db
             .from('documents')
-            .select('id, title, transcript_text, source_image_count, created_at, expires_at, type, file_url')
+            .select('id, title, transcript_text, source_image_count, created_at, expires_at, type, file_url, audio_url')
             .eq('email', email)
             .order('created_at', { ascending: false });
 
@@ -92,8 +92,8 @@ module.exports = async function handler(req, res) {
                 createdAt: doc.created_at,
                 sourceImageCount: doc.source_image_count || 0,
                 type: doc.type || 'transcription',
-                fileUrl: doc.file_url || null,
-                hasText: !!(doc.transcript_text),
+                fileUrl: doc.file_url || doc.audio_url || null,
+                hasText: !!(doc.transcript_text && !doc.transcript_text.startsWith('[Raw voice dictation')),
             };
         });
 

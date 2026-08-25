@@ -301,11 +301,11 @@ export default function HistoryPage() {
                     {entry.fileUrl && (
                       <a href={entry.fileUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
                         <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5">
-                          <ExternalLink className="w-3 h-3" /> View PDF
+                          <ExternalLink className="w-3 h-3" /> {entry.type === 'voice' ? 'Listen Audio' : 'View PDF'}
                         </Button>
                       </a>
                     )}
-                    {entry.type === 'scan' && entry.fileUrl && (
+                    {((entry.type === 'scan' || entry.type === 'voice') && !entry.hasText && entry.fileUrl) && (
                       <Button
                         size="sm"
                         onClick={() => handleConvertScan(entry)}

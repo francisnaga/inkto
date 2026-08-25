@@ -32,6 +32,16 @@ CRITICAL TRANSCRIPTION RULES:
 4. UNCLEAR WORDS: Do not hallucinate. If a word is illegible, transcribe your best logical guess and add [?] immediately after it.
 5. NO CHATTER: Output ONLY the clean, final transcribed text. No preamble, no commentary, no markdown.`;
 
+const VOICE_SYSTEM_PROMPT = `You are a world-class legal transcription AI specialising in transcribing Nigerian legal recordings, dictation, and court proceedings.
+Your sole purpose is to produce a verbatim, 100% accurate text transcription of the provided audio.
+
+CRITICAL VOICE TRANSCRIPTION RULES:
+1. VERBATIM ACCURACY: Transcribe the audio exactly as spoken. Do not paraphrase, summarize, or alter statements.
+2. NIGERIAN CONTEXT: Accurately transcribe Nigerian names, legal terms, places, case names, and citations (e.g., FSC, Supreme Court, Laws of the Federation of Nigeria).
+3. CODE SWITCHING & PIDGIN: If speakers use Nigerian Pidgin or switch into local languages, transcribe those phrases accurately as spoken.
+4. FILLER WORDS: Clean up basic vocal filler words (like "um", "ah", "you know") to make it readable, unless in formal testimony where exact phrasing matters.
+5. NO CHATTER: Output ONLY the clean transcribed text. No preamble, no commentary, no markdown formatting.`;
+
 async function callGemini(apiKey, parts, systemPrompt = SYSTEM_PROMPT) {
   const models = ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
   for (const model of models) {
@@ -68,26 +78,48 @@ module.exports = async function handler(req, res) {
   const email = verifyCookie(parseCookie(req.headers.cookie || '').inkto_auth);
   if (!email) return res.status(401).json({ error: 'Unauthorized', requireAuth: true });
 
-  const { fileUrl, title } = req.body || {};
+  const { id, fileUrl, title } = req.body || {};
   if (!fileUrl) return res.status(400).json({ error: 'fileUrl is required.' });
 
   try {
     const geminiKey = process.env.GEMINI_API_KEY;
     if (!geminiKey) return res.status(500).json({ error: 'Service is not configured.' });
 
-    // 1. Download file from storage
+    const db = require('./_utils/supabase').checkSupabase();
+
+    // 1. Fetch document type if ID is available
+    let existingDoc = null;
+    if (id) {
+      const { data } = await db.from('documents').select('*').eq('id', id).single();
+      existingDoc = data;
+    }
+
+    const isAudio = existingDoc?.type === 'voice' ||
+                    fileUrl.includes('audio.') ||
+                    fileUrl.toLowerCase().endsWith('.wav') ||
+                    fileUrl.toLowerCase().endsWith('.mp3') ||
+                    fileUrl.toLowerCase().endsWith('.m4a') ||
+                    fileUrl.toLowerCase().endsWith('.webm');
+
+    // 2. Download file from storage
     const fileRes = await fetch(fileUrl);
     if (!fileRes.ok) throw new Error('Could not retrieve file from cloud storage.');
     const arrayBuffer = await fileRes.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
     // Determine mime type based on URL extension
-    let mimeType = 'application/pdf';
-    if (fileUrl.toLowerCase().endsWith('.jpg') || fileUrl.toLowerCase().endsWith('.jpeg')) mimeType = 'image/jpeg';
-    else if (fileUrl.toLowerCase().endsWith('.png')) mimeType = 'image/png';
-    else if (fileUrl.toLowerCase().endsWith('.webp')) mimeType = 'image/webp';
+    let mimeType = isAudio ? 'audio/wav' : 'application/pdf';
+    if (!isAudio) {
+      if (fileUrl.toLowerCase().endsWith('.jpg') || fileUrl.toLowerCase().endsWith('.jpeg')) mimeType = 'image/jpeg';
+      else if (fileUrl.toLowerCase().endsWith('.png')) mimeType = 'image/png';
+      else if (fileUrl.toLowerCase().endsWith('.webp')) mimeType = 'image/webp';
+    } else {
+      if (fileUrl.toLowerCase().endsWith('.mp3')) mimeType = 'audio/mp3';
+      else if (fileUrl.toLowerCase().endsWith('.m4a')) mimeType = 'audio/x-m4a';
+      else if (fileUrl.toLowerCase().endsWith('.webm')) mimeType = 'audio/webm';
+    }
 
-    // 2. Call Gemini
+    // 3. Call Gemini
     const parts = [{
       inlineData: {
         mimeType,
@@ -95,23 +127,31 @@ module.exports = async function handler(req, res) {
       }
     }];
 
-    const transcription = await callGemini(geminiKey, parts);
+    const systemPrompt = isAudio ? VOICE_SYSTEM_PROMPT : SYSTEM_PROMPT;
+    const transcription = await callGemini(geminiKey, parts, systemPrompt);
 
-    // 3. Save new transcription document
-    const db = require('./_utils/supabase').checkSupabase();
-    const docId = nanoid(21);
-    
-    const { error: dbErr } = await db.from('documents').insert([{
-      id: docId,
-      email: email.toLowerCase(),
-      type: 'transcription',
-      title: title ? `Converted: ${title}` : 'Converted Document',
-      transcript_text: transcription
-    }]);
+    // 4. Update existing or Save new transcription document
+    if (isAudio && id) {
+      const { error: dbErr } = await db
+        .from('documents')
+        .update({ transcript_text: transcription })
+        .eq('id', id);
 
-    if (dbErr) throw dbErr;
+      if (dbErr) throw dbErr;
+      return res.json({ success: true, id, text: transcription });
+    } else {
+      const docId = nanoid(21);
+      const { error: dbErr } = await db.from('documents').insert([{
+        id: docId,
+        email: email.toLowerCase(),
+        type: 'transcription',
+        title: title ? `Converted: ${title}` : 'Converted Document',
+        transcript_text: transcription
+      }]);
 
-    return res.json({ success: true, id: docId });
+      if (dbErr) throw dbErr;
+      return res.json({ success: true, id: docId, text: transcription });
+    }
   } catch (err) {
     console.error('Transcribe past error:', err);
     return res.status(500).json({ error: err.message || 'Conversion failed.' });

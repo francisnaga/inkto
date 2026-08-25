@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { X, Mic, Square, RefreshCw, Loader2, CloudLightning } from 'lucide-react';
+import { X, Mic, Square, Pause, Play, Save, RefreshCw, Loader2, CloudLightning } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { saveOfflineRecording } from '@/lib/indexeddb';
 import { nanoid } from 'nanoid';
@@ -18,11 +18,13 @@ export default function DictateModal({ onClose, onTranscribeComplete }: DictateM
   const [status, setStatus] = useState<RecordStatus>('idle');
   const [timer, setTimer] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [progressStep, setProgressStep] = useState(1);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const saveActionRef = useRef<'transcribe' | 'save_raw_audio'>('transcribe');
 
   // Stop everything safely
   const cleanup = useCallback(() => {
@@ -70,6 +72,7 @@ export default function DictateModal({ onClose, onTranscribeComplete }: DictateM
     setErrorMessage(null);
     audioChunksRef.current = [];
     setTimer(0);
+    saveActionRef.current = 'transcribe';
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
@@ -101,7 +104,22 @@ export default function DictateModal({ onClose, onTranscribeComplete }: DictateM
     }
   };
 
-  const stopRecording = () => {
+  const pauseRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.pause();
+      setStatus('paused');
+    }
+  };
+
+  const resumeRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
+      mediaRecorderRef.current.resume();
+      setStatus('recording');
+    }
+  };
+
+  const triggerStopWithAction = (action: 'transcribe' | 'save_raw_audio') => {
+    saveActionRef.current = action;
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
@@ -123,20 +141,23 @@ export default function DictateModal({ onClose, onTranscribeComplete }: DictateM
 
   const handleAudioStopped = async (blob: Blob) => {
     setStatus('transcribing');
+    setProgressStep(1);
+
+    // Auto-advance progress UI to show user what is happening under the hood
+    const t1 = setTimeout(() => setProgressStep(2), 800);
+    const t2 = setTimeout(() => setProgressStep(3), 2000);
+    const t3 = setTimeout(() => setProgressStep(4), 3800);
+
     const online = await checkConnectivity();
 
     if (!online) {
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
       // Offline fallback: save to IndexedDB queue
       const id = nanoid(21);
       const title = `Voice Dictation (${new Date().toLocaleDateString('en-GB')})`;
       try {
         await saveOfflineRecording(id, blob, title);
         setStatus('offline_queued');
-        // Let the user's main list sync on reconnection
-        try {
-          // Trigger a dummy post to cloud to register the metadata as pending
-          // (if possible, otherwise let it sync fully when reconnect triggers)
-        } catch {}
       } catch (dbErr) {
         setErrorMessage('Offline save failed.');
         setStatus('error');
@@ -147,6 +168,7 @@ export default function DictateModal({ onClose, onTranscribeComplete }: DictateM
     // Online path: send to transcribe API
     const formData = new FormData();
     formData.append('files', blob, 'dictation.wav');
+    formData.append('action', saveActionRef.current);
 
     try {
       const res = await fetch('/api/transcribe', {
@@ -155,8 +177,22 @@ export default function DictateModal({ onClose, onTranscribeComplete }: DictateM
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'ASR Transcription failed');
-      onTranscribeComplete(data.text, data.sessionId);
+
+      // Clear layout timeouts
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
+      setProgressStep(4);
+      
+      // Let user see 100% checkmark briefly for premium feedback
+      await new Promise(r => setTimeout(r, 600));
+
+      if (saveActionRef.current === 'save_raw_audio') {
+        // Redirection to History so they can see their saved voice card!
+        window.location.href = '/history';
+      } else {
+        onTranscribeComplete(data.text, data.sessionId);
+      }
     } catch (err: any) {
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
       console.error(err);
       setErrorMessage(err.message || 'ASR transcription failed.');
       setStatus('error');
@@ -168,17 +204,19 @@ export default function DictateModal({ onClose, onTranscribeComplete }: DictateM
       <div style={{ background: '#fff', color: '#1C1917', borderRadius: 24, width: '100%', maxWidth: 400, padding: '32px 24px', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.3)' }}>
         
         {/* Close Button */}
-        <button onClick={onClose} style={{ position: 'absolute', top: 18, right: 18, background: '#F5F4F0', border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#78716C' }}>
-          <X size={16} />
-        </button>
+        {status !== 'transcribing' && (
+          <button onClick={onClose} style={{ position: 'absolute', top: 18, right: 18, background: '#F5F4F0', border: 'none', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#78716C' }}>
+            <X size={16} />
+          </button>
+        )}
 
         <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px 0', letterSpacing: '-0.3px' }}>Voice Dictation</h3>
-        <p style={{ fontSize: 13, color: '#78716C', textAlign: 'center', margin: '0 0 32px 0', lineHeight: 1.5 }}>
-          Record your dictation or proceedings. Gemini will convert it directly to structured text.
+        <p style={{ fontSize: 13, color: '#78716C', textAlign: 'center', margin: '0 0 24px 0', lineHeight: 1.5 }}>
+          Record meetings, notes, or court proceedings. Pause, save, or transcribe with Gemini.
         </p>
 
         {/* Waveform & Timer Section */}
-        <div style={{ height: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 40, width: '100%' }}>
+        <div style={{ height: 110, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 24, width: '100%' }}>
           {status === 'recording' && (
             <div className="flex items-center gap-1.5 h-10 mb-4">
               {[...Array(9)].map((_, i) => (
@@ -194,12 +232,24 @@ export default function DictateModal({ onClose, onTranscribeComplete }: DictateM
               ))}
             </div>
           )}
-          <span style={{ fontSize: 44, fontWeight: 800, color: '#1C1917', fontVariantNumeric: 'tabular-nums' }}>
+          {status === 'paused' && (
+            <div className="flex items-center gap-1 h-10 mb-4">
+              {[...Array(9)].map((_, i) => (
+                <div key={i} className="bg-muted rounded-full w-1.5 h-2" />
+              ))}
+            </div>
+          )}
+          <span style={{ fontSize: 44, fontWeight: 800, color: '#1C1917', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
             {formatTimer(timer)}
           </span>
           {status === 'recording' && (
             <span style={{ fontSize: 11, fontWeight: 700, color: '#EF4444', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 8 }} className="animate-pulse">
               ● Recording
+            </span>
+          )}
+          {status === 'paused' && (
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#78716C', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 8 }}>
+              Recording Paused
             </span>
           )}
         </div>
@@ -212,16 +262,103 @@ export default function DictateModal({ onClose, onTranscribeComplete }: DictateM
             </Button>
           )}
 
-          {status === 'recording' && (
-            <Button onClick={stopRecording} variant="destructive" size="lg" className="w-full h-14 rounded-xl gap-2 font-semibold">
-              <Square size={18} /> Stop & Transcribe
-            </Button>
+          {(status === 'recording' || status === 'paused') && (
+            <div className="w-full space-y-3">
+              <div className="flex gap-3">
+                {status === 'recording' ? (
+                  <Button onClick={pauseRecording} variant="outline" className="flex-1 h-12 rounded-xl gap-2 font-semibold border-2">
+                    <Pause size={16} /> Pause
+                  </Button>
+                ) : (
+                  <Button onClick={resumeRecording} className="flex-1 h-12 rounded-xl gap-2 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white">
+                    <Play size={16} /> Resume
+                  </Button>
+                )}
+                
+                <Button onClick={() => triggerStopWithAction('transcribe')} variant="default" className="flex-1 h-12 rounded-xl gap-2 font-semibold">
+                  <Square size={16} /> Transcribe
+                </Button>
+              </div>
+
+              <Button onClick={() => triggerStopWithAction('save_raw_audio')} variant="secondary" className="w-full h-12 rounded-xl gap-2 font-semibold border">
+                <Save size={16} /> Save Audio Only
+              </Button>
+            </div>
           )}
 
           {status === 'transcribing' && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-              <Loader2 size={32} className="animate-spin text-primary" />
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#78716C' }}>Gemini is transcribing…</span>
+            <div className="w-full space-y-4 py-2 bg-stone-50 rounded-2xl p-4 border text-left">
+              <p className="font-bold text-sm text-foreground text-center mb-3">
+                {saveActionRef.current === 'save_raw_audio' ? 'Saving voice recording…' : 'Transcribing voice…'}
+              </p>
+              
+              <div className="space-y-3">
+                {/* Step 1 */}
+                <div className="flex items-center gap-3 text-sm">
+                  {progressStep > 1 ? (
+                    <div className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">✓</div>
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
+                  )}
+                  <span className={progressStep >= 1 ? 'font-medium text-foreground' : 'text-muted-foreground'}>
+                    Packaging and optimizing audio file
+                  </span>
+                </div>
+
+                {/* Step 2 */}
+                <div className="flex items-center gap-3 text-sm">
+                  {progressStep > 2 ? (
+                    <div className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">✓</div>
+                  ) : progressStep === 2 ? (
+                    <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border border-muted shrink-0" />
+                  )}
+                  <span className={progressStep >= 2 ? 'font-medium text-foreground' : 'text-muted-foreground'}>
+                    Uploading to cloud storage
+                  </span>
+                </div>
+
+                {/* Step 3 */}
+                {saveActionRef.current === 'transcribe' ? (
+                  <>
+                    <div className="flex items-center gap-3 text-sm">
+                      {progressStep > 3 ? (
+                        <div className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">✓</div>
+                      ) : progressStep === 3 ? (
+                        <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
+                      ) : (
+                        <div className="w-5 h-5 rounded-full border border-muted shrink-0" />
+                      )}
+                      <span className={progressStep >= 3 ? 'font-medium text-foreground' : 'text-muted-foreground'}>
+                        Analyzing speech accent & dialect
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3 text-sm">
+                      {progressStep === 4 ? (
+                        <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
+                      ) : (
+                        <div className="w-5 h-5 rounded-full border border-muted shrink-0" />
+                      )}
+                      <span className={progressStep >= 4 ? 'font-medium text-foreground' : 'text-muted-foreground'}>
+                        Generating legal transcription
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-3 text-sm">
+                    {progressStep >= 3 ? (
+                      <div className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-[10px] font-bold shrink-0">✓</div>
+                    ) : (
+                      <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
+                    )}
+                    <span className={progressStep >= 3 ? 'font-medium text-foreground' : 'text-muted-foreground'}>
+                      Saving to document history
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

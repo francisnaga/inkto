@@ -23,7 +23,7 @@ module.exports = async function handler(req, res) {
         // Try Supabase (Postgres) first — for all new sessions
         const { data: session, error } = await db
             .from('documents')
-            .select('id, transcript_text, source_image_count, created_at')
+            .select('id, transcript_text, source_image_count, created_at, audio_url')
             .eq('id', id)
             .single();
 
@@ -42,7 +42,8 @@ module.exports = async function handler(req, res) {
                     text: session.transcript_text,
                     createdAt: session.created_at,
                     sourceImageCount: session.source_image_count,
-                    images: imageUrls
+                    images: imageUrls,
+                    audioUrl: session.audio_url
                 }
             });
         }

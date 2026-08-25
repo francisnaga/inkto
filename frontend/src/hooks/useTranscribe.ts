@@ -1,4 +1,4 @@
-﻿/* eslint-disable */
+/* eslint-disable */
 // @ts-nocheck
 'use client';
 import { useState } from 'react';
@@ -14,6 +14,7 @@ export function useTranscribe() {
     const [transcribedText, setTranscribedText] = useState('');
     const [sessionId, setSessionId] = useState(null);
     const [sessionImages, setSessionImages] = useState([]);
+    const [audioUrl, setAudioUrl] = useState(null);
     const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
 
     const addFiles = (newFiles) => {
@@ -40,6 +41,7 @@ export function useTranscribe() {
             setTranscribedText(data.session.text);
             setSessionId(data.session.id);
             setSessionImages(data.session.images || []);
+            setAudioUrl(data.session.audioUrl || null);
             setState('success');
         } catch (err) {
             console.error(err);
@@ -178,6 +180,7 @@ export function useTranscribe() {
         setTranscribedText('');
         setSessionId(null);
         setSessionImages([]);
+        setAudioUrl(null);
         setError(null);
         setState('idle');
         setBatchProgress({ current: 0, total: 0 });
@@ -186,5 +189,5 @@ export function useTranscribe() {
         }
     };
 
-    return { state, files, error, transcribedText, sessionId, sessionImages, batchProgress, addFiles, removeFile, transcribe, fetchSession, reset };
+    return { state, files, error, transcribedText, sessionId, sessionImages, audioUrl, batchProgress, addFiles, removeFile, transcribe, fetchSession, reset };
 }

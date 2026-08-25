@@ -262,29 +262,36 @@ module.exports = async function handler(req, res) {
     parts.push({ text: pageInstruction });
 
     try {
-        // Single-pass transcription — fast, lean, reliable
-        // Reserve 50s for the AI call (leaving 10s headroom under Vercel's 60s limit)
-        const systemPrompt = isAudio ? VOICE_SYSTEM_PROMPT : SYSTEM_PROMPT;
-        const finalText = cleanSinglePageText(await callGemini(geminiKey, parts, 50000, systemPrompt));
+        let outputText = '';
+        const isSaveRawAudio = req.body?.action === 'save_raw_audio';
 
-        // Detect blank/no-text responses (only for images)
-        let outputText = finalText;
-        if (!isAudio) {
-            const noTextPhrases = [
-                'does not contain any handwritten',
-                'no handwritten text',
-                'cannot transcribe',
-                'no text to transcribe',
-                'does not appear to contain any text',
-                'the image does not contain',
-                'there is no text',
-                'no legible text',
-                'no written text'
-            ];
-            const isNoText = finalText.length < 400 && noTextPhrases.some(p => finalText.toLowerCase().includes(p));
-            outputText = isNoText
-                ? '[No handwritten text found in this document. Please upload a clear photo of a handwritten page.]'
-                : finalText;
+        if (isSaveRawAudio) {
+            outputText = '[Raw voice dictation - click Convert to Text below to transcribe]';
+        } else {
+            // Single-pass transcription — fast, lean, reliable
+            // Reserve 50s for the AI call (leaving 10s headroom under Vercel's 60s limit)
+            const systemPrompt = isAudio ? VOICE_SYSTEM_PROMPT : SYSTEM_PROMPT;
+            const finalText = cleanSinglePageText(await callGemini(geminiKey, parts, 50000, systemPrompt));
+
+            // Detect blank/no-text responses (only for images)
+            outputText = finalText;
+            if (!isAudio) {
+                const noTextPhrases = [
+                    'does not contain any handwritten',
+                    'no handwritten text',
+                    'cannot transcribe',
+                    'no text to transcribe',
+                    'does not appear to contain any text',
+                    'the image does not contain',
+                    'there is no text',
+                    'no legible text',
+                    'no written text'
+                ];
+                const isNoText = finalText.length < 400 && noTextPhrases.some(p => finalText.toLowerCase().includes(p));
+                outputText = isNoText
+                    ? '[No handwritten text found in this document. Please upload a clear photo of a handwritten page.]'
+                    : finalText;
+            }
         }
 
         // Save to Supabase

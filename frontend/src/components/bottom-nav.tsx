@@ -108,6 +108,7 @@ export function BottomNav() {
       </nav>
       {/* Spacer so content isn't hidden behind the fixed nav */}
       <div
+        id="bottom-nav-spacer"
         style={{
           height: 'calc(52px + env(safe-area-inset-bottom, 0px))',
           flexShrink: 0,

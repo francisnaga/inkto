@@ -101,6 +101,29 @@ function AppPageContent() {
     return () => clearInterval(id);
   }, [state]);
 
+  /* Toggle body class to hide bottom navigation when scanner or dictate modal is open */
+  useEffect(() => {
+    if (showScanner) {
+      document.body.classList.add('scanner-active');
+    } else {
+      document.body.classList.remove('scanner-active');
+    }
+  }, [showScanner]);
+
+  useEffect(() => {
+    if (showDictate) {
+      document.body.classList.add('dictate-active');
+    } else {
+      document.body.classList.remove('dictate-active');
+    }
+  }, [showDictate]);
+
+  useEffect(() => {
+    return () => {
+      document.body.classList.remove('scanner-active', 'dictate-active');
+    };
+  }, []);
+
   const handleScanComplete = useCallback(async (pages: File[], pdfBlob: Blob) => {
     setShowScanner(false);
     if (savedPdf) URL.revokeObjectURL(savedPdf.url);

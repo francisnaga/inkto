@@ -179,3 +179,11 @@ button, a, input, select {
   transition-duration: 150ms;
   transition-timing-function: ease;
 }
+
+/* Hide bottom navigation and its spacer when scanner or dictate modals are active */
+body.scanner-active nav,
+body.dictate-active nav,
+body.scanner-active #bottom-nav-spacer,
+body.dictate-active #bottom-nav-spacer {
+  display: none !important;
+}

@@ -49,6 +49,9 @@ function VerifyForm() {
       const res  = await fetch('/api/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ email, otp }) });
       const data = await res.json();
       if (!res.ok) { setErr(data.error || 'Invalid code — try again.'); return; }
+      if (data.sessionToken) {
+        localStorage.setItem('inkto_session', data.sessionToken);
+      }
       setDone(true);
       await refreshUser();
       setTimeout(() => router.replace('/app'), 700);

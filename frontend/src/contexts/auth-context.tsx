@@ -2,6 +2,46 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+if (typeof window !== 'undefined' && !(window as any).__fetch_intercepted__) {
+  (window as any).__fetch_intercepted__ = true;
+  const originalFetch = window.fetch;
+  window.fetch = async function (input, init) {
+    if (typeof input === 'string' && input.startsWith('/api/')) {
+      const token = localStorage.getItem('inkto_session');
+      if (token) {
+        init = init || {};
+        init.headers = init.headers || {};
+        if (init.headers instanceof Headers) {
+          if (!init.headers.has('Authorization')) {
+            init.headers.set('Authorization', `Bearer ${token}`);
+          }
+          if (!init.headers.has('X-Inkto-Auth')) {
+            init.headers.set('X-Inkto-Auth', token);
+          }
+        } else if (Array.isArray(init.headers)) {
+          const hasAuth = init.headers.some(([k]) => k.toLowerCase() === 'authorization');
+          if (!hasAuth) {
+            init.headers.push(['Authorization', `Bearer ${token}`]);
+          }
+          const hasX = init.headers.some(([k]) => k.toLowerCase() === 'x-inkto-auth');
+          if (!hasX) {
+            init.headers.push(['X-Inkto-Auth', token]);
+          }
+        } else {
+          const headersObj = init.headers as Record<string, string>;
+          if (!headersObj['Authorization'] && !headersObj['authorization']) {
+            headersObj['Authorization'] = `Bearer ${token}`;
+          }
+          if (!headersObj['X-Inkto-Auth'] && !headersObj['x-inkto-auth']) {
+            headersObj['X-Inkto-Auth'] = token;
+          }
+        }
+      }
+    }
+    return originalFetch.call(this, input, init);
+  };
+}
+
 interface AuthUser {
   email: string;
 }
@@ -26,7 +66,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = async () => {
     try {
-      const res = await fetch('/api/history', { credentials: 'include' });
+      const token = typeof window !== 'undefined' ? localStorage.getItem('inkto_session') : null;
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const res = await fetch('/api/history', { credentials: 'include', headers });
       if (res.ok) {
         const data = await res.json();
         if (data.email) {
@@ -43,10 +88,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = async () => {
-    // Clear the cookie server-side by calling a logout endpoint
     try {
-      await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+      const token = typeof window !== 'undefined' ? localStorage.getItem('inkto_session') : null;
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      await fetch('/api/logout', { method: 'POST', credentials: 'include', headers });
     } catch {}
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('inkto_session');
+    }
     setUser(null);
   };
 

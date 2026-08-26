@@ -123,9 +123,11 @@ async function callGemini(apiKey, parts, timeoutMs, systemPrompt = SYSTEM_PROMPT
 }
 
 module.exports = async function handler(req, res) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    const origin = req.headers.origin || '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Inkto-Auth, Cookie');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -163,7 +165,7 @@ module.exports = async function handler(req, res) {
     };
 
     const cookies = parseCookie(req.headers.cookie || '');
-    const userEmail = verifyCookie(cookies.inkto_auth);
+    const userEmail = require('./_utils/auth').getAuthEmail(req);
 
     if (!userEmail) {
         return res.status(401).json({ error: 'Please sign in to convert documents.', requireAuth: true });

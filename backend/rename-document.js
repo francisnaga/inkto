@@ -21,13 +21,15 @@ function verifyCookie(v) {
 }
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin || '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cookie');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cookie, Authorization, X-Inkto-Auth');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'PATCH') return res.status(405).json({ error: 'Method not allowed' });
 
-  const email = verifyCookie(parseCookie(req.headers.cookie || '').inkto_auth);
+  const email = require('./_utils/auth').getAuthEmail(req);
   if (!email) return res.status(401).json({ error: 'Unauthorized' });
 
   const { id, title } = req.body || {};

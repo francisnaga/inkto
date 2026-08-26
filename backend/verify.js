@@ -22,9 +22,11 @@ function signCookie(email) {
 }
 
 module.exports = async function handler(req, res) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    const origin = req.headers.origin || '*';
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cookie, Authorization, X-Inkto-Auth');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -77,7 +79,12 @@ module.exports = async function handler(req, res) {
                 path: '/'
             }));
 
-            return res.json({ success: true, email: tokenData.email });
+            const origin = req.headers.origin || '*';
+            res.setHeader('Access-Control-Allow-Origin', origin);
+            res.setHeader('Access-Control-Allow-Credentials', 'true');
+            res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Cookie, Authorization, X-Inkto-Auth');
+            
+            return res.json({ success: true, email: tokenData.email, sessionToken: cookieValue });
         } catch (err) {
             console.error('OTP verify error:', err);
             return res.status(500).json({ error: 'Something went wrong. Please try again.' });

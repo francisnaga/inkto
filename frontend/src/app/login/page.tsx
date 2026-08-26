@@ -2,122 +2,152 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { InktoWordmark } from '@/components/inkto-logo';
+
+/* Inkto design tokens */
+const C = {
+  paper:   '#FBFAF7',
+  border:  '#E4E1D9',
+  ink:     '#0B0D12',
+  inkMid:  '#444240',
+  inkMute: '#6B6760',
+  blue:    '#24467A',
+  blueSub: '#EEF2F8',
+  brass:   '#A6822C',
+  brassS:  '#F8F2E6',
+  red:     '#B23A34',
+  warmMid: '#C8C4BA',
+};
+const UI  = '-apple-system, "Segoe UI", Roboto, sans-serif';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState('');
+  const [busy, setBusy]   = useState(false);
+  const [err, setErr]     = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsPending(true);
-    setError('');
+    setBusy(true); setErr('');
     try {
-      const res = await fetch('/api/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
+      const res  = await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || 'Failed to send code.'); return; }
+      if (!res.ok) { setErr(data.error || 'Failed to send code.'); return; }
       router.push(`/verify?email=${encodeURIComponent(email)}`);
     } catch {
-      setError('Network error. Please try again.');
+      setErr('Network error — please try again.');
     } finally {
-      setIsPending(false);
+      setBusy(false);
     }
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', padding: '0 0 32px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', fontFamily: UI }}>
 
-      {/* Top brand area */}
-      <div style={{ paddingTop: 64, paddingBottom: 48, textAlign: 'center' }}>
-        {/* Logo mark */}
-        <div style={{ width: 64, height: 64, borderRadius: 20, background: 'linear-gradient(135deg, #1D4ED8 0%, #7C3AED 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 8px 24px rgba(37,99,235,0.35)' }}>
-          <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
-            <path d="M8 26V10h4v16H8zm7-16h4l5 16h-4l-5-16z" fill="white" fillOpacity="0.9" />
-          </svg>
+      {/* Top mark — nib animates on first load (this is the one signature moment) */}
+      <div style={{ paddingTop: 72, paddingBottom: 56, textAlign: 'center' }}>
+        <div style={{ marginBottom: 24 }}>
+          <InktoWordmark size={36} animate />
         </div>
-        <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.7px', color: '#0C0A09', margin: '0 0 8px', fontFamily: 'inherit' }}>
-          Welcome to Inkto
+
+        {/* Thin letterhead rule */}
+        <div style={{ width: 40, height: 1, background: C.border, margin: '0 auto 20px' }} />
+
+        <h1
+          style={{
+            fontFamily: 'Georgia, "Iowan Old Style", "Times New Roman", serif',
+            fontSize: 26,
+            fontWeight: 700,
+            color: C.ink,
+            margin: '0 0 8px',
+            letterSpacing: '-0.02em',
+          }}
+        >
+          Sign in to Inkto
         </h1>
-        <p style={{ fontSize: 15, color: '#78716C', margin: 0, lineHeight: 1.5, fontFamily: 'inherit' }}>
-          Handwriting &amp; scans — typed in seconds.
+        <p style={{ fontSize: 14, color: C.inkMute, margin: 0, lineHeight: 1.6 }}>
+          No password — we email you a 6-digit code.
         </p>
       </div>
 
-      {/* Card */}
-      <div style={{ flex: 1, padding: '0 20px' }}>
-        <div style={{ background: '#fff', border: '1px solid #E7E5E4', borderRadius: 24, padding: '32px 24px', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: '#1C1917', margin: '0 0 6px', letterSpacing: '-0.4px' }}>Sign in</h2>
-          <p style={{ fontSize: 13, color: '#78716C', margin: '0 0 28px', lineHeight: 1.5 }}>
-            No password needed — we&apos;ll email you a 6-digit code.
-          </p>
+      {/* Form section */}
+      <div style={{ padding: '0 4px 40px' }}>
+        {/* Section rule */}
+        <div style={{ height: 1, background: C.border, marginBottom: 32 }} />
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div>
-              <label htmlFor="email" style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#44403C', marginBottom: 8, letterSpacing: '0.3px', textTransform: 'uppercase' }}>
-                Email address
-              </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                inputMode="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                style={{
-                  width: '100%', height: 52, padding: '0 16px', fontSize: 16,
-                  border: `1.5px solid ${error ? '#EF4444' : '#E7E5E4'}`,
-                  borderRadius: 14, background: '#FAFAF9', color: '#1C1917',
-                  outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box',
-                  transition: 'border-color 0.15s, box-shadow 0.15s',
-                }}
-                onFocus={e => { e.target.style.borderColor = '#2563EB'; e.target.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.12)'; e.target.style.background = '#fff'; }}
-                onBlur={e => { e.target.style.borderColor = error ? '#EF4444' : '#E7E5E4'; e.target.style.boxShadow = 'none'; e.target.style.background = '#FAFAF9'; }}
-              />
-            </div>
-
-            {error && (
-              <div style={{ padding: '12px 16px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 12, fontSize: 13, fontWeight: 600, color: '#DC2626' }}>
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isPending || !email}
-              style={{
-                width: '100%', height: 54, background: isPending || !email ? '#D6D3D1' : 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)',
-                border: 'none', borderRadius: 16, fontSize: 16, fontWeight: 700, color: '#fff',
-                cursor: isPending || !email ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
-                transition: 'all 0.18s', boxShadow: isPending || !email ? 'none' : '0 4px 16px rgba(37,99,235,0.35)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              }}
+        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div>
+            <label
+              htmlFor="email"
+              style={{ display: 'block', fontSize: 11, fontWeight: 700, color: C.inkMid, marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}
             >
-              {isPending ? (
-                <>
-                  <div style={{ width: 18, height: 18, border: '2.5px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.75s linear infinite' }} />
-                  Sending code…
-                </>
-              ) : 'Continue →'}
-            </button>
-          </form>
-        </div>
+              Email address
+            </label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              style={{
+                width: '100%', height: 48, padding: '0 14px',
+                fontSize: 15, fontFamily: UI,
+                border: `1px solid ${err ? C.red : C.border}`,
+                borderRadius: 8, background: '#FFFFFF', color: C.ink,
+                outline: 'none', boxSizing: 'border-box',
+              }}
+              onFocus={e => { e.target.style.borderColor = C.blue; e.target.style.boxShadow = `0 0 0 2px ${C.blueSub}`; }}
+              onBlur={e => { e.target.style.borderColor = err ? C.red : C.border; e.target.style.boxShadow = 'none'; }}
+            />
+          </div>
 
-        {/* Fine print */}
-        <p style={{ textAlign: 'center', fontSize: 12, color: '#A8A29E', marginTop: 24, lineHeight: 1.6, padding: '0 8px' }}>
+          {err && (
+            <p style={{ margin: 0, fontSize: 13, color: C.red, lineHeight: 1.5 }}>{err}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={busy || !email}
+            style={{
+              width: '100%', height: 48,
+              background: busy || !email ? C.warmMid : C.blue,
+              border: 'none', borderRadius: 8,
+              fontSize: 14, fontWeight: 700, color: '#fff',
+              cursor: busy || !email ? 'not-allowed' : 'pointer',
+              fontFamily: UI, letterSpacing: '0.01em',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              transition: 'background 150ms ease',
+            }}
+            onMouseEnter={e => { if (!busy && email) (e.currentTarget as HTMLButtonElement).style.background = '#3A5C94'; }}
+            onMouseLeave={e => { if (!busy && email) (e.currentTarget as HTMLButtonElement).style.background = C.blue; }}
+          >
+            {busy
+              ? <><Spinner /> Sending code…</>
+              : 'Continue'}
+          </button>
+        </form>
+
+        {/* Bottom rule + fine print */}
+        <div style={{ height: 1, background: C.border, margin: '32px 0 20px' }} />
+
+        <p style={{ fontSize: 11, color: C.warmMid, margin: 0, lineHeight: 1.7, textAlign: 'center' }}>
           By continuing you agree to our{' '}
-          <a href="/terms" style={{ color: '#78716C', fontWeight: 600, textDecoration: 'none' }}>Terms</a>
+          <a href="/terms" style={{ color: C.inkMute, textDecoration: 'underline', textUnderlineOffset: 2 }}>Terms</a>
           {' '}and{' '}
-          <a href="/privacy" style={{ color: '#78716C', fontWeight: 600, textDecoration: 'none' }}>Privacy Policy</a>.
+          <a href="/privacy" style={{ color: C.inkMute, textDecoration: 'underline', textUnderlineOffset: 2 }}>Privacy Policy</a>.
         </p>
       </div>
+
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
+  );
+}
+
+function Spinner() {
+  return (
+    <span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,0.35)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite', flexShrink: 0 }} />
   );
 }

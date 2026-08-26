@@ -20,9 +20,11 @@ module.exports = async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     // Clear the auth cookie by setting it to expire immediately
+    const host = req.headers.host || '';
+    const isSecure = !host.includes('localhost') && !host.includes('127.0.0.1') && !host.includes('192.168.');
     res.setHeader('Set-Cookie', serializeCookie('inkto_auth', '', {
         httpOnly: true,
-        secure: true,
+        secure: isSecure,
         sameSite: 'lax',
         maxAge: 0,
         path: '/'

@@ -67,9 +67,11 @@ module.exports = async function handler(req, res) {
 
             // Issue 60-day session cookie per spec
             const cookieValue = signCookie(tokenData.email);
+            const host = req.headers.host || '';
+            const isSecure = !host.includes('localhost') && !host.includes('127.0.0.1') && !host.includes('192.168.');
             res.setHeader('Set-Cookie', serializeCookie('inkto_auth', cookieValue, {
                 httpOnly: true,
-                secure: true,
+                secure: isSecure,
                 sameSite: 'lax',
                 maxAge: 60 * 24 * 60 * 60,
                 path: '/'
@@ -110,9 +112,11 @@ module.exports = async function handler(req, res) {
             await db.from('auth_tokens').update({ used: true }).eq('token', token);
 
             const cookieValue = signCookie(tokenData.email);
+            const host = req.headers.host || '';
+            const isSecure = !host.includes('localhost') && !host.includes('127.0.0.1') && !host.includes('192.168.');
             res.setHeader('Set-Cookie', serializeCookie('inkto_auth', cookieValue, {
                 httpOnly: true,
-                secure: true,
+                secure: isSecure,
                 sameSite: 'lax',
                 maxAge: 60 * 24 * 60 * 60,
                 path: '/'

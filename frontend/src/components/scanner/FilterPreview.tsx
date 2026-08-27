@@ -1,5 +1,6 @@
 'use client';
-import { Crop as CropIcon, RotateCw, Plus, Check, Sparkles, FileText, Sun, Sliders, Image as ImageIcon } from 'lucide-react';
+import { useState } from 'react';
+import { Crop as CropIcon, RotateCw, Plus, Check, Sparkles, FileText, Sun, Sliders, Image as ImageIcon, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { FilterType, ScannedPage } from '@/types/scanner';
@@ -33,6 +34,9 @@ export function FilterPreview({
   onAddPage,
   onFinish,
 }: FilterPreviewProps) {
+  const [brightness, setBrightness] = useState(100);
+  const [contrast, setContrast] = useState(100);
+  const [showSliders, setShowSliders] = useState(false);
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', background: '#0B0D12' }}>
       {/* Top Header */}
@@ -109,8 +113,46 @@ export function FilterPreview({
             objectFit: 'contain',
             borderRadius: 8,
             boxShadow: '0 8px 30px rgba(0,0,0,0.6)',
+            filter: `brightness(${brightness}%) contrast(${contrast}%)`,
+            transition: 'filter 0.2s ease',
           }}
         />
+      </div>
+
+      {/* Manual Adjustments Panel */}
+      {showSliders && (
+        <div style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.05)', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 12, color: '#A3A3A3', width: 68 }}>Brightness</span>
+              <input type="range" min="50" max="150" value={brightness} onChange={(e) => setBrightness(Number(e.target.value))} style={{ flex: 1, accentColor: '#22C55E' }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 12, color: '#A3A3A3', width: 68 }}>Contrast</span>
+              <input type="range" min="50" max="150" value={contrast} onChange={(e) => setContrast(Number(e.target.value))} style={{ flex: 1, accentColor: '#22C55E' }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tools Row */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          padding: '8px 16px',
+          background: 'rgba(255,255,255,0.04)',
+        }}
+      >
+        <button
+          onClick={() => setShowSliders(!showSliders)}
+          style={{
+            background: 'none', border: 'none', color: showSliders ? '#22C55E' : '#E4E1D9', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600,
+          }}
+        >
+          <SlidersHorizontal size={14} /> Adjustments
+        </button>
       </div>
 
       {/* CamScanner Filter Selector Carousel */}

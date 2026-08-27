@@ -348,6 +348,7 @@ export function ScannerContainer({
             setStage('filter');
           }}
           onDeletePage={handleDeletePage}
+          onReorderPages={newPages => setPages(newPages)}
           onAddMore={() => setStage('camera')}
           onSavePdf={handleSavePdf}
           onConvertText={handleConvertText}

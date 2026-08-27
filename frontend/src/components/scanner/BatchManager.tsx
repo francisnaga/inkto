@@ -1,7 +1,24 @@
 'use client';
-import { Plus, X, Trash2, Download, FileText } from 'lucide-react';
+import { Plus, X, Trash2, Download, FileText, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { ScannedPage } from '@/types/scanner';
 
 interface BatchManagerProps {
@@ -9,10 +26,109 @@ interface BatchManagerProps {
   activePageIndex: number;
   onSelectPage: (index: number) => void;
   onDeletePage: (index: number) => void;
+  onReorderPages: (pages: ScannedPage[]) => void;
   onAddMore: () => void;
   onSavePdf: () => void;
   onConvertText: () => void;
   onClose: () => void;
+}
+
+interface SortablePageProps {
+  page: ScannedPage;
+  index: number;
+  isActive: boolean;
+  onSelect: () => void;
+  onDelete: () => void;
+}
+
+function SortablePage({ page, index, isActive, onSelect, onDelete }: SortablePageProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: page.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        ...style,
+        position: 'relative',
+        background: '#1C1917',
+        borderRadius: 10,
+        overflow: 'hidden',
+        border: isActive ? '2px solid #22C55E' : '1px solid rgba(255,255,255,0.15)',
+        aspectRatio: '3/4',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        style={{
+          position: 'absolute',
+          top: 8,
+          left: 8,
+          background: 'rgba(0,0,0,0.6)',
+          borderRadius: 4,
+          padding: 4,
+          cursor: 'grab',
+          zIndex: 2,
+        }}
+      >
+        <GripVertical size={16} color="#fff" />
+      </div>
+      <img
+        src={page.enhancedCanvas.toDataURL('image/jpeg', 0.85)}
+        alt={`Page ${index + 1}`}
+        onClick={onSelect}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+      />
+      <span
+        style={{
+          position: 'absolute',
+          bottom: 8,
+          left: 8,
+          background: 'rgba(0,0,0,0.75)',
+          color: '#fff',
+          fontSize: 10,
+          fontWeight: 700,
+          padding: '2px 8px',
+          borderRadius: 4,
+          pointerEvents: 'none',
+        }}
+      >
+        Page {index + 1}
+      </span>
+      <button
+        onClick={e => {
+          e.stopPropagation();
+          onDelete();
+        }}
+        style={{
+          position: 'absolute',
+          top: 8,
+          right: 8,
+          background: 'rgba(178,58,52,0.85)',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '50%',
+          width: 28,
+          height: 28,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          zIndex: 2,
+        }}
+      >
+        <Trash2 size={14} />
+      </button>
+    </div>
+  );
 }
 
 export function BatchManager({
@@ -20,11 +136,26 @@ export function BatchManager({
   activePageIndex,
   onSelectPage,
   onDeletePage,
+  onReorderPages,
   onAddMore,
   onSavePdf,
   onConvertText,
   onClose,
 }: BatchManagerProps) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      const oldIndex = pages.findIndex(p => p.id === active.id);
+      const newIndex = pages.findIndex(p => p.id === over?.id);
+      onReorderPages(arrayMove(pages, oldIndex, newIndex));
+    }
+  };
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', background: '#0B0D12' }}>
       {/* Top Bar */}
@@ -66,78 +197,37 @@ export function BatchManager({
         </motion.button>
       </div>
 
-      {/* Grid of Pages */}
+      {/* Grid of Pages (Sortable) */}
       <div
         style={{
           flex: 1,
           minHeight: 0,
           padding: 16,
           overflowY: 'auto',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: 12,
         }}
       >
-        {pages.map((p, idx) => (
-          <div
-            key={p.id}
-            style={{
-              position: 'relative',
-              background: '#1C1917',
-              borderRadius: 10,
-              overflow: 'hidden',
-              border: idx === activePageIndex ? '2px solid #22C55E' : '1px solid rgba(255,255,255,0.15)',
-              aspectRatio: '3/4',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            <img
-              src={p.enhancedCanvas.toDataURL('image/jpeg', 0.85)}
-              alt={`Page ${idx + 1}`}
-              onClick={() => onSelectPage(idx)}
-              style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
-            />
-            <span
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={pages.map(p => p.id)} strategy={rectSortingStrategy}>
+            <div
               style={{
-                position: 'absolute',
-                bottom: 8,
-                left: 8,
-                background: 'rgba(0,0,0,0.75)',
-                color: '#fff',
-                fontSize: 10,
-                fontWeight: 700,
-                padding: '2px 8px',
-                borderRadius: 4,
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: 12,
               }}
             >
-              Page {idx + 1}
-            </span>
-            <button
-              onClick={e => {
-                e.stopPropagation();
-                onDeletePage(idx);
-              }}
-              style={{
-                position: 'absolute',
-                top: 8,
-                right: 8,
-                background: 'rgba(178,58,52,0.85)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '50%',
-                width: 28,
-                height: 28,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-              }}
-            >
-              <Trash2 size={14} />
-            </button>
-          </div>
-        ))}
+              {pages.map((p, idx) => (
+                <SortablePage
+                  key={p.id}
+                  page={p}
+                  index={idx}
+                  isActive={idx === activePageIndex}
+                  onSelect={() => onSelectPage(idx)}
+                  onDelete={() => onDeletePage(idx)}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       </div>
 
       {/* Export Actions Bar */}
@@ -186,3 +276,4 @@ export function BatchManager({
     </div>
   );
 }
+

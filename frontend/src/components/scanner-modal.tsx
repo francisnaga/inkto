@@ -2,844 +2,925 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRef, useEffect, useState, useCallback } from 'react';
 import {
-  X, RotateCcw, Check, ScanLine, ChevronLeft, ChevronRight,
-  FileText, Download, Plus, Camera, Loader2, ZapIcon,
+  X, RotateCcw, RotateCw, Check, ChevronLeft, ChevronRight,
+  FileText, Download, Plus, Camera, Loader2, Zap, ZapOff,
+  Crop as CropIcon, Trash2, Sliders, Sparkles, Sun, Image as ImageIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { motion, AnimatePresence } from 'framer-motion';
+import { scannerBridge, Pt, Quad, CamFilter } from '@/lib/scanner-bridge';
+import { compilePdfFromCanvases, canvasToFile } from '@/lib/pdf';
 
 interface ScannerModalProps {
   onScanComplete: (pages: File[], pdfBlob: Blob) => void;
   onConvertToText: (pages: File[]) => void;
   onClose: () => void;
 }
-type Phase = 'scanning' | 'adjusting' | 'reviewing' | 'choice';
-type EnhanceMode = 'auto' | 'color' | 'bw';
-interface Pt { x: number; y: number; }
-type Quad = [Pt, Pt, Pt, Pt];
 
-// ── Script loader (idempotent) ──────────────────────────────────────────────
-function loadScript(src: string): Promise<void> {
-  return new Promise(res => {
-    if (document.querySelector(`script[src="${src}"]`)) { res(); return; }
-    const s = document.createElement('script');
-    s.src = src; s.async = true;
-    s.onload = () => res();
-    s.onerror = () => res(); // silently continue even if CDN fails
-    document.head.appendChild(s);
-  });
-}
-declare global { interface Window { jscanify: any; jspdf: any; cv: any; } }
+type Phase = 'scanning' | 'adjusting' | 'reviewing' | 'batch_summary';
 
-// ── Geometry helpers ────────────────────────────────────────────────────────
-function dist(a: Pt, b: Pt) { 
-  if (!a || !b) return 0;
-  return Math.sqrt(((a.x || 0) - (b.x || 0)) ** 2 + ((a.y || 0) - (b.y || 0)) ** 2); 
-}
-function quadSize(corners: Quad) {
-  if (!corners || !Array.isArray(corners) || corners.length < 4) {
-    return { w: 800, h: 1000 };
-  }
-  const [tl, tr, br, bl] = corners;
-  if (!tl || !tr || !br || !bl) return { w: 800, h: 1000 };
-  const w = Math.max(100, Math.round((dist(tl, tr) + dist(bl, br)) / 2));
-  const h = Math.max(100, Math.round((dist(tl, bl) + dist(tr, br)) / 2));
-  return { w: isNaN(w) || w <= 0 ? 800 : w, h: isNaN(h) || h <= 0 ? 1000 : h };
-}
-function defaultCorners(W: number, H: number): Quad {
-  const p = 0.10;
-  const safeW = Math.max(100, W || 800);
-  const safeH = Math.max(100, H || 1000);
-  return [{ x: safeW * p, y: safeH * p }, { x: safeW * (1 - p), y: safeH * p }, { x: safeW * (1 - p), y: safeH * (1 - p) }, { x: safeW * p, y: safeH * (1 - p) }];
-}
-type TR = { scale: number; ox: number; oy: number };
-function getTransform(iW: number, iH: number, cW: number, cH: number): TR {
-  const safeIW = Math.max(1, iW || 1);
-  const safeIH = Math.max(1, iH || 1);
-  const scale = Math.min(cW / safeIW, cH / safeIH);
-  return { scale: isNaN(scale) || scale <= 0 ? 1 : scale, ox: (cW - safeIW * scale) / 2, oy: (cH - safeIH * scale) / 2 };
-}
-function i2c(p: Pt, t: TR) { return { x: t.ox + (p?.x || 0) * t.scale, y: t.oy + (p?.y || 0) * t.scale }; }
-function c2i(x: number, y: number, t: TR) { return { x: (x - t.ox) / t.scale, y: (y - t.oy) / t.scale }; }
-
-// ── Pure-JS bilinear perspective warp (OpenCV fallback) ─────────────────────
-function computeHomography(src: Pt[], dst: Pt[]): number[] {
-  if (!src || !dst || src.length < 4 || dst.length < 4) {
-    return [1, 0, 0, 0, 1, 0, 0, 0, 1];
-  }
-  // 8-point DLT
-  const A: number[][] = [];
-  for (let i = 0; i < 4; i++) {
-    const { x: X = 0, y: Y = 0 } = src[i] || {};
-    const { x: u = 0, y: v = 0 } = dst[i] || {};
-    A.push([-X, -Y, -1, 0, 0, 0, u * X, u * Y, u]);
-    A.push([0, 0, 0, -X, -Y, -1, v * X, v * Y, v]);
-  }
-  const n = 8;
-  const M: number[][] = A.map(row => [...row.slice(0, n), -row[n]]);
-  for (let col = 0; col < n; col++) {
-    let maxRow = col;
-    for (let r = col + 1; r < n; r++) {
-      if (Math.abs(M[r]?.[col] || 0) > Math.abs(M[maxRow]?.[col] || 0)) maxRow = r;
-    }
-    if (M[maxRow] && M[col]) {
-      [M[col], M[maxRow]] = [M[maxRow], M[col]];
-    }
-    if (!M[col] || Math.abs(M[col][col]) < 1e-10) continue;
-    for (let r = 0; r < n; r++) {
-      if (r === col) continue;
-      const f = M[r][col] / M[col][col];
-      for (let c = col; c <= n; c++) M[r][c] -= f * M[col][c];
-    }
-  }
-  const h = M.map((row, i) => {
-    const divisor = row?.[i];
-    return !divisor || Math.abs(divisor) < 1e-10 ? 0 : (row[n] / divisor);
-  });
-  return [...h, 1];
+interface ScannedPage {
+  id: string;
+  originalCanvas: HTMLCanvasElement;
+  corners: Quad;
+  warpedCanvas: HTMLCanvasElement;
+  enhancedCanvas: HTMLCanvasElement;
+  filter: CamFilter;
+  rotation: number; // 0, 90, 180, 270
 }
 
-function jsWarp(srcCanvas: HTMLCanvasElement, corners: Quad): HTMLCanvasElement {
-  if (!srcCanvas || !corners || corners.length < 4) return srcCanvas;
-  const { w, h } = quadSize(corners);
-  const [tl, tr, br, bl] = corners;
-  if (!tl || !tr || !br || !bl) return srcCanvas;
+const C = {
+  paper:   '#FBFAF7',
+  border:  '#E4E1D9',
+  ink:     '#0B0D12',
+  inkMid:  '#444240',
+  inkMute: '#6B6760',
+  blue:    '#24467A',
+  blueSub: '#EEF2F8',
+  brass:   '#A6822C',
+  brassS:  '#F8F2E6',
+  red:     '#B23A34',
+  green:   '#16A34A',
+  warmMid: '#C8C4BA',
+};
 
-  const srcPts = [tl, tr, br, bl];
-  const dstPts = [{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }];
-  const H = computeHomography(dstPts, srcPts);
+const UI = '-apple-system, "Segoe UI", Roboto, sans-serif';
 
-  const out = document.createElement('canvas');
-  out.width = Math.max(1, w);
-  out.height = Math.max(1, h);
-  const ctx = out.getContext('2d');
-  const srcCtx = srcCanvas.getContext('2d');
-  if (!ctx || !srcCtx) return srcCanvas;
+const FILTERS: { id: CamFilter; label: string; icon: any }[] = [
+  { id: 'magic_color', label: 'Magic Color', icon: Sparkles },
+  { id: 'bw',          label: 'B&W Clean',   icon: FileText },
+  { id: 'no_shadow',   label: 'No Shadow',   icon: Sun },
+  { id: 'lighten',     label: 'Lighten',     icon: Sliders },
+  { id: 'original',    label: 'Original',    icon: ImageIcon },
+];
 
-  try {
-    const srcImg = srcCtx.getImageData(0, 0, srcCanvas.width, srcCanvas.height);
-    const dstImg = ctx.createImageData(out.width, out.height);
-    const sW = srcCanvas.width, sH = srcCanvas.height;
-    const sd = srcImg.data, dd = dstImg.data;
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const denom = H[6] * x + H[7] * y + H[8];
-        if (Math.abs(denom) < 1e-10) continue;
-        const sx = (H[0] * x + H[1] * y + H[2]) / denom;
-        const sy = (H[3] * x + H[4] * y + H[5]) / denom;
-        if (sx < 0 || sy < 0 || sx >= sW - 1 || sy >= sH - 1 || isNaN(sx) || isNaN(sy)) continue;
-        const fx = Math.floor(sx), fy = Math.floor(sy);
-        const dx = sx - fx, dy = sy - fy;
-        const i00 = (fy * sW + fx) * 4;
-        const i10 = (fy * sW + fx + 1) * 4;
-        const i01 = ((fy + 1) * sW + fx) * 4;
-        const i11 = ((fy + 1) * sW + fx + 1) * 4;
-        const di = (y * w + x) * 4;
-        if (i00 < 0 || i11 + 3 >= sd.length || di < 0 || di + 3 >= dd.length) continue;
-        for (let c = 0; c < 3; c++) {
-          dd[di + c] = Math.round(
-            sd[i00 + c] * (1 - dx) * (1 - dy) +
-            sd[i10 + c] * dx * (1 - dy) +
-            sd[i01 + c] * (1 - dx) * dy +
-            sd[i11 + c] * dx * dy
-          );
-        }
-        dd[di + 3] = 255;
-      }
-    }
-    ctx.putImageData(dstImg, 0, 0);
-    return out;
-  } catch (err) {
-    console.warn("jsWarp error fallback:", err);
-    return srcCanvas;
-  }
-}
-
-// ── OpenCV-based warp (preferred when available) ────────────────────────────
-function ocvWarp(src: HTMLCanvasElement, corners: Quad): HTMLCanvasElement {
-  const cv = window.cv;
-  if (!cv || !cv.imread || !corners || corners.length < 4) return jsWarp(src, corners);
-  const [tl, tr, br, bl] = corners;
-  if (!tl || !tr || !br || !bl) return jsWarp(src, corners);
-  const { w, h } = quadSize(corners);
-  let srcMat: any, dstMat: any, srcPts: any, dstPts: any, M: any;
-  try {
-    srcMat = cv.imread(src);
-    dstMat = new cv.Mat();
-    srcPts = cv.matFromArray(4, 1, cv.CV_32FC2, [tl.x, tl.y, tr.x, tr.y, br.x, br.y, bl.x, bl.y]);
-    dstPts = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, w, 0, w, h, 0, h]);
-    M = cv.getPerspectiveTransform(srcPts, dstPts);
-    cv.warpPerspective(srcMat, dstMat, M, new cv.Size(w, h), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
-    const out = document.createElement('canvas'); out.width = w; out.height = h;
-    cv.imshow(out, dstMat);
-    return out;
-  } catch (e) {
-    console.warn("ocvWarp failed, falling back to jsWarp:", e);
-    return jsWarp(src, corners);
-  } finally {
-    try { srcMat?.delete(); } catch {}
-    try { dstMat?.delete(); } catch {}
-    try { srcPts?.delete(); } catch {}
-    try { dstPts?.delete(); } catch {}
-    try { M?.delete(); } catch {}
-  }
-}
-
-function perspectiveWarp(src: HTMLCanvasElement, corners: Quad): HTMLCanvasElement {
-  if (window.cv?.Mat) {
-    try { return ocvWarp(src, corners); } catch { /* fall through to JS warp */ }
-  }
-  return jsWarp(src, corners);
-}
-
-// ── Image enhancement ────────────────────────────────────────────────────────
-function enhance(src: HTMLCanvasElement, mode: EnhanceMode): HTMLCanvasElement {
-  const out = document.createElement('canvas'); out.width = src.width; out.height = src.height;
-  const ctx = out.getContext('2d')!;
-  ctx.drawImage(src, 0, 0);
-  const id = ctx.getImageData(0, 0, out.width, out.height);
-  const d = id.data;
-  if (mode === 'bw') {
-    // Greyscale + adaptive threshold
-    let sum = 0;
-    for (let i = 0; i < d.length; i += 4) { const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; d[i] = d[i + 1] = d[i + 2] = g; sum += g; }
-    const thr = (sum / (d.length / 4)) * 0.80;
-    for (let i = 0; i < d.length; i += 4) { const v = d[i] >= thr ? 255 : 0; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; }
-  } else if (mode === 'auto') {
-    // Auto-levels (sample every 8th pixel for speed)
-    let [mnR, mxR, mnG, mxG, mnB, mxB] = [255, 0, 255, 0, 255, 0];
-    for (let i = 0; i < d.length; i += 32) {
-      if (d[i] < mnR) mnR = d[i]; if (d[i] > mxR) mxR = d[i];
-      if (d[i + 1] < mnG) mnG = d[i + 1]; if (d[i + 1] > mxG) mxG = d[i + 1];
-      if (d[i + 2] < mnB) mnB = d[i + 2]; if (d[i + 2] > mxB) mxB = d[i + 2];
-    }
-    const rR = mxR - mnR || 1, rG = mxG - mnG || 1, rB = mxB - mnB || 1;
-    for (let i = 0; i < d.length; i += 4) {
-      d[i] = Math.min(255, ((d[i] - mnR) / rR) * 270);
-      d[i + 1] = Math.min(255, ((d[i + 1] - mnG) / rG) * 262);
-      d[i + 2] = Math.min(255, ((d[i + 2] - mnB) / rB) * 248);
-    }
-  } else {
-    // Colour boost
-    for (let i = 0; i < d.length; i += 4) {
-      d[i] = Math.min(255, Math.max(0, (d[i] - 128) * 1.18 + 136));
-      d[i + 1] = Math.min(255, Math.max(0, (d[i + 1] - 128) * 1.18 + 136));
-      d[i + 2] = Math.min(255, Math.max(0, (d[i + 2] - 128) * 1.18 + 136));
-    }
-  }
-  ctx.putImageData(id, 0, 0);
-  return out;
-}
-
-// ── Corner guide overlay ─────────────────────────────────────────────────────
-function drawGuide(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  const pad = 28, c = 22;
-  ctx.setLineDash([8, 5]); ctx.strokeStyle = 'rgba(99,179,237,0.5)'; ctx.lineWidth = 1.5;
-  ctx.strokeRect(pad, pad, w - pad * 2, h - pad * 2); ctx.setLineDash([]);
-  ctx.strokeStyle = '#60A5FA'; ctx.lineWidth = 4; ctx.lineCap = 'round';
-  [[pad, pad], [w - pad, pad], [pad, h - pad], [w - pad, h - pad]].forEach(([x, y]) => {
-    const dx = x < w / 2 ? c : -c, dy = y < h / 2 ? c : -c;
-    ctx.beginPath(); ctx.moveTo(x + dx, y); ctx.lineTo(x, y); ctx.lineTo(x, y + dy); ctx.stroke();
-  });
-}
-
-// ────────────────────────────────────────────────────────────────────────────
 export default function ScannerModal({ onScanComplete, onConvertToText, onClose }: ScannerModalProps) {
-  const videoRef    = useRef<HTMLVideoElement>(null);
-  const overlayRef  = useRef<HTMLCanvasElement>(null);
-  const adjustRef   = useRef<HTMLCanvasElement>(null);
-  // Reusable detection canvas — allocated once, reused every tick
-  const detCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const streamRef   = useRef<MediaStream | null>(null);
-  const animRef     = useRef<number>(0);
-  const detIntRef   = useRef<ReturnType<typeof setInterval> | null>(null);
-  const scannerRef  = useRef<any>(null);
-  const capturedRef = useRef<HTMLCanvasElement | null>(null);
-  const baseRef     = useRef<HTMLCanvasElement | null>(null);
+  // Navigation & state
+  const [phase, setPhase] = useState<Phase>('scanning');
+  const [pages, setPages] = useState<ScannedPage[]>([]);
+  const [activePageIndex, setActivePageIndex] = useState<number>(0);
+  const [processing, setProcessing] = useState(false);
+  const [procMsg, setProcMsg] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  // Camera stream & controls
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const liveCanvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [torchOn, setTorchOn] = useState(false);
+  const [hasTorch, setHasTorch] = useState(false);
+  const [detectedLiveCorners, setDetectedLiveCorners] = useState<Quad | null>(null);
+
+  // Crop & Loupe (touch magnifier)
+  const adjustCanvasRef = useRef<HTMLCanvasElement>(null);
+  const loupeCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [activeCornerIdx, setActiveCornerIdx] = useState<number>(-1);
+  const [loupePos, setLoupePos] = useState<{ x: number; y: number; visible: boolean }>({ x: 0, y: 0, visible: false });
   const liveCornersRef = useRef<Quad | null>(null);
-  const lastQuadRef    = useRef<Quad | null>(null);
-  // Guard: only one detection running at a time
-  const detectingRef = useRef(false);
 
-  const [phase, setPhase]           = useState<Phase>('scanning');
-  const [pages, setPages]           = useState<File[]>([]);
-  const [pageUrls, setPageUrls]     = useState<string[]>([]);
-  const [reviewUrl, setReviewUrl]   = useState<string | null>(null);
-  const [reviewBlob, setReviewBlob] = useState<Blob | null>(null);
-  const [enhanceMode, setEnhanceMode] = useState<EnhanceMode>('auto');
-  const [galleryIdx, setGalleryIdx]   = useState(0);
-  const [scannerReady, setScannerReady] = useState(false);
-  const [videoReady, setVideoReady]     = useState(false);
-  const [docDetected, setDocDetected]   = useState(false);
-  const [error, setError]               = useState<string | null>(null);
-  const [generatingPdf, setGeneratingPdf] = useState(false);
-  const [processing, setProcessing]       = useState(false);
-  const [procMsg, setProcMsg]             = useState('');
-  const [loadingMsg, setLoadingMsg]       = useState('Loading scanner…');
+  // File input fallback
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Load OpenCV + jscanify ONLY when this modal mounts ───────────────────
-  useEffect(() => {
-    let dead = false;
-    (async () => {
-      try {
-        setLoadingMsg('Loading edge detector…');
-        // Use a smaller, faster OpenCV build
-        await loadScript('https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.9.0-release.2/dist/opencv.min.js');
-
-        // Wait for cv runtime (poll, max 15s)
-        await new Promise<void>((res, rej) => {
-          let attempts = 0;
-          const check = () => {
-            if (window.cv?.Mat) { res(); return; }
-            if (++attempts > 150) { res(); return; } // timeout — continue without OCV
-            setTimeout(check, 100);
-          };
-          check();
-        });
-
-        if (dead) return;
-        setLoadingMsg('Loading jscanify…');
-        await loadScript('https://unpkg.com/jscanify@1.3.1/src/jscanify.js');
-        await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-
-        if (!dead) {
-          if (window.jscanify) {
-            try { scannerRef.current = new window.jscanify(); } catch {}
-          }
-          setScannerReady(true);
-        }
-      } catch (e) {
-        // Library failed — still allow camera capture with pure-JS warp
-        if (!dead) setScannerReady(true);
-      }
-    })();
-    return () => { dead = true; };
-  }, []);
-
-  // ── Camera management ─────────────────────────────────────────────────────
-  const stopCamera = useCallback(() => {
-    streamRef.current?.getTracks().forEach(t => t.stop()); streamRef.current = null;
-    cancelAnimationFrame(animRef.current);
-    if (detIntRef.current) { clearInterval(detIntRef.current); detIntRef.current = null; }
-  }, []);
-
+  // ── 1. WebRTC Camera Initialization ─────────────────────────────────────────
   const startCamera = useCallback(async () => {
-    setError(null); setVideoReady(false); setDocDetected(false);
     try {
-      streamRef.current?.getTracks().forEach(t => t.stop());
-      // Cap at 1280×720 — crucial for mobile memory budget
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280, max: 1920 }, height: { ideal: 720, max: 1080 } },
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+      }
+
+      const constraints: MediaStreamConstraints = {
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        },
         audio: false,
-      });
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
-        setVideoReady(true);
       }
-    } catch (err: any) {
-      setError(
-        err?.name === 'NotAllowedError' ? 'Camera access denied — allow it in browser settings, then tap Try again.'
-          : err?.name === 'NotFoundError' ? 'No camera found on this device.'
-          : `Could not start camera: ${err?.message || 'unknown error'}`
-      );
+
+      // Check for torch/flash capability
+      const track = stream.getVideoTracks()[0];
+      const capabilities = (track?.getCapabilities?.() as any) || {};
+      if (capabilities.torch) {
+        setHasTorch(true);
+      }
+    } catch (e: any) {
+      console.warn('Camera stream error:', e);
+      setError('Could not access camera. You can upload photo files directly below.');
+    }
+  }, []);
+
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
     }
   }, []);
 
   useEffect(() => {
-    if (phase === 'scanning') startCamera(); else stopCamera();
-    return stopCamera;
+    if (phase === 'scanning') {
+      startCamera();
+    } else {
+      stopCamera();
+    }
+    return () => {
+      stopCamera();
+    };
   }, [phase, startCamera, stopCamera]);
 
-  // ── Edge detection — throttled, reuses single canvas ────────────────────
-  useEffect(() => {
-    if (phase !== 'scanning' || !scannerReady) return;
-    const id = setInterval(() => {
-      // Skip if a detection is already in flight
-      if (detectingRef.current) return;
-      const video = videoRef.current;
-      if (!video || video.readyState < 2 || video.videoWidth === 0 || !scannerRef.current) return;
-      detectingRef.current = true;
+  // Flash / Torch Toggle
+  const toggleTorch = useCallback(async () => {
+    if (!streamRef.current) return;
+    const track = streamRef.current.getVideoTracks()[0];
+    if (track) {
       try {
-        // Reuse a single canvas rather than creating one every tick
-        if (!detCanvasRef.current) {
-          detCanvasRef.current = document.createElement('canvas');
-        }
-        const tmp = detCanvasRef.current;
-        tmp.width = video.videoWidth;
-        tmp.height = video.videoHeight;
-        const ctx2d = tmp.getContext('2d');
-        if (!ctx2d) return;
-        ctx2d.drawImage(video, 0, 0);
-
-        let contour: any = null;
-        try {
-          contour = scannerRef.current.findPaperContour(tmp);
-          if (contour && !contour.empty?.()) {
-            const cornersObj = scannerRef.current.getCornerPoints(contour);
-            if (cornersObj?.topLeftCorner) {
-              lastQuadRef.current = [
-                cornersObj.topLeftCorner,
-                cornersObj.topRightCorner,
-                cornersObj.bottomRightCorner,
-                cornersObj.bottomLeftCorner,
-              ];
-              setDocDetected(true);
-            } else {
-              lastQuadRef.current = null; setDocDetected(false);
-            }
-          } else {
-            lastQuadRef.current = null; setDocDetected(false);
-          }
-        } finally {
-          try { contour?.delete?.(); } catch {}
-        }
-      } catch {
-        lastQuadRef.current = null; setDocDetected(false);
-      } finally {
-        detectingRef.current = false;
+        const nextState = !torchOn;
+        await (track as any).applyConstraints({
+          advanced: [{ torch: nextState }],
+        });
+        setTorchOn(nextState);
+      } catch (e) {
+        console.warn('Failed to toggle torch:', e);
       }
-    }, 300); // 300ms — slightly slower than before to reduce CPU pressure
-    detIntRef.current = id;
-    return () => clearInterval(id);
-  }, [phase, scannerReady]);
+    }
+  }, [torchOn]);
 
-  // ── 60fps overlay draw ────────────────────────────────────────────────────
+  // ── 2. Live Corner Detection Loop on Video Stream ───────────────────────────
   useEffect(() => {
     if (phase !== 'scanning') return;
-    const draw = () => {
-      const video = videoRef.current, ov = overlayRef.current;
-      if (!ov || !video) { animRef.current = requestAnimationFrame(draw); return; }
-      const vw = video.videoWidth || ov.clientWidth, vh = video.videoHeight || ov.clientHeight;
-      if (ov.width !== ov.clientWidth) ov.width = ov.clientWidth;
-      if (ov.height !== ov.clientHeight) ov.height = ov.clientHeight;
-      const ctx = ov.getContext('2d')!; ctx.clearRect(0, 0, ov.width, ov.height);
-      const quad = lastQuadRef.current;
-      if (quad) {
-        const sx = ov.width / vw, sy = ov.height / vh;
-        const m = quad.map(p => ({ x: p.x * sx, y: p.y * sy }));
-        ctx.beginPath(); m.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.closePath();
-        ctx.strokeStyle = '#22C55E'; ctx.lineWidth = 3; ctx.stroke();
-        ctx.fillStyle = 'rgba(34,197,94,0.10)'; ctx.fill();
-        m.forEach(p => {
-          ctx.beginPath(); ctx.arc(p.x, p.y, 9, 0, 2 * Math.PI);
-          ctx.fillStyle = '#22C55E'; ctx.fill();
-          ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
-        });
-      } else {
-        drawGuide(ctx, ov.width, ov.height);
+
+    let animId: number;
+    let lastScanTime = 0;
+
+    const detectLoop = async (time: number) => {
+      if (videoRef.current && liveCanvasRef.current && videoRef.current.readyState >= 2) {
+        const video = videoRef.current;
+        const canvas = liveCanvasRef.current;
+        const ctx = canvas.getContext('2d');
+
+        if (ctx && canvas.width !== video.videoWidth) {
+          canvas.width = video.videoWidth || 640;
+          canvas.height = video.videoHeight || 480;
+        }
+
+        // Run edge detection every 300ms to avoid saturating CPU
+        if (time - lastScanTime > 300 && ctx && canvas.width > 0 && canvas.height > 0) {
+          lastScanTime = time;
+          try {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const corners = await scannerBridge.detectCorners(canvas);
+            setDetectedLiveCorners(corners);
+          } catch {}
+        }
       }
-      animRef.current = requestAnimationFrame(draw);
+      animId = requestAnimationFrame(detectLoop);
     };
-    animRef.current = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(animRef.current);
+
+    animId = requestAnimationFrame(detectLoop);
+    return () => cancelAnimationFrame(animId);
   }, [phase]);
 
-  // ── Capture ───────────────────────────────────────────────────────────────
-  const captureFrame = useCallback(() => {
+  // ── 3. Shutter Capture ───────────────────────────────────────────────────────
+  const captureFrame = useCallback(async () => {
+    if (!videoRef.current) return;
+    if (navigator.vibrate) navigator.vibrate(40); // Haptic feedback
+
+    setProcessing(true);
+    setProcMsg('Capturing document…');
+
+    const video = videoRef.current;
+    const captureCanvas = document.createElement('canvas');
+    captureCanvas.width = video.videoWidth || 1920;
+    captureCanvas.height = video.videoHeight || 1080;
+    const ctx = captureCanvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+
+    setProcMsg('Detecting document borders…');
+    let corners: Quad;
     try {
-      const video = videoRef.current;
-      if (!video || video.readyState < 2 || video.videoWidth === 0) {
-        setError('Camera not ready — wait a moment and try again.'); return;
-      }
-      stopCamera();
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-      canvas.getContext('2d')!.drawImage(video, 0, 0);
-      capturedRef.current = canvas;
-      liveCornersRef.current = lastQuadRef.current ?? defaultCorners(canvas.width, canvas.height);
-      setPhase('adjusting');
-    } catch (e: any) {
-      setError(`Couldn't capture photo — ${e?.message || 'try again'}.`);
-    }
-  }, [stopCamera]);
-
-  // ── Interactive corner canvas ─────────────────────────────────────────────
-  useEffect(() => {
-    if (phase !== 'adjusting') return;
-    const canvas = adjustRef.current, img = capturedRef.current;
-    if (!canvas || !img) return;
-    const parent = canvas.parentElement!;
-    canvas.width = parent.clientWidth; canvas.height = parent.clientHeight;
-    const HANDLE_R = 24;
-    let dragIdx = -1;
-    const corners: Quad = [...(liveCornersRef.current ?? defaultCorners(img.width, img.height))] as Quad;
-
-    const draw = () => {
-      try {
-        const ctx = canvas.getContext('2d')!, t = getTransform(img.width, img.height, canvas.width, canvas.height);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, t.ox, t.oy, img.width * t.scale, img.height * t.scale);
-        const m = corners.map(p => i2c(p, t));
-        // Dim outside selection
-        ctx.save(); ctx.beginPath(); ctx.rect(0, 0, canvas.width, canvas.height);
-        ctx.moveTo(m[0].x, m[0].y); m.forEach((p, i) => i > 0 && ctx.lineTo(p.x, p.y)); ctx.closePath();
-        ctx.fillStyle = 'rgba(0,0,0,0.42)'; ctx.fill('evenodd'); ctx.restore();
-        // Border
-        ctx.beginPath(); m.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.closePath();
-        ctx.strokeStyle = '#3B82F6'; ctx.lineWidth = 2.5; ctx.stroke();
-        // Handles
-        m.forEach((p, i) => {
-          ctx.beginPath(); ctx.arc(p.x, p.y, HANDLE_R, 0, 2 * Math.PI);
-          ctx.fillStyle = i === dragIdx ? '#1D4ED8' : 'rgba(59,130,246,0.9)'; ctx.fill();
-          ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(p.x - 8, p.y); ctx.lineTo(p.x + 8, p.y); ctx.moveTo(p.x, p.y - 8); ctx.lineTo(p.x, p.y + 8);
-          ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
-        });
-      } catch {}
-    };
-
-    const pos = (e: PointerEvent) => { const r = canvas.getBoundingClientRect(), sx = canvas.width / r.width, sy = canvas.height / r.height; return { x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy }; };
-    const onDown = (e: PointerEvent) => {
-      const p = pos(e), t = getTransform(img.width, img.height, canvas.width, canvas.height); dragIdx = -1; let best = HANDLE_R * 2.5;
-      corners.forEach((c, i) => { const cp = i2c(c, t), d = Math.hypot(p.x - cp.x, p.y - cp.y); if (d < best) { best = d; dragIdx = i; } });
-      if (dragIdx >= 0) { e.preventDefault(); canvas.setPointerCapture(e.pointerId); draw(); }
-    };
-    const onMove = (e: PointerEvent) => {
-      if (dragIdx < 0) return; e.preventDefault();
-      const p = pos(e), t = getTransform(img.width, img.height, canvas.width, canvas.height), ip = c2i(p.x, p.y, t);
-      corners[dragIdx] = { x: Math.max(0, Math.min(img.width, ip.x)), y: Math.max(0, Math.min(img.height, ip.y)) };
-      liveCornersRef.current = [...corners] as Quad; draw();
-    };
-    const onUp = () => { dragIdx = -1; draw(); };
-
-    canvas.addEventListener('pointerdown', onDown, { passive: false });
-    canvas.addEventListener('pointermove', onMove, { passive: false });
-    canvas.addEventListener('pointerup', onUp);
-    draw();
-    return () => { canvas.removeEventListener('pointerdown', onDown); canvas.removeEventListener('pointermove', onMove); canvas.removeEventListener('pointerup', onUp); };
-  }, [phase]);
-
-  // ── Apply perspective correction ──────────────────────────────────────────
-  const applyTransform = useCallback(async () => {
-    const src = capturedRef.current, corners = liveCornersRef.current;
-    if (!src || !corners || !Array.isArray(corners) || corners.length < 4) {
-      setError("Couldn't apply the crop — try adjusting the corners again.");
-      return;
-    }
-    setProcessing(true); setProcMsg('Applying perspective correction…');
-    await new Promise(r => setTimeout(r, 40));
-    let corrected: HTMLCanvasElement;
-    try {
-      if (scannerRef.current) {
-        try {
-          const [tl, tr, br, bl] = corners;
-          const { w, h } = quadSize(corners);
-          corrected = scannerRef.current.extractPaper(src, w, h, {
-            topLeftCorner: tl, topRightCorner: tr, bottomRightCorner: br, bottomLeftCorner: bl,
-          });
-          if (!corrected) corrected = perspectiveWarp(src, corners);
-        } catch {
-          corrected = perspectiveWarp(src, corners);
-        }
-      } else {
-        corrected = perspectiveWarp(src, corners);
-      }
-      if (!corrected) {
-        corrected = src;
-      }
-    } catch (e: any) {
-      console.warn("Perspective crop error:", e);
-      setError("Couldn't apply the crop — try adjusting the corners again.");
-      setProcessing(false);
-      return;
-    }
-    baseRef.current = corrected;
-    setProcMsg('Enhancing image…'); await new Promise(r => setTimeout(r, 40));
-    try {
-      const enhanced = enhance(corrected, 'auto'); setEnhanceMode('auto');
-      enhanced.toBlob(blob => {
-        if (!blob) {
-          setError("Couldn't apply the crop — try adjusting the corners again.");
-          setProcessing(false);
-          return;
-        }
-        if (reviewUrl) URL.revokeObjectURL(reviewUrl);
-        setReviewUrl(URL.createObjectURL(blob)); setReviewBlob(blob);
-        setPhase('reviewing'); setProcessing(false); setProcMsg('');
-      }, 'image/jpeg', 0.92);
-    } catch (e: any) {
-      console.warn("Enhance error:", e);
-      setError("Couldn't apply the crop — try adjusting the corners again.");
-      setProcessing(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ── Enhance mode switch ───────────────────────────────────────────────────
-  useEffect(() => {
-    if (phase !== 'reviewing' || !baseRef.current) return;
-    try {
-      const enhanced = enhance(baseRef.current, enhanceMode);
-      enhanced.toBlob(blob => {
-        if (!blob) return;
-        setReviewUrl(prev => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(blob!); });
-        setReviewBlob(blob);
-      }, 'image/jpeg', 0.92);
-    } catch {}
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enhanceMode, phase]);
-
-  // ── Page management ───────────────────────────────────────────────────────
-  const addAnotherPage = useCallback(() => {
-    if (!reviewBlob || !reviewUrl) return;
-    const file = new File([reviewBlob], `page-${pages.length + 1}.jpg`, { type: 'image/jpeg' });
-    setPages(p => [...p, file]);
-    setPageUrls(u => [...u, reviewUrl]);
-    setReviewUrl(null);
-    setReviewBlob(null);
-    lastQuadRef.current = null;
-    setPhase('scanning');
-  }, [reviewBlob, reviewUrl, pages.length]);
-
-  const doneReviewing = useCallback(() => {
-    if (!reviewBlob || !reviewUrl) return;
-    const file = new File([reviewBlob], `page-${pages.length + 1}.jpg`, { type: 'image/jpeg' });
-    setPages(p => [...p, file]);
-    setPageUrls(u => [...u, reviewUrl]);
-    setReviewUrl(null);
-    setReviewBlob(null);
-    setPhase('choice');
-  }, [reviewBlob, reviewUrl, pages.length]);
-
-  const retake = useCallback(() => {
-    if (reviewUrl) URL.revokeObjectURL(reviewUrl);
-    setReviewUrl(null); setReviewBlob(null); lastQuadRef.current = null; setPhase('scanning');
-  }, [reviewUrl]);
-
-  // ── PDF generation ────────────────────────────────────────────────────────
-  const generatePdf = useCallback(async (currentPages: File[], currentUrls: string[]): Promise<Blob> => {
-    const { jsPDF } = window.jspdf; let pdf: any = null;
-    for (let i = 0; i < currentPages.length; i++) {
-      const img = await new Promise<HTMLImageElement>((res, rej) => {
-        const el = new Image();
-        el.onload = () => res(el);
-        el.onerror = rej;
-        el.src = currentUrls[i];
-      });
-      const landscape = img.naturalWidth > img.naturalHeight;
-      const [pw, ph] = landscape ? [297, 210] : [210, 297];
-      if (!pdf) pdf = new jsPDF({ orientation: landscape ? 'landscape' : 'portrait', unit: 'mm', format: 'a4' });
-      else pdf.addPage('a4', landscape ? 'landscape' : 'portrait');
-      pdf.addImage(currentUrls[i], 'JPEG', 0, 0, pw, ph);
-    }
-    return pdf.output('blob');
-  }, []);
-
-  const handleSaveAsScan = useCallback(async () => {
-    if (!pages.length) return;
-    setGeneratingPdf(true);
-    try {
-      const pdfBlob = await generatePdf(pages, pageUrls);
-      onScanComplete(pages, pdfBlob);
+      corners = await scannerBridge.detectCorners(captureCanvas);
     } catch {
-      onScanComplete(pages, new Blob(pages, { type: 'application/pdf' }));
-    } finally {
-      setGeneratingPdf(false);
+      corners = [
+        { x: captureCanvas.width * 0.08, y: captureCanvas.height * 0.08 },
+        { x: captureCanvas.width * 0.92, y: captureCanvas.height * 0.08 },
+        { x: captureCanvas.width * 0.92, y: captureCanvas.height * 0.92 },
+        { x: captureCanvas.width * 0.08, y: captureCanvas.height * 0.92 },
+      ];
     }
-  }, [pages, pageUrls, generatePdf, onScanComplete]);
 
-  const handleConvertToWord = useCallback(() => {
-    if (!pages.length) return;
-    onConvertToText(pages);
+    liveCornersRef.current = corners;
+
+    const newPage: ScannedPage = {
+      id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      originalCanvas: captureCanvas,
+      corners,
+      warpedCanvas: captureCanvas,
+      enhancedCanvas: captureCanvas,
+      filter: 'magic_color',
+      rotation: 0,
+    };
+
+    setPages(prev => [...prev, newPage]);
+    setActivePageIndex(pages.length);
+    setProcessing(false);
+    setPhase('adjusting');
+  }, [pages.length]);
+
+  // Manual File Upload Fallback
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length) return;
+    const files = Array.from(e.target.files);
+
+    setProcessing(true);
+    setProcMsg('Loading uploaded images…');
+
+    const newPages: ScannedPage[] = [];
+
+    for (const file of files) {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      await new Promise(res => { img.onload = res; img.src = url; });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth || 1200;
+      canvas.height = img.naturalHeight || 1600;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+
+      const corners = await scannerBridge.detectCorners(canvas);
+      newPages.push({
+        id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+        originalCanvas: canvas,
+        corners,
+        warpedCanvas: canvas,
+        enhancedCanvas: canvas,
+        filter: 'magic_color',
+        rotation: 0,
+      });
+    }
+
+    setPages(prev => [...prev, ...newPages]);
+    setActivePageIndex(pages.length);
+    liveCornersRef.current = newPages[0]?.corners || null;
+    setProcessing(false);
+    setPhase('adjusting');
+    if (e.target) e.target.value = '';
+  }, [pages.length]);
+
+  // ── 4. Interactive 4-Point Cropping & Touch Loupe Magnifier ─────────────────
+  const activePage = pages[activePageIndex];
+
+  useEffect(() => {
+    if (phase !== 'adjusting' || !adjustCanvasRef.current || !activePage) return;
+
+    const canvas = adjustCanvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const src = activePage.originalCanvas;
+    canvas.width = canvas.parentElement?.clientWidth || 360;
+    canvas.height = canvas.parentElement?.clientHeight || 480;
+
+    const corners = liveCornersRef.current || activePage.corners;
+    liveCornersRef.current = corners;
+
+    const scale = Math.min(canvas.width / src.width, canvas.height / src.height);
+    const ox = (canvas.width - src.width * scale) / 2;
+    const oy = (canvas.height - src.height * scale) / 2;
+
+    const i2c = (p: Pt) => ({ x: ox + p.x * scale, y: oy + p.y * scale });
+    const c2i = (x: number, y: number) => ({ x: (x - ox) / scale, y: (y - oy) / scale });
+
+    let dragIdx = -1;
+    const HANDLE_R = 14;
+
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(src, ox, oy, src.width * scale, src.height * scale);
+
+      const cPts = corners.map(i2c);
+
+      // Shaded overlay outside polygon
+      ctx.save();
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.moveTo(cPts[0].x, cPts[0].y);
+      ctx.lineTo(cPts[1].x, cPts[1].y);
+      ctx.lineTo(cPts[2].x, cPts[2].y);
+      ctx.lineTo(cPts[3].x, cPts[3].y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // Border guidelines
+      ctx.beginPath();
+      ctx.moveTo(cPts[0].x, cPts[0].y);
+      ctx.lineTo(cPts[1].x, cPts[1].y);
+      ctx.lineTo(cPts[2].x, cPts[2].y);
+      ctx.lineTo(cPts[3].x, cPts[3].y);
+      ctx.closePath();
+      ctx.strokeStyle = '#22C55E';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Corner handles
+      cPts.forEach((cp, idx) => {
+        ctx.beginPath();
+        ctx.arc(cp.x, cp.y, HANDLE_R, 0, Math.PI * 2);
+        ctx.fillStyle = idx === dragIdx ? '#15803D' : '#22C55E';
+        ctx.fill();
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(cp.x, cp.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fill();
+      });
+    };
+
+    // Draw Loupe Magnifier (2.5x Zoom with Crosshair)
+    const drawLoupe = (screenX: number, screenY: number, imgCorner: Pt) => {
+      if (!loupeCanvasRef.current) return;
+      const loupe = loupeCanvasRef.current;
+      const lCtx = loupe.getContext('2d');
+      if (!lCtx) return;
+
+      const size = 110;
+      loupe.width = size;
+      loupe.height = size;
+
+      lCtx.clearRect(0, 0, size, size);
+
+      // Circular clip
+      lCtx.save();
+      lCtx.beginPath();
+      lCtx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
+      lCtx.clip();
+
+      // 2.5x Zoom onto source canvas
+      const zoom = 2.5;
+      const cropW = size / zoom;
+      const cropH = size / zoom;
+      const sx = imgCorner.x - cropW / 2;
+      const sy = imgCorner.y - cropH / 2;
+
+      lCtx.drawImage(src, sx, sy, cropW, cropH, 0, 0, size, size);
+
+      // Crosshairs
+      lCtx.strokeStyle = 'rgba(34, 197, 94, 0.9)';
+      lCtx.lineWidth = 1.5;
+      lCtx.beginPath();
+      lCtx.moveTo(size / 2, 0);
+      lCtx.lineTo(size / 2, size);
+      lCtx.moveTo(0, size / 2);
+      lCtx.lineTo(size, size / 2);
+      lCtx.stroke();
+
+      lCtx.restore();
+
+      // Position loupe offset 70px above touch
+      setLoupePos({
+        x: Math.max(10, Math.min(window.innerWidth - size - 10, screenX - size / 2)),
+        y: Math.max(10, screenY - size - 40),
+        visible: true,
+      });
+    };
+
+    const onPointerDown = (e: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const px = e.clientX - rect.left;
+      const py = e.clientY - rect.top;
+
+      let best = HANDLE_R * 2.5;
+      dragIdx = -1;
+      corners.forEach((c, idx) => {
+        const cp = i2c(c);
+        const d = Math.hypot(px - cp.x, py - cp.y);
+        if (d < best) {
+          best = d;
+          dragIdx = idx;
+        }
+      });
+
+      if (dragIdx >= 0) {
+        e.preventDefault();
+        canvas.setPointerCapture(e.pointerId);
+        setActiveCornerIdx(dragIdx);
+        draw();
+        drawLoupe(e.clientX, e.clientY, corners[dragIdx]);
+      }
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (dragIdx < 0) return;
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const px = e.clientX - rect.left;
+      const py = e.clientY - rect.top;
+      const ip = c2i(px, py);
+
+      corners[dragIdx] = {
+        x: Math.max(0, Math.min(src.width, ip.x)),
+        y: Math.max(0, Math.min(src.height, ip.y)),
+      };
+      liveCornersRef.current = [...corners] as Quad;
+      draw();
+      drawLoupe(e.clientX, e.clientY, corners[dragIdx]);
+    };
+
+    const onPointerUp = () => {
+      dragIdx = -1;
+      setActiveCornerIdx(-1);
+      setLoupePos(prev => ({ ...prev, visible: false }));
+      draw();
+    };
+
+    canvas.addEventListener('pointerdown', onPointerDown);
+    canvas.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('pointerup', onPointerUp);
+    draw();
+
+    return () => {
+      canvas.removeEventListener('pointerdown', onPointerDown);
+      canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('pointerup', onPointerUp);
+    };
+  }, [phase, activePage]);
+
+  // ── 5. Apply Perspective Correction & CamScanner Filter ────────────────────
+  const applyCropAndFilter = useCallback(async () => {
+    if (!activePage || !liveCornersRef.current) return;
+    setProcessing(true);
+    setProcMsg('Applying CamScanner perspective correction…');
+
+    try {
+      const corners = liveCornersRef.current;
+      const warped = await scannerBridge.warp(activePage.originalCanvas, corners);
+      
+      setProcMsg('Enhancing with Magic Color…');
+      const enhanced = await scannerBridge.applyFilter(warped, activePage.filter);
+
+      setPages(prev => {
+        const next = [...prev];
+        next[activePageIndex] = {
+          ...next[activePageIndex],
+          corners,
+          warpedCanvas: warped,
+          enhancedCanvas: enhanced,
+        };
+        return next;
+      });
+
+      setPhase('reviewing');
+    } catch (e: any) {
+      console.error(e);
+      setError("Couldn't apply the crop — try adjusting the corners again.");
+    } finally {
+      setProcessing(false);
+    }
+  }, [activePage, activePageIndex]);
+
+  // Switch Filter on Review Screen
+  const handleFilterChange = useCallback(async (filter: CamFilter) => {
+    if (!activePage) return;
+    setProcessing(true);
+    setProcMsg(`Applying ${filter.replace('_', ' ')}…`);
+
+    try {
+      const enhanced = await scannerBridge.applyFilter(activePage.warpedCanvas, filter);
+      setPages(prev => {
+        const next = [...prev];
+        next[activePageIndex] = {
+          ...next[activePageIndex],
+          filter,
+          enhancedCanvas: enhanced,
+        };
+        return next;
+      });
+    } catch (e) {
+      console.warn('Filter failed:', e);
+    } finally {
+      setProcessing(false);
+    }
+  }, [activePage, activePageIndex]);
+
+  // Rotate 90 degrees
+  const handleRotate = useCallback(async () => {
+    if (!activePage) return;
+    setProcessing(true);
+    setProcMsg('Rotating page…');
+
+    const src = activePage.warpedCanvas;
+    const rotated = document.createElement('canvas');
+    rotated.width = src.height;
+    rotated.height = src.width;
+    const ctx = rotated.getContext('2d');
+    if (ctx) {
+      ctx.translate(rotated.width / 2, rotated.height / 2);
+      ctx.rotate((90 * Math.PI) / 180);
+      ctx.drawImage(src, -src.width / 2, -src.height / 2);
+    }
+
+    const enhanced = await scannerBridge.applyFilter(rotated, activePage.filter);
+
+    setPages(prev => {
+      const next = [...prev];
+      next[activePageIndex] = {
+        ...next[activePageIndex],
+        rotation: (next[activePageIndex].rotation + 90) % 360,
+        warpedCanvas: rotated,
+        enhancedCanvas: enhanced,
+      };
+      return next;
+    });
+    setProcessing(false);
+  }, [activePage, activePageIndex]);
+
+  // Delete page
+  const handleDeletePage = useCallback((index: number) => {
+    setPages(prev => {
+      const filtered = prev.filter((_, i) => i !== index);
+      if (filtered.length === 0) {
+        setPhase('scanning');
+        return [];
+      }
+      setActivePageIndex(Math.max(0, index - 1));
+      return filtered;
+    });
+  }, []);
+
+  // ── 6. Export PDF / Convert to Text ─────────────────────────────────────────
+  const handleSavePdf = useCallback(async () => {
+    if (pages.length === 0) return;
+    setProcessing(true);
+    setProcMsg('Compiling high-resolution A4 PDF…');
+
+    try {
+      const canvases = pages.map(p => p.enhancedCanvas);
+      const pdfBlob = await compilePdfFromCanvases(canvases, `Scan-${new Date().toISOString().slice(0, 10)}`);
+      
+      const filePromises = pages.map((p, idx) => 
+        canvasToFile(p.enhancedCanvas, `page-${idx + 1}.jpg`)
+      );
+      const pageFiles = await Promise.all(filePromises);
+
+      onScanComplete(pageFiles, pdfBlob);
+    } catch (e: any) {
+      console.error('PDF Export Error:', e);
+      setError('Failed to generate PDF. Please try again.');
+    } finally {
+      setProcessing(false);
+    }
+  }, [pages, onScanComplete]);
+
+  const handleConvertText = useCallback(async () => {
+    if (pages.length === 0) return;
+    setProcessing(true);
+    setProcMsg('Preparing pages for AI transcription…');
+
+    try {
+      const filePromises = pages.map((p, idx) => 
+        canvasToFile(p.enhancedCanvas, `page-${idx + 1}.jpg`)
+      );
+      const pageFiles = await Promise.all(filePromises);
+      onConvertToText(pageFiles);
+    } catch (e: any) {
+      console.error('Convert Error:', e);
+      setError('Failed to prepare pages. Please try again.');
+    } finally {
+      setProcessing(false);
+    }
   }, [pages, onConvertToText]);
 
-  const headerLabel = phase === 'scanning' ? (pages.length > 0 ? `Page ${pages.length + 1}` : 'Scan Document')
-    : phase === 'adjusting' ? 'Adjust Corners'
-    : phase === 'reviewing' ? 'Review & Enhance'
-    : 'Choose Save Option';
-
-  // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#000', display: 'flex', flexDirection: 'column', fontFamily: "'Inter',-apple-system,sans-serif" }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: '#0B0D12', display: 'flex', flexDirection: 'column', color: '#FFFFFF', fontFamily: UI }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(16px)', minHeight: 60, flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(59,130,246,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <ScanLine size={16} color="#60A5FA" />
-          </div>
-          <span style={{ fontWeight: 700, fontSize: 16, color: '#fff', letterSpacing: '-0.3px' }}>{headerLabel}</span>
+      {/* ── Processing / Loader Overlay ──────────────────────────────────────── */}
+      <AnimatePresence>
+        {processing && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ position: 'absolute', inset: 0, zIndex: 1010, background: 'rgba(11, 13, 18, 0.82)', backdropFilter: 'blur(6px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}
+          >
+            <Loader2 size={36} color="#22C55E" style={{ animation: 'spin 0.8s linear infinite' }} />
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#E4E1D9' }}>{procMsg}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Error Notification ──────────────────────────────────────────────── */}
+      {error && (
+        <div style={{ position: 'absolute', top: 16, left: 16, right: 16, zIndex: 1020, background: '#B23A34', color: '#fff', padding: '10px 14px', borderRadius: 8, fontSize: 13, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
+          <span>{error}</span>
+          <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><X size={16} /></button>
         </div>
-        <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: '50%', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff', transition: 'background 0.15s' }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.22)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.12)')}>
-          <X size={18} />
-        </button>
-      </div>
+      )}
 
-      {/* Main viewport */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#0a0a0a', minHeight: 0 }}>
+      {/* ── PHASE 1: Real-Time Camera Screen ────────────────────────────────── */}
+      {phase === 'scanning' && (
+        <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', background: '#000' }}>
+          {/* Top Bar */}
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)' }}>
+            <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', cursor: 'pointer' }}>
+              <X size={20} />
+            </motion.button>
 
-        {/* Scanning phase */}
-        {phase === 'scanning' && !error && (<>
-          <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-          <canvas ref={overlayRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />
-          {/* Status pill */}
-          <div style={{ position: 'absolute', top: 16, left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
-            <span style={{
-              background: docDetected ? 'rgba(21,128,61,0.88)' : !videoReady || !scannerReady ? 'rgba(0,0,0,0.70)' : 'rgba(0,0,0,0.60)',
-              color: '#fff', fontSize: 12, fontWeight: 700, padding: '6px 18px', borderRadius: 24,
-              backdropFilter: 'blur(8px)', transition: 'background 0.35s', letterSpacing: '0.2px',
-              border: docDetected ? '1px solid rgba(74,222,128,0.4)' : '1px solid rgba(255,255,255,0.10)',
-            }}>
-              {!videoReady ? '⏳ Starting camera…' : !scannerReady ? `⏳ ${loadingMsg}` : docDetected ? '✦ Document detected — tap to capture' : 'Aim at document on contrasting surface'}
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#fff', letterSpacing: '0.02em' }}>
+              {pages.length > 0 ? `${pages.length} Page${pages.length > 1 ? 's' : ''} Scanned` : 'Scan Document'}
             </span>
+
+            {hasTorch ? (
+              <motion.button whileTap={{ scale: 0.9 }} onClick={toggleTorch} style={{ background: torchOn ? '#22C55E' : 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', cursor: 'pointer' }}>
+                {torchOn ? <Zap size={20} /> : <ZapOff size={20} />}
+              </motion.button>
+            ) : <div style={{ width: 40 }} />}
           </div>
-        </>)}
 
-        {/* Adjusting phase */}
-        {phase === 'adjusting' && (<>
-          <canvas ref={adjustRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', touchAction: 'none' }} />
-          {processing && (
-            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.72)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18 }}>
-              <div style={{ width: 56, height: 56, borderRadius: '50%', border: '3px solid rgba(255,255,255,0.15)', borderTopColor: '#60A5FA', animation: 'spin 0.85s linear infinite' }} />
-              <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>{procMsg}</span>
-            </div>
-          )}
-          {!processing && (
-            <div style={{ position: 'absolute', top: 16, left: 0, right: 0, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
-              <span style={{ background: 'rgba(0,0,0,0.65)', color: '#93C5FD', fontSize: 12, fontWeight: 600, padding: '6px 16px', borderRadius: 20, backdropFilter: 'blur(8px)', border: '1px solid rgba(147,197,253,0.25)' }}>
-                Drag the blue handles to fit the document edges
-              </span>
-            </div>
-          )}
-        </>)}
+          {/* Live Video & Overlay */}
+          <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <canvas ref={liveCanvasRef} style={{ display: 'none' }} />
 
-        {/* Reviewing phase */}
-        {phase === 'reviewing' && reviewUrl && (<>
-          <img src={reviewUrl} alt="Processed" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', animation: 'scanSettle 0.3s cubic-bezier(0.4,0,0.2,1)' }} />
-          {/* Enhancement pills */}
-          <div style={{ position: 'absolute', top: 16, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 8 }}>
-            {(['auto', 'color', 'bw'] as EnhanceMode[]).map(m => (
-              <button key={m} onClick={() => setEnhanceMode(m)} style={{
-                padding: '7px 20px', borderRadius: 24, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700,
-                background: enhanceMode === m ? '#fff' : 'rgba(0,0,0,0.65)', color: enhanceMode === m ? '#1C1917' : '#fff',
-                backdropFilter: 'blur(8px)', transition: 'all 0.18s', boxShadow: enhanceMode === m ? '0 0 0 2.5px #3B82F6' : 'none',
-                letterSpacing: '0.2px',
-              }}>
-                {m === 'auto' ? '✦ Auto' : m === 'color' ? '🎨 Colour' : '◐ B&W'}
-              </button>
+            {/* Live Green Document Guide Polygon */}
+            {detectedLiveCorners && (
+              <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+                <polygon
+                  points={detectedLiveCorners.map(p => `${(p.x / (liveCanvasRef.current?.width || 1)) * 100}%,${(p.y / (liveCanvasRef.current?.height || 1)) * 100}%`).join(' ')}
+                  fill="rgba(34, 197, 94, 0.15)"
+                  stroke="#22C55E"
+                  strokeWidth="2.5"
+                  strokeDasharray="6 4"
+                />
+              </svg>
+            )}
+          </div>
+
+          {/* Bottom Shutter & Action Bar */}
+          <div style={{ padding: '24px 20px 32px', background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)', display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
+            {/* Gallery Upload Fallback */}
+            <motion.button whileTap={{ scale: 0.9 }} onClick={() => fileInputRef.current?.click()} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 12, padding: '10px 14px', color: '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <ImageIcon size={20} />
+              <span style={{ fontSize: 10, fontWeight: 600 }}>Import</span>
+            </motion.button>
+            <input ref={fileInputRef} type="file" multiple accept="image/*,application/pdf" style={{ display: 'none' }} onChange={handleFileUpload} />
+
+            {/* Shutter Button */}
+            <motion.button
+              whileTap={{ scale: 0.90 }}
+              onClick={captureFrame}
+              style={{
+                width: 76,
+                height: 76,
+                borderRadius: '50%',
+                background: '#FFFFFF',
+                border: '4px solid #22C55E',
+                boxShadow: '0 0 20px rgba(34, 197, 94, 0.4)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <div style={{ width: 58, height: 58, borderRadius: '50%', background: '#22C55E' }} />
+            </motion.button>
+
+            {/* Batch Complete Button */}
+            {pages.length > 0 ? (
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setPhase('batch_summary')}
+                style={{ background: '#24467A', border: 'none', borderRadius: 12, padding: '10px 14px', color: '#fff', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}
+              >
+                <Check size={20} />
+                <span style={{ fontSize: 10, fontWeight: 600 }}>Finish ({pages.length})</span>
+              </motion.button>
+            ) : <div style={{ width: 56 }} />}
+          </div>
+        </div>
+      )}
+
+      {/* ── PHASE 2: Interactive 4-Point Cropping & Loupe Screen ────────────── */}
+      {phase === 'adjusting' && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#0B0D12' }}>
+          {/* Header */}
+          <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+            <motion.button whileTap={{ scale: 0.9 }} onClick={() => setPhase('scanning')} style={{ background: 'none', border: 'none', color: '#E4E1D9', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600 }}>
+              <ChevronLeft size={18} /> Retake
+            </motion.button>
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Adjust Corners</span>
+            <div style={{ width: 60 }} />
+          </div>
+
+          {/* Canvas with Loupe */}
+          <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <canvas ref={adjustCanvasRef} style={{ width: '100%', height: '100%', objectFit: 'contain', touchAction: 'none' }} />
+
+            {/* Magnifier Loupe Overlay */}
+            {loupePos.visible && (
+              <div style={{ position: 'fixed', left: loupePos.x, top: loupePos.y, zIndex: 1030, pointerEvents: 'none', borderRadius: '50%', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.6)', border: '3px solid #22C55E' }}>
+                <canvas ref={loupeCanvasRef} style={{ display: 'block' }} />
+              </div>
+            )}
+          </div>
+
+          {/* Action Bar */}
+          <div style={{ padding: '16px 20px 28px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: 12 }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (activePage) {
+                  const w = activePage.originalCanvas.width;
+                  const h = activePage.originalCanvas.height;
+                  liveCornersRef.current = [
+                    { x: 0, y: 0 },
+                    { x: w, y: 0 },
+                    { x: w, y: h },
+                    { x: 0, y: h },
+                  ];
+                  applyCropAndFilter();
+                }
+              }}
+              style={{ flex: 1, height: 48, borderRadius: 10, background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', fontWeight: 600 }}
+            >
+              Full Page
+            </Button>
+            <Button
+              onClick={applyCropAndFilter}
+              style={{ flex: 2, height: 48, borderRadius: 10, background: '#22C55E', color: '#fff', fontWeight: 700 }}
+            >
+              <Check size={18} style={{ marginRight: 6 }} /> Apply Crop
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── PHASE 3: CamScanner Filter & Review Screen ───────────────────────── */}
+      {phase === 'reviewing' && activePage && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#0B0D12' }}>
+          {/* Top Bar */}
+          <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+            <motion.button whileTap={{ scale: 0.9 }} onClick={() => setPhase('adjusting')} style={{ background: 'none', border: 'none', color: '#E4E1D9', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600 }}>
+              <CropIcon size={16} /> Re-crop
+            </motion.button>
+
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>
+              Page {activePageIndex + 1} of {pages.length}
+            </span>
+
+            <motion.button whileTap={{ scale: 0.9 }} onClick={handleRotate} style={{ background: 'none', border: 'none', color: '#E4E1D9', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600 }}>
+              <RotateCw size={16} />
+            </motion.button>
+          </div>
+
+          {/* Render Preview */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, overflow: 'hidden' }}>
+            <img
+              src={activePage.enhancedCanvas.toDataURL('image/jpeg', 0.92)}
+              alt="Enhanced Scan"
+              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8, boxShadow: '0 8px 30px rgba(0,0,0,0.5)' }}
+            />
+          </div>
+
+          {/* CamScanner Filter Selector Carousel */}
+          <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.05)', borderTop: '1px solid rgba(255,255,255,0.1)', overflowX: 'auto', display: 'flex', gap: 8, justifyContent: 'center' }}>
+            {FILTERS.map(f => {
+              const Icon = f.icon;
+              const isSelected = activePage.filter === f.id;
+              return (
+                <motion.button
+                  key={f.id}
+                  whileTap={{ scale: 0.92 }}
+                  onClick={() => handleFilterChange(f.id)}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    background: isSelected ? '#22C55E' : 'rgba(255,255,255,0.08)',
+                    color: isSelected ? '#fff' : '#E4E1D9',
+                    border: 'none',
+                    cursor: 'pointer',
+                    minWidth: 68,
+                  }}
+                >
+                  <Icon size={16} />
+                  <span style={{ fontSize: 11, fontWeight: isSelected ? 700 : 500 }}>{f.label}</span>
+                </motion.button>
+              );
+            })}
+          </div>
+
+          {/* Footer Actions */}
+          <div style={{ padding: '16px 20px 28px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: 12 }}>
+            <Button
+              variant="outline"
+              onClick={() => setPhase('scanning')}
+              style={{ flex: 1, height: 48, borderRadius: 10, background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', fontWeight: 600 }}
+            >
+              <Plus size={16} style={{ marginRight: 6 }} /> Add Page
+            </Button>
+            <Button
+              onClick={() => setPhase('batch_summary')}
+              style={{ flex: 1.5, height: 48, borderRadius: 10, background: '#24467A', color: '#fff', fontWeight: 700 }}
+            >
+              <Check size={18} style={{ marginRight: 6 }} /> Done ({pages.length})
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── PHASE 4: Multi-Page Batch Document Manager ──────────────────────── */}
+      {phase === 'batch_summary' && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#0B0D12' }}>
+          {/* Top Bar */}
+          <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+            <motion.button whileTap={{ scale: 0.9 }} onClick={() => setPhase('scanning')} style={{ background: 'none', border: 'none', color: '#E4E1D9', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600 }}>
+              <Plus size={16} /> Add More
+            </motion.button>
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Document Pages ({pages.length})</span>
+            <motion.button whileTap={{ scale: 0.9 }} onClick={onClose} style={{ background: 'none', border: 'none', color: '#E4E1D9', cursor: 'pointer' }}>
+              <X size={20} />
+            </motion.button>
+          </div>
+
+          {/* Grid of Pages */}
+          <div style={{ flex: 1, padding: 16, overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+            {pages.map((p, idx) => (
+              <div
+                key={p.id}
+                style={{
+                  position: 'relative',
+                  background: '#1C1917',
+                  borderRadius: 10,
+                  overflow: 'hidden',
+                  border: idx === activePageIndex ? '2px solid #22C55E' : '1px solid rgba(255,255,255,0.15)',
+                  aspectRatio: '3/4',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                <img
+                  src={p.enhancedCanvas.toDataURL('image/jpeg', 0.85)}
+                  alt={`Page ${idx + 1}`}
+                  onClick={() => {
+                    setActivePageIndex(idx);
+                    setPhase('reviewing');
+                  }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+                />
+                <span style={{ position: 'absolute', bottom: 8, left: 8, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4 }}>
+                  Page {idx + 1}
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeletePage(idx);
+                  }}
+                  style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(178,58,52,0.85)', color: '#fff', border: 'none', borderRadius: '50%', width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
             ))}
           </div>
-        </>)}
 
-        {/* Choice phase */}
-        {phase === 'choice' && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 24, boxSizing: 'border-box' }}>
-            <div style={{ width: '100%', maxWidth: 320, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: 24, boxSizing: 'border-box', textAlign: 'center', boxShadow: '0 12px 36px rgba(0,0,0,0.5)' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 12 }}>
-                Scan Complete
-              </div>
-              <div style={{ fontFamily: 'Georgia, serif', fontSize: 22, fontWeight: 700, color: '#FFFFFF', marginBottom: 20 }}>
-                {pages.length} Page{pages.length !== 1 ? 's' : ''} Scanned
-              </div>
-              
-              {/* Horizontal thumbnail strips */}
-              <div style={{ display: 'flex', gap: 10, overflowX: 'auto', padding: '4px 0 16px', marginBottom: 16, justifyContent: 'center' }}>
-                {pageUrls.map((url, i) => (
-                  <div key={i} style={{ position: 'relative', height: 76, width: 56, borderRadius: 6, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.2)', flexShrink: 0 }}>
-                    <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                ))}
-              </div>
-              
-              <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '12px 0 20px' }} />
-              <p style={{ fontSize: 13, color: '#94A3B8', margin: 0, lineHeight: 1.5 }}>
-                Save directly to your history as a PDF scan, or send to AI to convert into an editable document.
-              </p>
-            </div>
+          {/* Final Export Choices */}
+          <div style={{ padding: '16px 20px 28px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <Button
+              onClick={handleSavePdf}
+              style={{ width: '100%', height: 48, borderRadius: 10, background: '#22C55E', color: '#fff', fontWeight: 700, fontSize: 14 }}
+            >
+              <Download size={18} style={{ marginRight: 8 }} /> Save Document as PDF
+            </Button>
+            <Button
+              onClick={handleConvertText}
+              variant="outline"
+              style={{ width: '100%', height: 48, borderRadius: 10, background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', fontWeight: 600, fontSize: 14 }}
+            >
+              <FileText size={18} style={{ marginRight: 8 }} /> Convert to Word / Editable Text
+            </Button>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Error state */}
-        {error && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#fff', textAlign: 'center', padding: '32px 24px', gap: 20 }}>
-            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(239,68,68,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Camera size={28} style={{ opacity: 0.7 }} />
-            </div>
-            <p style={{ fontSize: 15, lineHeight: 1.7, margin: 0, maxWidth: 300, color: '#E2E8F0' }}>{error}</p>
-            <button onClick={() => { setError(null); startCamera(); }} style={{ padding: '13px 32px', background: '#2563EB', color: '#fff', border: 'none', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-              Try again
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Keyframes */}
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes scanSettle{from{opacity:.4;transform:scale(.96)}to{opacity:1;transform:scale(1)}}@media(prefers-reduced-motion:reduce){@keyframes scanSettle{from{}to{}}}`}</style>
-
-      {/* Bottom controls */}
-      <div style={{ padding: '20px 20px', background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(12px)', display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0 }}>
-
-        {/* Scanning controls */}
-        {phase === 'scanning' && !error && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 36 }}>
-            {pages.length > 0 ? (
-              <button onClick={() => setPhase('choice')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: 10, fontWeight: 700, letterSpacing: '0.5px' }}>
-                <div style={{ position: 'relative', width: 46, height: 46 }}>
-                  <img src={pageUrls[pageUrls.length - 1]} alt="" style={{ width: 46, height: 46, objectFit: 'cover', borderRadius: 10, border: '2px solid rgba(255,255,255,0.28)' }} />
-                  <div style={{ position: 'absolute', top: -7, right: -7, background: '#24467A', color: '#fff', borderRadius: '50%', width: 20, height: 20, fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{pages.length}</div>
-                </div>
-                DONE
-              </button>
-            ) : <div style={{ width: 46 }} />}
-
-            {/* Shutter button */}
-            <button onClick={captureFrame} disabled={!videoReady}
-              style={{ width: 80, height: 80, borderRadius: '50%', background: 'transparent', border: `5px solid ${videoReady ? (docDetected ? '#22C55E' : 'rgba(255,255,255,0.75)') : 'rgba(255,255,255,0.18)'}`, cursor: videoReady ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'border-color 0.3s', flexShrink: 0 }}>
-              <div style={{ width: 64, height: 64, borderRadius: '50%', background: videoReady ? (docDetected ? '#22C55E' : '#fff') : '#374151', transition: 'background 0.25s' }} />
-            </button>
-
-            <div style={{ width: 46 }} />
-          </div>
-        )}
-
-        {/* Adjusting controls */}
-        {phase === 'adjusting' && !processing && (
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={() => { lastQuadRef.current = null; setPhase('scanning'); }} style={{ flex: 1, height: 54, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.22)', color: '#fff', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'inherit' }}>
-              <RotateCcw size={15} /> Retake
-            </button>
-            <button onClick={applyTransform} style={{ flex: 2, height: 54, background: '#24467A', border: 'none', color: '#fff', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'inherit', boxShadow: '0 4px 16px rgba(36,70,122,0.3)' }}>
-              <ZapIcon size={15} /> Apply Correction
-            </button>
-          </div>
-        )}
-
-        {/* Reviewing controls */}
-        {phase === 'reviewing' && (
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={retake} style={{ flex: 1, height: 50, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.22)', color: '#fff', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'inherit' }}>
-              <RotateCcw size={14} /> Retake
-            </button>
-            <button onClick={addAnotherPage} style={{ flex: 1.2, height: 50, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.22)', color: '#fff', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'inherit' }}>
-              <Plus size={14} /> Add Page
-            </button>
-            <button onClick={doneReviewing} style={{ flex: 1.2, height: 50, background: '#24467A', border: 'none', color: '#fff', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'inherit', boxShadow: '0 4px 16px rgba(36,70,122,0.3)' }}>
-              <Check size={14} /> Done ({pages.length + 1})
-            </button>
-          </div>
-        )}
-
-        {/* Choice controls */}
-        {phase === 'choice' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '10px 0' }}>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={handleSaveAsScan} disabled={generatingPdf} style={{ flex: 1, height: 52, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.22)', color: '#fff', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontFamily: 'inherit', opacity: generatingPdf ? 0.65 : 1 }}>
-                {generatingPdf ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Download size={15} />}
-                {generatingPdf ? 'Building PDF…' : `Save as Scan`}
-              </button>
-              <button onClick={handleConvertToWord} style={{ flex: 1, height: 52, background: '#24467A', border: 'none', color: '#fff', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontFamily: 'inherit', boxShadow: '0 4px 16px rgba(36,70,122,0.35)' }}>
-                <FileText size={15} /> Convert to Word
-              </button>
-            </div>
-            <button onClick={() => setPhase('scanning')} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: 12, fontWeight: 600, cursor: 'pointer', marginTop: 8 }}>
-              ← Scan more pages
-            </button>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

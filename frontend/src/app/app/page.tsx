@@ -80,6 +80,7 @@ function AppPageContent() {
   const {
     state, files, error, transcribedText,
     sessionId, sessionImages, audioUrl,
+    batchProgress, pdfProgress,
     addFiles, removeFile, transcribe, reset, fetchSession,
   } = useTranscribe();
   const { user, loading } = useAuth();
@@ -283,14 +284,57 @@ function AppPageContent() {
     );
   }
 
+  /* ── Preparing PDF (extracting pages client-side) ── */
+  if (state === 'preparing_pdf') {
+    const cur = (pdfProgress as any)?.current || 1;
+    const tot = (pdfProgress as any)?.total || 1;
+    const pct = Math.max(5, Math.round((cur / tot) * 100));
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', fontFamily: UI, textAlign: 'center', padding: 24 }}>
+        <div style={{
+          width: 72,
+          height: 72,
+          borderRadius: '50%',
+          background: C.blueSub,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 20,
+          animation: 'pulse 1.5s infinite'
+        }}>
+          <FileText size={32} color={C.blue} />
+        </div>
+        <h2 style={{ fontFamily: UI, fontSize: 20, fontWeight: 700, color: C.ink, margin: '0 0 6px' }}>
+          Preparing PDF for Transcription…
+        </h2>
+        <p style={{ fontSize: 13, color: C.inkMute, margin: '0 0 20px', maxWidth: 320, lineHeight: 1.5 }}>
+          {(pdfProgress as any)?.fileName ? `${(pdfProgress as any).fileName} — ` : ''}Extracting page {cur} of {tot} ({pct}%)
+        </p>
+        {/* Progress bar */}
+        <div style={{ width: '100%', maxWidth: 280, height: 6, background: C.border, borderRadius: 99, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${pct}%`, background: C.blue, borderRadius: 99, transition: 'width 0.2s ease' }} />
+        </div>
+        <style>{`
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.08); opacity: 0.8; }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   /* ── Files staged / Processing ───────────────────── */
   if (state === 'uploading' || state === 'processing') {
     const processing = state === 'processing';
     if (processing) {
+      const cur = batchProgress?.current || 0;
+      const tot = batchProgress?.total || files.length || 1;
+      const pct = Math.min(100, Math.max(5, Math.round((cur / tot) * 100)));
       return (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', fontFamily: UI, textAlign: 'center', padding: 24 }}>
           {/* Calm pulse animation container */}
-          <div style={{ position: 'relative', marginBottom: 28 }}>
+          <div style={{ position: 'relative', marginBottom: 20 }}>
             <div style={{
               width: 72,
               height: 72,
@@ -306,16 +350,26 @@ function AppPageContent() {
             <style>{`
               @keyframes pulse {
                 0%, 100% { transform: scale(1); opacity: 1; }
-                50% { transform: scale(1.1); opacity: 0.7; }
+                50% { transform: scale(1.08); opacity: 0.8; }
               }
             `}</style>
           </div>
-          <h2 style={{ fontFamily: DISPLAY, fontSize: 20, fontWeight: 700, color: C.ink, margin: '0 0 8px', letterSpacing: '-0.01em' }}>
-            Reading your document...
+          <h2 style={{ fontFamily: UI, fontSize: 20, fontWeight: 700, color: C.ink, margin: '0 0 6px', letterSpacing: '-0.01em' }}>
+            Transcribing Legal Document…
           </h2>
-          <p style={{ fontSize: 13, color: C.inkMute, margin: 0, maxWidth: 260, lineHeight: 1.5 }}>
-            Inkto AI is transcribing and formatting your legal text. Please hold on.
+          <p style={{ fontSize: 13, color: C.inkMute, margin: '0 0 20px', maxWidth: 300, lineHeight: 1.5 }}>
+            Inkto AI is transcribing page {Math.min(cur + 1, tot)} of {tot} ({pct}% complete)
           </p>
+
+          {/* Progress Bar */}
+          <div style={{ width: '100%', maxWidth: 280, height: 6, background: C.border, borderRadius: 99, overflow: 'hidden', marginBottom: 16 }}>
+            <div style={{ height: '100%', width: `${pct}%`, background: C.blue, borderRadius: 99, transition: 'width 0.3s ease' }} />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: C.inkMid, fontWeight: 500 }}>
+            <Loader2 size={13} color={C.blue} style={{ animation: 'spin 1s linear infinite' }} />
+            <span>Processing {batchProgress?.concurrency || 3} pages in parallel</span>
+          </div>
         </div>
       );
     }

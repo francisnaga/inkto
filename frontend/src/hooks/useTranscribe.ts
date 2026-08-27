@@ -15,15 +15,25 @@ export function useTranscribe() {
     const [sessionId, setSessionId] = useState(null);
     const [sessionImages, setSessionImages] = useState([]);
     const [audioUrl, setAudioUrl] = useState(null);
-    const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
+    const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0, active: 0, concurrency: 0 });
+    const [pdfProgress, setPdfProgress] = useState(null);
 
     const addFiles = async (newFiles) => {
         let processedFiles = [];
+        const hasPdf = newFiles.some(f => f.type === 'application/pdf' || f.name?.toLowerCase().endsWith('.pdf'));
+        
+        if (hasPdf) {
+            setState('preparing_pdf');
+        }
+
         for (const f of newFiles) {
-            if (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')) {
+            if (f.type === 'application/pdf' || f.name?.toLowerCase().endsWith('.pdf')) {
+                setPdfProgress({ current: 1, total: 1, fileName: f.name });
                 try {
                     const { convertPdfToImages } = await import('../lib/pdfHelper');
-                    const pages = await convertPdfToImages(f);
+                    const pages = await convertPdfToImages(f, (current, total) => {
+                        setPdfProgress({ current, total, fileName: f.name });
+                    });
                     processedFiles.push(...pages);
                 } catch (e) {
                     console.warn('PDF client conversion error, using raw file:', e);
@@ -33,8 +43,10 @@ export function useTranscribe() {
                 processedFiles.push(f);
             }
         }
+
+        setPdfProgress(null);
         setFiles(prev => [...prev, ...processedFiles]);
-        if (state === 'idle') setState('uploading');
+        setState('uploading');
     };
 
     const removeFile = (index) => {
@@ -198,11 +210,12 @@ export function useTranscribe() {
         setAudioUrl(null);
         setError(null);
         setState('idle');
-        setBatchProgress({ current: 0, total: 0 });
+        setPdfProgress(null);
+        setBatchProgress({ current: 0, total: 0, active: 0, concurrency: 0 });
         if (window.location.pathname.startsWith('/session/')) {
             window.history.pushState({}, '', '/');
         }
     };
 
-    return { state, files, error, transcribedText, sessionId, sessionImages, audioUrl, batchProgress, addFiles, removeFile, transcribe, fetchSession, reset };
+    return { state, files, error, transcribedText, sessionId, sessionImages, audioUrl, batchProgress, pdfProgress, addFiles, removeFile, transcribe, fetchSession, reset };
 }

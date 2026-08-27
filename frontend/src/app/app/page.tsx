@@ -150,7 +150,7 @@ function AppPageContent() {
         const { getOfflineRecordings, deleteOfflineRecording } = await import('@/lib/indexeddb');
         for (const item of await getOfflineRecordings()) {
           const fd = new FormData(); fd.append('files', item.blob, 'offline-dictation.wav');
-          if ((await fetch('/api/transcribe', { method: 'POST', body: fd })).ok) await deleteOfflineRecording(item.id);
+          if ((await fetch('/api/transcribe', { method: 'POST', credentials: 'include', body: fd })).ok) await deleteOfflineRecording(item.id);
         }
       } catch {}
     };
@@ -196,7 +196,10 @@ function AppPageContent() {
     const name = `scan-${new Date().toISOString().slice(0, 10)}-${pages.length}p.pdf`;
     setSavedPdf({ url, name });
     const a = document.createElement('a'); a.href = url; a.download = name; a.click();
-    try { const fd = new FormData(); fd.append('file', pdfBlob, name); fd.append('title', name); await fetch('/api/save-scan', { method: 'POST', body: fd }); } catch {}
+    try { 
+      const fd = new FormData(); fd.append('file', pdfBlob, name); fd.append('title', name); 
+      await fetch('/api/save-scan', { method: 'POST', credentials: 'include', body: fd }); 
+    } catch {}
   }, [savedPdf]);
 
   const handleConvertToText = useCallback((pages: File[]) => { setShowScanner(false); addFiles(pages); }, [addFiles]);

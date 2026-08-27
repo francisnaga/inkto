@@ -261,10 +261,22 @@ export function ScannerContainer({
     setProcMsg('Preparing pages for transcription…');
 
     try {
+      // 1. First, build the PDF and fire-and-forget save it to History so the user has the original scan.
+      const canvases = pages.map(p => p.enhancedCanvas);
+      const pdfBlob = await compilePagesToPdf(canvases, `Scan-${new Date().toISOString().slice(0, 10)}`);
+      const name = `scan-${new Date().toISOString().slice(0, 10)}-${pages.length}p.pdf`;
+      const fd = new FormData(); 
+      fd.append('file', pdfBlob, name); 
+      fd.append('title', name);
+      fetch('/api/save-scan', { method: 'POST', credentials: 'include', body: fd }).catch(e => console.error('Background PDF save failed:', e));
+
+      // 2. Convert pages to JPEGs for the OCR pipeline
       const filePromises = pages.map((p, idx) => 
         canvasToFile(p.enhancedCanvas, `page-${idx + 1}.jpg`)
       );
       const pageFiles = await Promise.all(filePromises);
+      
+      // 3. Hand off to transcription
       onConvertToText(pageFiles);
     } catch (e) {
       console.error('Convert text error:', e);

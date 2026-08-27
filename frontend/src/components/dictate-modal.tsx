@@ -213,6 +213,7 @@ export default function DictateModal({ onClose, onTranscribeComplete, draftId, i
     try {
       const res = await fetch('/api/transcribe', {
         method: 'POST',
+        credentials: 'include',
         body: formData,
       });
       const data = await res.json();

@@ -61,20 +61,35 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('inkto_session');
+      const email = localStorage.getItem('inkto_user_email');
+      if (token && email) {
+        return { email };
+      }
+    }
+    return null;
+  });
   const [loading, setLoading] = useState(true);
 
   const refreshUser = async () => {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('inkto_session') : null;
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+      if (!token) {
+        setUser(null);
+        return;
       }
-      const res = await fetch('/api/history', { credentials: 'include', headers });
+
+      const headers: Record<string, string> = { 'Authorization': `Bearer ${token}` };
+      const res = await fetch(`/api/user-status?t=${Date.now()}`, { credentials: 'include', headers });
+
       if (res.ok) {
         const data = await res.json();
         if (data.email) {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('inkto_user_email', data.email);
+          }
           setUser({ email: data.email });
           return;
         }
@@ -95,13 +110,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 localStorage.setItem('inkto_refresh_token', refreshData.refreshToken);
               }
               // Retry verification
-              const retryRes = await fetch('/api/history', {
+              const retryRes = await fetch(`/api/user-status?t=${Date.now()}`, {
                 credentials: 'include',
                 headers: { 'Authorization': `Bearer ${refreshData.sessionToken}` }
               });
               if (retryRes.ok) {
                 const retryData = await retryRes.json();
                 if (retryData.email) {
+                  localStorage.setItem('inkto_user_email', retryData.email);
                   setUser({ email: retryData.email });
                   return;
                 }
@@ -109,11 +125,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           }
         }
+        // Only clear if refresh explicitly failed
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('inkto_session');
+          localStorage.removeItem('inkto_refresh_token');
+          localStorage.removeItem('inkto_user_email');
+        }
+        setUser(null);
       }
     } catch (e) {
       console.error('refreshUser error:', e);
     }
-    setUser(null);
   };
 
   useEffect(() => {
@@ -160,6 +182,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               if (exData.refreshToken) {
                 localStorage.setItem('inkto_refresh_token', exData.refreshToken);
               }
+              if (exData.email) {
+                localStorage.setItem('inkto_user_email', exData.email);
+              }
               window.history.replaceState(null, '', window.location.pathname);
             }
           }
@@ -186,6 +211,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('inkto_session');
       localStorage.removeItem('inkto_refresh_token');
+      localStorage.removeItem('inkto_user_email');
     }
     setUser(null);
   };

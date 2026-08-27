@@ -67,6 +67,7 @@ function VerifyForm() {
       if (data.refreshToken) {
         localStorage.setItem('inkto_refresh_token', data.refreshToken);
       }
+      localStorage.setItem('inkto_user_email', data.email || email);
       setDone(true);
       await refreshUser();
       setTimeout(() => router.replace('/app'), 500);

@@ -57,7 +57,7 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const email = require('./_utils/auth').getAuthEmail(req);
+  const email = await require('./_utils/auth').getAuthEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in to draft documents.', requireAuth: true });
 
   const { mode, userContent, templateContent, prompt } = req.body || {};
@@ -73,8 +73,17 @@ module.exports = async function handler(req, res) {
     const db = require('./_utils/supabase').checkSupabase();
 
     // Check plan & limits
-    const { data: userRow } = await db.from('users').select('subscription_status, plan_expires_at').eq('email', email).single();
-    const isPaid = userRow?.subscription_status === 'active' && userRow?.plan_expires_at && new Date(userRow.plan_expires_at) > new Date();
+    let userRow = null;
+    try {
+      const { data, error } = await db.from('users').select('subscription_status, plan_expires_at, is_pro').eq('email', email).single();
+      if (error && (error.code === '42703' || error.message?.includes('does not exist'))) {
+        const fallback = await db.from('users').select('subscription_status, plan_expires_at').eq('email', email).single();
+        userRow = fallback.data;
+      } else {
+        userRow = data;
+      }
+    } catch {}
+    const isPaid = userRow?.is_pro === true || (userRow?.subscription_status === 'active' && userRow?.plan_expires_at && new Date(userRow.plan_expires_at) > new Date());
 
     if (!isPaid) {
       const today = new Date(); today.setHours(0, 0, 0, 0);

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/auth-context';
 import { InktoWordmark } from '@/components/inkto-logo';
 
 /* Inkto design tokens */
@@ -22,12 +23,22 @@ const UI  = '-apple-system, "Segoe UI", Roboto, sans-serif';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { user, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [busy, setBusy]   = useState(false);
   const [err, setErr]     = useState('');
 
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace('/app');
+    }
+  }, [user, loading, router]);
+
+  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidEmail) return;
     setBusy(true); setErr('');
     try {
       const res  = await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
@@ -110,19 +121,19 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={busy || !email}
+            disabled={busy || !isValidEmail}
             style={{
               width: '100%', height: 48,
-              background: busy || !email ? C.warmMid : C.blue,
+              background: busy || !isValidEmail ? C.warmMid : C.blue,
               border: 'none', borderRadius: 8,
               fontSize: 14, fontWeight: 700, color: '#fff',
-              cursor: busy || !email ? 'not-allowed' : 'pointer',
+              cursor: busy || !isValidEmail ? 'not-allowed' : 'pointer',
               fontFamily: UI, letterSpacing: '0.01em',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               transition: 'background 150ms ease',
             }}
-            onMouseEnter={e => { if (!busy && email) (e.currentTarget as HTMLButtonElement).style.background = '#3A5C94'; }}
-            onMouseLeave={e => { if (!busy && email) (e.currentTarget as HTMLButtonElement).style.background = C.blue; }}
+            onMouseEnter={e => { if (!busy && isValidEmail) (e.currentTarget as HTMLButtonElement).style.background = '#3A5C94'; }}
+            onMouseLeave={e => { if (!busy && isValidEmail) (e.currentTarget as HTMLButtonElement).style.background = C.blue; }}
           >
             {busy
               ? <><Spinner /> Sending code…</>

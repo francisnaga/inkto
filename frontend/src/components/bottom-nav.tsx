@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, FileText, Clock, User } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Home, FileText, Clock, User, Loader2 } from 'lucide-react';
 
 const NAV = [
   { name: 'Home',      href: '/app',       Icon: Home },
@@ -22,6 +23,12 @@ const C = {
 
 export function BottomNav() {
   const pathname = usePathname();
+  const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
+
+  // Clear navigating state when route actually changes
+  useEffect(() => {
+    setNavigatingTo(null);
+  }, [pathname]);
 
   // Hidden on routes that have their own full-screen UI
   const hidden = ['/', '/login', '/verify'].includes(pathname);
@@ -29,6 +36,34 @@ export function BottomNav() {
 
   return (
     <>
+      {/* Styles for premium loading and spin animations */}
+      <style>{`
+        @keyframes nav-loading-bar {
+          0% { left: 0; width: 0%; }
+          50% { left: 0; width: 70%; }
+          100% { left: 100%; width: 0%; }
+        }
+        @keyframes nav-spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
+
+      {/* Premium top loading progress bar */}
+      {navigatingTo && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            height: 3,
+            background: C.active,
+            zIndex: 99999,
+            animation: 'nav-loading-bar 1.5s infinite ease-in-out',
+          }}
+        />
+      )}
+
       <nav
         style={{
           position: 'fixed',
@@ -39,7 +74,6 @@ export function BottomNav() {
           background: C.bg,
           borderTop: `1px solid ${C.border}`,
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-          /* No blur, no glass — letterhead aesthetic */
         }}
       >
         <div
@@ -55,10 +89,17 @@ export function BottomNav() {
         >
           {NAV.map(({ name, href, Icon }) => {
             const active = pathname === href || (href !== '/app' && pathname.startsWith(href));
+            const isLoadingThis = navigatingTo === href;
+
             return (
               <Link
                 key={name}
                 href={href}
+                onClick={() => {
+                  if (pathname !== href) {
+                    setNavigatingTo(href);
+                  }
+                }}
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -83,11 +124,19 @@ export function BottomNav() {
                     transition: 'background 150ms ease',
                   }}
                 >
-                  <Icon
-                    size={18}
-                    color={active ? C.active : C.inactive}
-                    strokeWidth={active ? 2.5 : 1.8}
-                  />
+                  {isLoadingThis ? (
+                    <Loader2
+                      size={18}
+                      color={C.active}
+                      style={{ animation: 'nav-spin 1s linear infinite' }}
+                    />
+                  ) : (
+                    <Icon
+                      size={18}
+                      color={active ? C.active : C.inactive}
+                      strokeWidth={active ? 2.5 : 1.8}
+                    />
+                  )}
                 </div>
                 <span
                   style={{

@@ -34,6 +34,7 @@ function VerifyForm() {
   const [cooldown, setCooldown] = useState(0);
   const [resent, setResent]   = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const startCooldown = () => {
     setCooldown(60);
@@ -48,9 +49,17 @@ function VerifyForm() {
     try {
       const res  = await fetch('/api/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ email, otp }) });
       const data = await res.json();
-      if (!res.ok) { setErr(data.error || 'Invalid code — try again.'); return; }
+      if (!res.ok) {
+        setErr(data.error || 'Invalid code — try again.');
+        setOtp('');
+        setTimeout(() => inputRef.current?.focus(), 50);
+        return;
+      }
       if (data.sessionToken) {
         localStorage.setItem('inkto_session', data.sessionToken);
+      }
+      if (data.refreshToken) {
+        localStorage.setItem('inkto_refresh_token', data.refreshToken);
       }
       setDone(true);
       await refreshUser();
@@ -116,6 +125,7 @@ function VerifyForm() {
             6-digit code
           </label>
           <input
+            ref={inputRef}
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"

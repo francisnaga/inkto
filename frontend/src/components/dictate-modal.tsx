@@ -10,21 +10,25 @@ import { nanoid } from 'nanoid';
 interface DictateModalProps {
   onClose: () => void;
   onTranscribeComplete: (text: string, sessionId: string) => void;
+  draftId?: string;
+  initialAudioUrl?: string;
 }
 
 type RecordStatus = 'idle' | 'recording' | 'paused' | 'offline_queued' | 'transcribing' | 'error';
 
-export default function DictateModal({ onClose, onTranscribeComplete }: DictateModalProps) {
+export default function DictateModal({ onClose, onTranscribeComplete, draftId, initialAudioUrl }: DictateModalProps) {
   const [status, setStatus] = useState<RecordStatus>('idle');
   const [timer, setTimer] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [progressStep, setProgressStep] = useState(1);
+  const [isOnline, setIsOnline] = useState(true);
+  const [initialBlob, setInitialBlob] = useState<Blob | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const saveActionRef = useRef<'transcribe' | 'save_raw_audio'>('transcribe');
+  const saveActionRef = useRef<'transcribe' | 'save_raw_audio' | 'save_draft'>('transcribe');
 
   // Stop everything safely
   const cleanup = useCallback(() => {
@@ -44,6 +48,34 @@ export default function DictateModal({ onClose, onTranscribeComplete }: DictateM
   useEffect(() => {
     return cleanup;
   }, [cleanup]);
+
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    const setOn = () => setIsOnline(true);
+    const setOff = () => setIsOnline(false);
+    window.addEventListener('online', setOn);
+    window.addEventListener('offline', setOff);
+    return () => {
+      window.removeEventListener('online', setOn);
+      window.removeEventListener('offline', setOff);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (initialAudioUrl) {
+      fetch(initialAudioUrl)
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to load draft');
+          return res.blob();
+        })
+        .then(blob => {
+          setInitialBlob(blob);
+        })
+        .catch(err => {
+          console.error('[Dictate] Failed to pre-load draft audio:', err);
+        });
+    }
+  }, [initialAudioUrl]);
 
   // Timer logic
   useEffect(() => {
@@ -118,7 +150,7 @@ export default function DictateModal({ onClose, onTranscribeComplete }: DictateM
     }
   };
 
-  const triggerStopWithAction = (action: 'transcribe' | 'save_raw_audio') => {
+  const triggerStopWithAction = (action: 'transcribe' | 'save_raw_audio' | 'save_draft') => {
     saveActionRef.current = action;
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
@@ -148,15 +180,25 @@ export default function DictateModal({ onClose, onTranscribeComplete }: DictateM
     const t2 = setTimeout(() => setProgressStep(3), 2000);
     const t3 = setTimeout(() => setProgressStep(4), 3800);
 
+    let finalBlob = blob;
+    if (initialBlob) {
+      try {
+        const { mergeAudioBlobs } = await import('@/lib/audio-merger');
+        finalBlob = await mergeAudioBlobs(initialBlob, blob);
+      } catch (err) {
+        console.error('Audio merge failed client-side:', err);
+      }
+    }
+
     const online = await checkConnectivity();
 
     if (!online) {
       clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
       // Offline fallback: save to IndexedDB queue
-      const id = nanoid(21);
+      const id = draftId || nanoid(21);
       const title = `Voice Dictation (${new Date().toLocaleDateString('en-GB')})`;
       try {
-        await saveOfflineRecording(id, blob, title);
+        await saveOfflineRecording(id, finalBlob, title);
         setStatus('offline_queued');
       } catch (dbErr) {
         setErrorMessage('Offline save failed.');
@@ -167,8 +209,17 @@ export default function DictateModal({ onClose, onTranscribeComplete }: DictateM
 
     // Online path: send to transcribe API
     const formData = new FormData();
-    formData.append('files', blob, 'dictation.wav');
-    formData.append('action', saveActionRef.current);
+    formData.append('files', finalBlob, 'dictation.wav');
+    
+    if (saveActionRef.current === 'save_draft') {
+      formData.append('action', 'save_raw_audio');
+      formData.append('isDraft', 'true');
+    } else {
+      formData.append('action', saveActionRef.current);
+    }
+    
+    const sessionId = draftId || nanoid(21);
+    formData.append('sessionId', sessionId);
 
     try {
       const res = await fetch('/api/transcribe', {
@@ -186,8 +237,9 @@ export default function DictateModal({ onClose, onTranscribeComplete }: DictateM
       await new Promise(r => setTimeout(r, 600));
 
       if (saveActionRef.current === 'save_raw_audio') {
-        // Redirection to History so they can see their saved voice card!
         window.location.href = '/history';
+      } else if (saveActionRef.current === 'save_draft') {
+        onClose();
       } else {
         onTranscribeComplete(data.text, data.sessionId);
       }
@@ -214,6 +266,12 @@ export default function DictateModal({ onClose, onTranscribeComplete }: DictateM
         <p style={{ fontSize: 13, color: '#78716C', textAlign: 'center', margin: '0 0 24px 0', lineHeight: 1.5 }}>
           Record meetings, notes, or court proceedings. Pause, save, or transcribe with Gemini.
         </p>
+
+        {!isOnline && (
+          <div style={{ background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: 8, padding: '10px 14px', width: '100%', marginBottom: 18, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: 12, color: '#D97706', fontWeight: 600, textAlign: 'center' }}>⚠ No connection — recording saved locally</span>
+          </div>
+        )}
 
         {/* Waveform & Timer Section */}
         <div style={{ height: 110, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginBottom: 24, width: '100%' }}>
@@ -276,12 +334,12 @@ export default function DictateModal({ onClose, onTranscribeComplete }: DictateM
                 )}
                 
                 <Button onClick={() => triggerStopWithAction('transcribe')} variant="default" className="flex-1 h-12 rounded-xl gap-2 font-semibold">
-                  <Square size={16} /> Transcribe
+                  <Square size={16} /> {isOnline ? 'Stop & Transcribe' : 'Stop & Save Offline'}
                 </Button>
               </div>
 
-              <Button onClick={() => triggerStopWithAction('save_raw_audio')} variant="secondary" className="w-full h-12 rounded-xl gap-2 font-semibold border">
-                <Save size={16} /> Save Audio Only
+              <Button onClick={() => triggerStopWithAction('save_draft')} variant="secondary" className="w-full h-12 rounded-xl gap-2 font-semibold border">
+                <Save size={16} /> Save & Continue Later
               </Button>
             </div>
           )}
@@ -289,7 +347,11 @@ export default function DictateModal({ onClose, onTranscribeComplete }: DictateM
           {status === 'transcribing' && (
             <div className="w-full space-y-4 py-2 bg-stone-50 rounded-2xl p-4 border text-left">
               <p className="font-bold text-sm text-foreground text-center mb-3">
-                {saveActionRef.current === 'save_raw_audio' ? 'Saving voice recording…' : 'Transcribing voice…'}
+                {saveActionRef.current === 'save_draft'
+                  ? 'Saving voice draft…'
+                  : saveActionRef.current === 'save_raw_audio'
+                    ? 'Saving voice recording…'
+                    : 'Transcribing voice…'}
               </p>
               
               <div className="space-y-3">

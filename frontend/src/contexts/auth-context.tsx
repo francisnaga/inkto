@@ -78,8 +78,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser({ email: data.email });
           return;
         }
+      } else if (res.status === 401) {
+        // Attempt refresh!
+        const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('inkto_refresh_token') : null;
+        if (refreshToken) {
+          const refreshRes = await fetch('/api/refresh-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken })
+          });
+          if (refreshRes.ok) {
+            const refreshData = await refreshRes.json();
+            if (refreshData.sessionToken) {
+              localStorage.setItem('inkto_session', refreshData.sessionToken);
+              if (refreshData.refreshToken) {
+                localStorage.setItem('inkto_refresh_token', refreshData.refreshToken);
+              }
+              // Retry verification
+              const retryRes = await fetch('/api/history', {
+                credentials: 'include',
+                headers: { 'Authorization': `Bearer ${refreshData.sessionToken}` }
+              });
+              if (retryRes.ok) {
+                const retryData = await retryRes.json();
+                if (retryData.email) {
+                  setUser({ email: retryData.email });
+                  return;
+                }
+              }
+            }
+          }
+        }
       }
-    } catch {}
+    } catch (e) {
+      console.error('refreshUser error:', e);
+    }
     setUser(null);
   };
 
@@ -98,6 +131,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {}
     if (typeof window !== 'undefined') {
       localStorage.removeItem('inkto_session');
+      localStorage.removeItem('inkto_refresh_token');
     }
     setUser(null);
   };

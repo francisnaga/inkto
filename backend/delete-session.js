@@ -52,7 +52,7 @@ module.exports = async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     const cookies = parseCookie(req.headers.cookie || '');
-    const email = require('./_utils/auth').getAuthEmail(req);
+    const email = await require('./_utils/auth').getAuthEmail(req);
 
     if (!email) {
         return res.status(401).json({ error: 'Unauthorized', requireAuth: true });

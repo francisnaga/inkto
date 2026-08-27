@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { ChevronRight, FileText, Search, FileDown, File, Loader2, Trash2, Bookmark } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -201,7 +203,15 @@ interface Category {
 }
 
 export default function TemplatesPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/login');
+    }
+  }, [loading, user, router]);
+
   const [view, setView] = useState<View>('categories');
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
   const [activeTemplate, setActiveTemplate] = useState<Template | null>(null);
@@ -211,6 +221,10 @@ export default function TemplatesPage() {
   const [fittingTemplate, setFittingTemplate] = useState<Template | null>(null);
   const [fittingInput, setFittingInput] = useState('');
   const [isFitting, setIsFitting] = useState(false);
+  const [fitSourceMode, setFitSourceMode] = useState<'select' | 'paste' | 'history'>('select');
+  const [historyItems, setHistoryItems] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [loadingDocId, setLoadingDocId] = useState<string | null>(null);
 
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [draftPrompt, setDraftPrompt] = useState('');
@@ -223,7 +237,13 @@ export default function TemplatesPage() {
     if (!user) return;
     setLoadingTemplates(true);
     try {
-      const res = await fetch('/api/user-templates', { credentials: 'include' });
+      const res = await fetch(`/api/user-templates?t=${Date.now()}`, { 
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       const data = await res.json();
       if (data.templates) setUserTemplates(data.templates);
     } catch (e) {
@@ -294,6 +314,48 @@ export default function TemplatesPage() {
     }
   };
 
+  useEffect(() => {
+    if (fittingTemplate && user) {
+      setFitSourceMode('select');
+      setHistoryLoading(true);
+      fetch(`/api/history?t=${Date.now()}`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.history) {
+            setHistoryItems(data.history.filter((h: any) => h.hasText && h.type !== 'draft'));
+          }
+        })
+        .catch(e => console.error('Failed to load history for template fitting:', e))
+        .finally(() => setHistoryLoading(false));
+    } else {
+      setFitSourceMode('select');
+      setHistoryItems([]);
+    }
+  }, [fittingTemplate, user]);
+
+  const handleHistorySelect = async (docId: string) => {
+    setLoadingDocId(docId);
+    try {
+      const res = await fetch(`/api/session?id=${docId}`);
+      const data = await res.json();
+      if (data.success && data.session && data.session.text) {
+        setFittingInput(data.session.text);
+        setFitSourceMode('paste');
+      } else {
+        alert('Could not retrieve document text.');
+      }
+    } catch {
+      alert('Retrieval failed.');
+    } finally {
+      setLoadingDocId(null);
+    }
+  };
+
   const handleRunDraft = async () => {
     if (!draftPrompt.trim()) return;
     setIsDrafting(true);
@@ -335,6 +397,18 @@ export default function TemplatesPage() {
           .map(t => ({ ...t, categoryName: cat.name, category: cat }))
       )
     : [];
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Loader2 className="w-6 h-6 animate-spin text-[#24467A]" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   // ── Editor view ──
   if (view === 'editor' && activeTemplate) {
@@ -468,9 +542,11 @@ export default function TemplatesPage() {
         <p className="text-muted-foreground mt-1 text-sm">Standard legal document templates.</p>
       </header>
 
-      <Button onClick={() => setShowDraftModal(true)} className="w-full h-11 mb-5 bg-stone-900 hover:bg-stone-800 text-white font-semibold rounded-xl gap-2">
-        ✍ Draft Document from Scratch
-      </Button>
+      <Link href="/draft" className="w-full mb-5">
+        <Button className="w-full h-11 bg-stone-900 hover:bg-stone-800 text-white font-semibold rounded-xl gap-2">
+          ✍ Draft Document from Scratch
+        </Button>
+      </Link>
 
       {/* Search */}
       <div className="relative mb-5">
@@ -567,65 +643,96 @@ export default function TemplatesPage() {
       {fittingTemplate && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <div style={{ background: '#fff', color: '#1c1917', borderRadius: 24, width: '100%', maxWidth: 440, padding: 28, position: 'relative', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: '-0.3px' }}>AI-Fit: {fittingTemplate.name}</h3>
-            <p style={{ fontSize: 13, color: '#78716c', margin: 0, lineHeight: 1.5 }}>
-              Paste or type your raw notes, dictated details, or transcribed text. Gemini will restructure it exactly into the template's clause order and formatting.
-            </p>
-            <textarea
-              value={fittingInput}
-              onChange={e => setFittingInput(e.target.value)}
-              style={{ width: '100%', height: 160, padding: 12, border: '1px solid #e4e2dc', borderRadius: 12, resize: 'none', background: '#fafaf9', fontSize: 14, outline: 'none' }}
-              placeholder="E.g., Landlord is Alhaji Tunde Cole. Tenant is Dr. Emeka Obi. Rent is N1,200,000 per annum starting October 1st..."
-              disabled={isFitting}
-            />
+            <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: '-0.3px', fontFamily: 'Georgia, serif' }}>AI-Fit: {fittingTemplate.name}</h3>
+            
             {isFitting ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 16, paddingBottom: 16, gap: 12 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 24, paddingBottom: 24, gap: 12 }}>
                 <Loader2 size={32} className="animate-spin text-primary" />
                 <span style={{ fontSize: 13, fontWeight: 600, color: '#78716c' }}>AI is restructuring your document…</span>
               </div>
             ) : (
-              <div style={{ display: 'flex', gap: 10 }}>
-                <Button variant="outline" style={{ flex: 1 }} onClick={() => setFittingTemplate(null)}>
-                  Cancel
-                </Button>
-                <Button style={{ flex: 1 }} onClick={handleRunAiFit} disabled={!fittingInput.trim()}>
-                  Align to Template
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+              <>
+                {fitSourceMode === 'select' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <p style={{ fontSize: 13, color: '#78716c', margin: '0 0 8px 0', lineHeight: 1.5 }}>
+                      Choose how you want to provide information to align to this template.
+                    </p>
+                    <Button onClick={() => setFitSourceMode('paste')} className="w-full h-11 justify-start gap-3 rounded-xl border" variant="outline">
+                      ✍️ Paste Details Manually
+                    </Button>
+                    <Button onClick={() => setFitSourceMode('history')} className="w-full h-11 justify-start gap-3 rounded-xl border" variant="outline">
+                      📜 Choose from Saved History
+                    </Button>
+                    <Button onClick={() => setFittingTemplate(null)} className="w-full h-11 mt-4 rounded-xl" variant="ghost">
+                      Cancel
+                    </Button>
+                  </div>
+                )}
 
-      {/* AI Draft Document Modal */}
-      {showDraftModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ background: '#fff', color: '#1c1917', borderRadius: 24, width: '100%', maxWidth: 440, padding: 28, position: 'relative', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: '-0.3px' }}>Draft Document</h3>
-            <p style={{ fontSize: 13, color: '#78716c', margin: 0, lineHeight: 1.5 }}>
-              Describe the legal document you wish to draft from scratch. Gemini will produce a comprehensive professional draft under Nigerian legal syntax.
-            </p>
-            <textarea
-              value={draftPrompt}
-              onChange={e => setDraftPrompt(e.target.value)}
-              style={{ width: '100%', height: 160, padding: 12, border: '1px solid #e4e2dc', borderRadius: 12, resize: 'none', background: '#fafaf9', fontSize: 14, outline: 'none' }}
-              placeholder="E.g., A tenancy agreement for a 3-bedroom flat in Lekki Phase 1, landlord is Alhaji Cole, tenant is Dr Emeka, rent N3,500,000/year, 2-year term..."
-              disabled={isDrafting}
-            />
-            {isDrafting ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 16, paddingBottom: 16, gap: 12 }}>
-                <Loader2 size={32} className="animate-spin text-primary" />
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#78716c' }}>Gemini is drafting your document…</span>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', gap: 10 }}>
-                <Button variant="outline" style={{ flex: 1 }} onClick={() => setShowDraftModal(false)}>
-                  Cancel
-                </Button>
-                <Button style={{ flex: 1 }} onClick={handleRunDraft} disabled={!draftPrompt.trim()}>
-                  Generate Draft
-                </Button>
-              </div>
+                {fitSourceMode === 'paste' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <p style={{ fontSize: 13, color: '#78716c', margin: 0, lineHeight: 1.5 }}>
+                      Review or edit the source details below, then click Align to structure it.
+                    </p>
+                    <textarea
+                      value={fittingInput}
+                      onChange={e => setFittingInput(e.target.value)}
+                      style={{ width: '100%', height: 160, padding: 12, border: '1px solid #e4e2dc', borderRadius: 12, resize: 'none', background: '#fafaf9', fontSize: 14, outline: 'none' }}
+                      placeholder="E.g., Landlord is Alhaji Tunde Cole. Tenant is Dr. Emeka Obi. Rent is N1,200,000 per annum starting October 1st..."
+                    />
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <Button variant="outline" style={{ flex: 1 }} onClick={() => setFitSourceMode('select')}>
+                        Back
+                      </Button>
+                      <Button style={{ flex: 1 }} onClick={handleRunAiFit} disabled={!fittingInput.trim()}>
+                        Align to Template
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {fitSourceMode === 'history' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <p style={{ fontSize: 13, color: '#78716c', margin: 0, lineHeight: 1.5 }}>
+                      Select a document from your history to load its text.
+                    </p>
+                    <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid #e4e2dc', borderRadius: 12, padding: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {historyLoading ? (
+                        <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}>
+                          <Loader2 className="animate-spin text-muted-foreground w-5 h-5" />
+                        </div>
+                      ) : historyItems.length === 0 ? (
+                        <div style={{ textAlign: 'center', fontSize: 12, color: '#78716c', padding: 20 }}>
+                          No past transcriptions found.
+                        </div>
+                      ) : (
+                        historyItems.map(item => (
+                          <button
+                            key={item.id}
+                            onClick={() => handleHistorySelect(item.id)}
+                            disabled={loadingDocId !== null}
+                            style={{
+                              width: '100%', padding: '10px 12px', border: 'none', background: '#fafaf9', borderRadius: 8, textAlign: 'left',
+                              cursor: loadingDocId ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8
+                            }}
+                          >
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: '#1c1917', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
+                              <div style={{ fontSize: 10, color: '#78716c', marginTop: 2 }}>{new Date(item.createdAt).toLocaleDateString()}</div>
+                            </div>
+                            {loadingDocId === item.id && (
+                              <Loader2 className="animate-spin text-muted-foreground w-4 h-4" />
+                            )}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                    <Button variant="outline" className="w-full" onClick={() => setFitSourceMode('select')}>
+                      Back
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

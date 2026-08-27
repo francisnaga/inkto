@@ -298,6 +298,8 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
     const [isEditing, setIsEditing] = useState(false);
+    const [activeTab, setActiveTab] = useState<'split' | 'original' | 'result'>('split');
+    const [hasReviewed, setHasReviewed] = useState(false);
 
     const [email, setEmail] = useState(() => localStorage.getItem('inkto_last_email') || '');
     const [sendingEmail, setSendingEmail] = useState(false);
@@ -498,11 +500,19 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     };
 
     const handleDownloadDocx = () => {
+        if (!hasReviewed) {
+            alert("Please review and confirm the AI transcript first.");
+            return;
+        }
         const date = new Date().toISOString().slice(0, 10);
         downloadFile('/api/download-docx', value, `inkto-transcript-${date}.docx`, 'Could not generate Word document.');
     };
 
     const handleDownloadPdf = () => {
+        if (!hasReviewed) {
+            alert("Please review and confirm the AI transcript first.");
+            return;
+        }
         const date = new Date().toISOString().slice(0, 10);
         downloadFile('/api/download-pdf', value, `inkto-transcript-${date}.pdf`, 'Could not generate PDF.');
     };
@@ -511,6 +521,10 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     const validateEmail = (e) => e && e.includes('@') && e.includes('.');
 
     const handleSendEmail = async (formats = { docx: true, pdf: false }) => {
+        if (!hasReviewed) {
+            alert("Please review and confirm the AI transcript first.");
+            return;
+        }
         if (!validateEmail(email)) {
             setEmailStatus({ type: 'error', msg: 'Enter a valid email address.' });
             return;
@@ -535,6 +549,10 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     };
 
     const handleSaveHistory = async () => {
+        if (!hasReviewed) {
+            alert("Please review and confirm the AI transcript first.");
+            return;
+        }
         if (!validateEmail(email)) {
             setEmailStatus({ type: 'error', msg: 'Enter a valid email address.' });
             return;
@@ -604,14 +622,14 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                             }
                             setShowInboxModal(true);
                         }}
-                        disabled={sendingEmail}
+                        disabled={sendingEmail || !hasReviewed}
                         style={{
                             padding: '9px 14px',
                             background: '#2563EB', color: '#fff',
                             border: 'none', borderRadius: '8px',
                             fontSize: '13px', fontWeight: '700',
-                            cursor: sendingEmail ? 'wait' : 'pointer',
-                            opacity: sendingEmail ? 0.5 : 1,
+                            cursor: (sendingEmail || !hasReviewed) ? 'not-allowed' : 'pointer',
+                            opacity: (sendingEmail || !hasReviewed) ? 0.5 : 1,
                             whiteSpace: 'nowrap', fontFamily: 'inherit',
                         }}
                     >
@@ -619,14 +637,14 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                     </button>
                     <button
                         onClick={handleSaveHistory}
-                        disabled={sendingEmail}
+                        disabled={sendingEmail || !hasReviewed}
                         style={{
                             padding: '9px 14px',
                             background: '#1C1917', color: '#fff',
                             border: 'none', borderRadius: '8px',
                             fontSize: '13px', fontWeight: '700',
-                            cursor: sendingEmail ? 'wait' : 'pointer',
-                            opacity: sendingEmail ? 0.5 : 1,
+                            cursor: (sendingEmail || !hasReviewed) ? 'not-allowed' : 'pointer',
+                            opacity: (sendingEmail || !hasReviewed) ? 0.5 : 1,
                             whiteSpace: 'nowrap', fontFamily: 'inherit',
                         }}
                     >
@@ -677,20 +695,26 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                 )}
 
                 {/* DOCX */}
-                <button onClick={handleDownloadDocx} title="Download Word document" style={{
+                <button onClick={handleDownloadDocx} disabled={!hasReviewed} title="Download Word document" style={{
                     display: 'flex', alignItems: 'center', gap: '5px',
                     padding: '6px 10px', background: '#EFF6FF', border: 'none', borderRadius: '7px',
-                    fontSize: '12px', fontWeight: '600', color: '#1D4ED8', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, fontFamily: 'inherit',
+                    fontSize: '12px', fontWeight: '600', color: '#1D4ED8',
+                    cursor: hasReviewed ? 'pointer' : 'not-allowed',
+                    opacity: hasReviewed ? 1 : 0.4,
+                    whiteSpace: 'nowrap', flexShrink: 0, fontFamily: 'inherit',
                 }}>
                     <FileDown size={12} color="#1D4ED8" />
                     {isDesktop ? 'Word' : '.doc'}
                 </button>
 
                 {/* PDF */}
-                <button onClick={handleDownloadPdf} title="Download PDF" style={{
+                <button onClick={handleDownloadPdf} disabled={!hasReviewed} title="Download PDF" style={{
                     display: 'flex', alignItems: 'center', gap: '5px',
                     padding: '6px 10px', background: '#FEF2F2', border: 'none', borderRadius: '7px',
-                    fontSize: '12px', fontWeight: '600', color: '#DC2626', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, fontFamily: 'inherit',
+                    fontSize: '12px', fontWeight: '600', color: '#DC2626',
+                    cursor: hasReviewed ? 'pointer' : 'not-allowed',
+                    opacity: hasReviewed ? 1 : 0.4,
+                    whiteSpace: 'nowrap', flexShrink: 0, fontFamily: 'inherit',
                 }}>
                     <File size={12} color="#DC2626" />
                     {isDesktop ? 'PDF' : 'PDF'}
@@ -763,7 +787,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                 background: isNoText ? '#F59E0B' : '#15803D', color: '#fff',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '800',
             }}>
-                {isNoText ? '!' : 'âœ“'}
+                {isNoText ? '!' : '✓'}
             </div>
             <span style={{ fontSize: '13px', fontWeight: '700', color: '#44403C' }}>
                 {isNoText ? 'No text found' : 'Transcription complete'}
@@ -773,55 +797,158 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 
-    /* â”€â”€ Desktop layout â”€â”€ */
+    /* ── Tab toggle ── */
+    const tabToggle = images.length > 0 && (
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '12px 24px',
+            borderBottom: '1px solid #E4E2DC',
+            background: '#FAFAF9',
+            borderRadius: 12,
+            border: '1px solid #E4E2DC',
+            flexShrink: 0
+        }}>
+            <div style={{ display: 'flex', background: '#F5F4F0', borderRadius: 8, padding: 3, gap: 2, border: '1px solid #E4E2DC' }}>
+                {(['split', 'original', 'result'] as const).map(tab => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        style={{
+                            padding: '6px 16px',
+                            borderRadius: 6,
+                            border: 'none',
+                            background: activeTab === tab ? '#FFFFFF' : 'transparent',
+                            color: activeTab === tab ? '#0B0D12' : '#78716C',
+                            fontWeight: 700,
+                            fontSize: 12,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            cursor: 'pointer',
+                            boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                            transition: 'all 0.15s',
+                            fontFamily: 'inherit',
+                        }}
+                    >
+                        {tab}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+
+    /* ── AI Review Gate banner ── */
+    const reviewBanner = !hasReviewed && !value.startsWith('[Raw voice dictation') && (
+        <div style={{
+            border: '1.5px solid #DC2626',
+            background: '#FEF2F2',
+            borderRadius: 10,
+            padding: '12px 18px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            flexWrap: 'wrap',
+            boxSizing: 'border-box',
+            marginBottom: 16
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13, color: '#991B1B', fontWeight: 700 }}>
+                    ⚠️ AI-generated — review carefully before use
+                </span>
+            </div>
+            <button
+                onClick={() => setHasReviewed(true)}
+                style={{
+                    background: '#DC2626',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: 6,
+                    padding: '6px 14px',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    boxShadow: '0 2px 8px rgba(220,38,38,0.25)',
+                    transition: 'background 0.15s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#B91C1C'}
+                onMouseLeave={e => e.currentTarget.style.background = '#DC2626'}
+            >
+                I've Reviewed
+            </button>
+        </div>
+    );
+
+    /* ── Desktop layout ── */
     if (isDesktop) {
         return (
-            <div style={{ animation: 'fadeIn 0.4s ease' }} className="desktop-split">
-                {images.length > 0 && (
-                    <div className="left-pane" style={{ background: '#FAFAF9', borderRight: '1px solid #E4E2DC', overflow: 'hidden', padding: 0, display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ padding: '12px 16px', borderBottom: '1px solid #E4E2DC', background: '#fff', flexShrink: 0 }}>
-                            <span style={{ fontSize: '12px', fontWeight: '700', color: '#78716C', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Source Documents</span>
-                        </div>
-                        <div style={{ flex: 1, overflow: 'hidden' }}>
-                            <FilmstripViewer images={images} />
-                        </div>
-                    </div>
-                )}
-
-                <div className="right-pane" style={{ padding: '24px', overflowY: 'auto' }}>
-                    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                        {statusBadge}
-                        {!isNoText && emailRow}
-
-                        <div style={{ background: '#fff', border: '1px solid #E4E2DC', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: '10px' }}>
-                            {toolbar}
-                            <div style={{ position: 'relative' }}>
-                                {value.startsWith('[Raw voice dictation') ? (
-                                    renderRawAudioDashboard()
-                                ) : (
-                                    <RichEditor
-                                        content={value}
-                                        onChange={handleChange}
-                                        readOnly={!isEditing || isNoText}
-                                        style={textareaStyleDesktop}
-                                    />
-                                )}
-                                {showScrollTop && !value.startsWith('[Raw voice dictation') && (
-                                    <button onClick={scrollToTop} style={{ position: 'absolute', bottom: '16px', right: '16px', width: '36px', height: '36px', background: 'rgba(28,25,23,0.65)', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-                                        <ChevronUp size={16} color="white" />
-                                    </button>
-                                )}
+            <div style={{ display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.4s ease', gap: 16 }}>
+                {tabToggle}
+                {reviewBanner}
+                
+                <div className="desktop-split" style={{ display: 'flex', height: 'calc(100vh - 180px)', overflow: 'hidden' }}>
+                    {images.length > 0 && (activeTab === 'split' || activeTab === 'original') && (
+                        <div className="left-pane" style={{
+                            background: '#FAFAF9',
+                            borderRight: '1px solid #E4E2DC',
+                            overflow: 'hidden',
+                            padding: 0,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            width: activeTab === 'original' ? '100%' : '50%'
+                        }}>
+                            <div style={{ padding: '12px 16px', borderBottom: '1px solid #E4E2DC', background: '#fff', flexShrink: 0 }}>
+                                <span style={{ fontSize: '12px', fontWeight: '700', color: '#78716C', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Source Documents</span>
+                            </div>
+                            <div style={{ flex: 1, overflow: 'hidden' }}>
+                                <FilmstripViewer images={images} />
                             </div>
                         </div>
+                    )}
 
-                        {!isNoText && tipBanner}
+                    {(activeTab === 'split' || activeTab === 'result') && (
+                        <div className="right-pane" style={{
+                            width: activeTab === 'result' ? '100%' : '50%',
+                            padding: '24px',
+                            overflowY: 'auto'
+                        }}>
+                            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                                {statusBadge}
+                                {!isNoText && emailRow}
 
-                        <button onClick={onReset} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '13px', background: '#FAFAF9', border: '1px solid #E4E2DC', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: '#78716C', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit' }}
-                            onMouseEnter={e => { e.currentTarget.style.background = '#F0EFEB'; e.currentTarget.style.color = '#44403C'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = '#FAFAF9'; e.currentTarget.style.color = '#78716C'; }}>
-                            <RotateCcw size={13} /> New document
-                        </button>
-                    </div>
+                                <div style={{ background: '#fff', border: '1px solid #E4E2DC', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: '10px' }}>
+                                    {toolbar}
+                                    <div style={{ position: 'relative' }}>
+                                        {value.startsWith('[Raw voice dictation') ? (
+                                            renderRawAudioDashboard()
+                                        ) : (
+                                            <RichEditor
+                                                content={value}
+                                                onChange={handleChange}
+                                                readOnly={!isEditing || isNoText}
+                                                style={textareaStyleDesktop}
+                                            />
+                                        )}
+                                        {showScrollTop && !value.startsWith('[Raw voice dictation') && (
+                                            <button onClick={scrollToTop} style={{ position: 'absolute', bottom: '16px', right: '16px', width: '36px', height: '36px', background: 'rgba(28,25,23,0.65)', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+                                                <ChevronUp size={16} color="white" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {!isNoText && tipBanner}
+
+                                <button onClick={onReset} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '13px', background: '#FAFAF9', border: '1px solid #E4E2DC', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: '#78716C', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit' }}
+                                    onMouseEnter={e => { e.currentTarget.style.background = '#F0EFEB'; e.currentTarget.style.color = '#44403C'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.background = '#FAFAF9'; e.currentTarget.style.color = '#78716C'; }}>
+                                    <RotateCcw size={13} /> New document
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {showInboxModal && <InboxModal onClose={() => setShowInboxModal(false)} onSend={handleSendEmail} />}
@@ -829,40 +956,59 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         );
     }
 
-    /* â”€â”€ Mobile layout â”€â”€ */
+    /* ── Mobile layout ── */
     return (
-        <div style={{ animation: 'fadeIn 0.4s ease' }}>
-            {statusBadge}
-            {!isNoText && emailRow}
+        <div style={{ animation: 'fadeIn 0.4s ease', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {tabToggle}
+            {reviewBanner}
 
-            <div style={{ background: '#fff', border: '1px solid #E4E2DC', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: '10px' }}>
-                {toolbar}
-                <div style={{ position: 'relative' }}>
-                    {value.startsWith('[Raw voice dictation') ? (
-                        renderRawAudioDashboard()
-                    ) : (
-                        <RichEditor
-                            content={value}
-                            onChange={handleChange}
-                            readOnly={!isEditing || isNoText}
-                            style={textareaStyleMobile}
-                        />
-                    )}
-                    {showScrollTop && !value.startsWith('[Raw voice dictation') && (
-                        <button onClick={scrollToTop} style={{ position: 'absolute', bottom: '12px', right: '12px', width: '32px', height: '32px', background: 'rgba(28,25,23,0.65)', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-                            <ChevronUp size={15} color="white" />
-                        </button>
-                    )}
+            {images.length > 0 && (activeTab === 'split' || activeTab === 'original') && (
+                <div style={{
+                    height: activeTab === 'original' ? 'calc(100vh - 200px)' : '260px',
+                    border: '1px solid #E4E2DC',
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    background: '#FAFAF9'
+                }}>
+                    <FilmstripViewer images={images} />
                 </div>
-            </div>
+            )}
 
-            {!isNoText && tipBanner}
+            {(activeTab === 'split' || activeTab === 'result') && (
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    {statusBadge}
+                    {!isNoText && emailRow}
 
-            <button onClick={onReset} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '13px', background: '#FAFAF9', border: '1px solid #E4E2DC', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: '#78716C', cursor: 'pointer', transition: 'all 0.2s', marginBottom: '32px', fontFamily: 'inherit' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#F0EFEB'; e.currentTarget.style.color = '#44403C'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#FAFAF9'; e.currentTarget.style.color = '#78716C'; }}>
-                <RotateCcw size={13} /> New document
-            </button>
+                    <div style={{ background: '#fff', border: '1px solid #E4E2DC', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: '10px' }}>
+                        {toolbar}
+                        <div style={{ position: 'relative' }}>
+                            {value.startsWith('[Raw voice dictation') ? (
+                                renderRawAudioDashboard()
+                            ) : (
+                                <RichEditor
+                                    content={value}
+                                    onChange={handleChange}
+                                    readOnly={!isEditing || isNoText}
+                                    style={textareaStyleMobile}
+                                />
+                            )}
+                            {showScrollTop && !value.startsWith('[Raw voice dictation') && (
+                                <button onClick={scrollToTop} style={{ position: 'absolute', bottom: '12px', right: '12px', width: '32px', height: '32px', background: 'rgba(28,25,23,0.65)', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+                                    <ChevronUp size={15} color="white" />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {!isNoText && tipBanner}
+
+                    <button onClick={onReset} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '13px', background: '#FAFAF9', border: '1px solid #E4E2DC', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: '#78716C', cursor: 'pointer', transition: 'all 0.2s', marginBottom: '32px', fontFamily: 'inherit' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#F0EFEB'; e.currentTarget.style.color = '#44403C'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = '#FAFAF9'; e.currentTarget.style.color = '#78716C'; }}>
+                        <RotateCcw size={13} /> New document
+                    </button>
+                </div>
+            )}
 
             {showInboxModal && <InboxModal onClose={() => setShowInboxModal(false)} onSend={handleSendEmail} />}
         </div>

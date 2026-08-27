@@ -1,4 +1,4 @@
-﻿const multer = require('multer');
+const multer = require('multer');
 const { nanoid } = require('nanoid');
 
 const upload = multer({
@@ -42,7 +42,7 @@ module.exports = async function handler(req, res) {
     };
 
     const cookies = parseCookie(req.headers.cookie || '');
-    const userEmail = require('./_utils/auth').getAuthEmail(req);
+    const userEmail = await require('./_utils/auth').getAuthEmail(req);
 
     if (!userEmail) {
         return res.status(401).json({ error: 'Please sign in to save scans.', requireAuth: true });

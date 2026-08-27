@@ -1,16 +1,30 @@
 'use client';
 
-import { Camera, Mic, FileText, X, Download, Loader2, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { Camera, Mic, FileText, X, Download, Loader2, ChevronRight, CheckCircle2, Crown } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { useTranscribe } from '@/hooks/useTranscribe';
 import { useAuth } from '@/contexts/auth-context';
 import { useState, useEffect, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { InktoWordmark } from '@/components/inkto-logo';
 
 const ThumbnailGrid = dynamic(() => import('@/components/thumbnail-grid'), { ssr: false });
 const OutputBox     = dynamic(() => import('@/components/output-box'), { ssr: false });
 const ScannerModal  = dynamic(() => import('@/components/scanner-modal'), { ssr: false });
 const DictateModal  = dynamic(() => import('@/components/dictate-modal'), { ssr: false });
+
+interface HistoryEntry {
+  id: string;
+  title: string;
+  preview: string;
+  createdAt: string;
+  sourceImageCount: number;
+  type: 'scan' | 'transcription' | 'voice' | 'draft';
+  fileUrl: string | null;
+  hasText: boolean;
+}
 
 /* Inkto design tokens */
 const C = {
@@ -67,13 +81,61 @@ function AppPageContent() {
     sessionId, sessionImages, audioUrl,
     addFiles, removeFile, transcribe, reset, fetchSession,
   } = useTranscribe();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/login');
+    }
+  }, [loading, user, router]);
+
   const [showScanner, setShowScanner] = useState(false);
   const [showDictate, setShowDictate] = useState(false);
+  const [activeDraft, setActiveDraft] = useState<{ id: string; audioUrl: string } | null>(null);
   const [savedPdf, setSavedPdf]       = useState<{ url: string; name: string } | null>(null);
   const [procStep, setProcStep]       = useState(0);
   const searchParams = useSearchParams();
   const docId = searchParams.get('doc');
+  const resumeId = searchParams.get('resume');
+
+  const [recents, setRecents] = useState<HistoryEntry[]>([]);
+  const [recentsLoading, setRecentsLoading] = useState(true);
+
+  useEffect(() => {
+    if (resumeId) {
+      fetch(`/api/session?id=${resumeId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.session && data.session.audioUrl) {
+            setActiveDraft({ id: resumeId, audioUrl: data.session.audioUrl });
+          }
+        })
+        .catch(e => console.error('Failed to load draft for resumption:', e));
+    }
+  }, [resumeId]);
+
+  useEffect(() => {
+    const loadRecents = async () => {
+      try {
+        const res = await fetch(`/api/history?t=${Date.now()}`, {
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setRecents((data.history || []).slice(0, 2));
+        }
+      } catch (e) {
+        console.error('Failed to load recent items:', e);
+      } finally {
+        setRecentsLoading(false);
+      }
+    };
+    loadRecents();
+  }, [state]);
 
   useEffect(() => { if (docId) fetchSession(docId); }, [docId, fetchSession]);
 
@@ -161,19 +223,61 @@ function AppPageContent() {
     );
   }
 
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#FBFAF7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Loader2 size={24} color={C.blue} style={{ animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   /* ── Error ───────────────────────────────────────── */
   if (state === 'error') {
+    const errStr = String(error || '');
+    const isLimit = errStr.toLowerCase().includes('limit') || errStr.toLowerCase().includes('free') || errStr.toLowerCase().includes('upgrade');
     return (
-      <div style={{ paddingTop: 48, fontFamily: UI }}>
-        <p style={{ fontSize: 13, color: C.red, marginBottom: 16, lineHeight: 1.6 }}>
-          {error || 'An unexpected error occurred.'}
-        </p>
-        <button
-          onClick={reset}
-          style={{ height: 44, padding: '0 24px', background: C.blue, border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: UI }}
-        >
-          Try again
-        </button>
+      <div style={{ paddingTop: 48, fontFamily: UI, textAlign: isLimit ? 'center' : 'left' }}>
+        {isLimit ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            <div style={{ width: 56, height: 56, borderRadius: '50%', background: C.brassS, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Crown size={24} color={C.brass} />
+            </div>
+            <h2 style={{ fontFamily: DISPLAY, fontSize: 22, fontWeight: 700, margin: 0 }}>Daily Limit Reached</h2>
+            <p style={{ fontSize: 13, color: C.inkMute, margin: 0, maxWidth: 320, lineHeight: 1.5 }}>
+              You have completed your 5 free conversions/drafts for today. Upgrade to Pro for unlimited document scanning, text conversions, and drafting.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 280, marginTop: 12 }}>
+              <Link href="/account" style={{ width: '100%' }}>
+                <Button style={{ width: '100%', height: 44, background: C.blue, color: '#fff', fontWeight: 700, borderRadius: 6 }}>
+                  Upgrade to Pro
+                </Button>
+              </Link>
+              <button
+                onClick={reset}
+                style={{ height: 44, background: 'transparent', border: `1.5px solid ${C.border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, color: C.inkMid, cursor: 'pointer' }}
+              >
+                Go back
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p style={{ fontSize: 13, color: C.red, marginBottom: 16, lineHeight: 1.6 }}>
+              {error || 'An unexpected error occurred.'}
+            </p>
+            <button
+              onClick={reset}
+              style={{ height: 44, padding: '0 24px', background: C.blue, border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: UI }}
+            >
+              Try again
+            </button>
+          </>
+        )}
       </div>
     );
   }
@@ -181,18 +285,50 @@ function AppPageContent() {
   /* ── Files staged / Processing ───────────────────── */
   if (state === 'uploading' || state === 'processing') {
     const processing = state === 'processing';
+    if (processing) {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', fontFamily: UI, textAlign: 'center', padding: 24 }}>
+          {/* Calm pulse animation container */}
+          <div style={{ position: 'relative', marginBottom: 28 }}>
+            <div style={{
+              width: 72,
+              height: 72,
+              borderRadius: '50%',
+              background: C.blueSub,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+            }}>
+              <FileText size={28} color={C.blue} />
+            </div>
+            <style>{`
+              @keyframes pulse {
+                0%, 100% { transform: scale(1); opacity: 1; }
+                50% { transform: scale(1.1); opacity: 0.7; }
+              }
+            `}</style>
+          </div>
+          <h2 style={{ fontFamily: DISPLAY, fontSize: 20, fontWeight: 700, color: C.ink, margin: '0 0 8px', letterSpacing: '-0.01em' }}>
+            Reading your document...
+          </h2>
+          <p style={{ fontSize: 13, color: C.inkMute, margin: 0, maxWidth: 260, lineHeight: 1.5 }}>
+            Inkto AI is transcribing and formatting your legal text. Please hold on.
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div style={{ paddingTop: 28, paddingBottom: 32, fontFamily: UI }}>
         {/* Header row */}
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 24 }}>
           <h2 style={{ fontFamily: DISPLAY, fontSize: 20, fontWeight: 700, color: C.ink, margin: 0, letterSpacing: '-0.02em' }}>
-            {processing ? 'Converting…' : `${files.length} page${files.length !== 1 ? 's' : ''} staged`}
+            {files.length} page{files.length !== 1 ? 's' : ''} staged
           </h2>
-          {!processing && (
-            <button onClick={reset} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.inkMute, padding: 0, display: 'flex', alignItems: 'center' }}>
-              <X size={18} />
-            </button>
-          )}
+          <button onClick={reset} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.inkMute, padding: 0, display: 'flex', alignItems: 'center' }}>
+            <X size={18} />
+          </button>
         </div>
 
         {/* Rule */}
@@ -200,56 +336,30 @@ function AppPageContent() {
 
         {/* Thumbnails */}
         <div style={{ marginBottom: 24 }}>
-          <ThumbnailGrid files={files} onRemove={processing ? () => {} : removeFile} />
+          <ThumbnailGrid files={files} onRemove={removeFile} />
         </div>
 
-        {/* Processing steps */}
-        {processing && (
-          <div style={{ marginBottom: 28 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: C.warmMid, margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              In progress
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-              {PROC_STEPS.map((step, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  {i < procStep
-                    ? <CheckCircle2 size={16} color={C.blue} />
-                    : i === procStep
-                      ? <div style={{ width: 16, height: 16, border: `2px solid ${C.border}`, borderTopColor: C.blue, borderRadius: '50%', animation: 'spin 0.7s linear infinite', flexShrink: 0 }} />
-                      : <div style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${C.border}`, flexShrink: 0 }} />
-                  }
-                  <span style={{ fontSize: 13, color: i <= procStep ? C.ink : C.warmMid, fontWeight: i <= procStep ? 600 : 400 }}>
-                    {step}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* CTA */}
-        {!processing && (
-          <>
-            <div style={{ height: 1, background: C.border, marginBottom: 20 }} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <button
-                onClick={() => transcribe()}
-                style={{ width: '100%', height: 48, background: C.blue, border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: UI }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#3A5C94'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = C.blue; }}
-              >
-                Convert to text →
-              </button>
-              <label
-                htmlFor="add-more"
-                style={{ width: '100%', height: 44, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, color: C.inkMid, cursor: 'pointer', fontFamily: UI, display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}
-              >
-                + Add more pages
-              </label>
-              <input id="add-more" type="file" style={{ display: 'none' }} multiple accept="image/*,application/pdf" onChange={handleInput} />
-            </div>
-          </>
-        )}
+        <>
+          <div style={{ height: 1, background: C.border, marginBottom: 20 }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <button
+              onClick={() => transcribe()}
+              style={{ width: '100%', height: 48, background: C.blue, border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: UI }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#3A5C94'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = C.blue; }}
+            >
+              Convert to text →
+            </button>
+            <label
+              htmlFor="add-more"
+              style={{ width: '100%', height: 44, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, color: C.inkMid, cursor: 'pointer', fontFamily: UI, display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}
+            >
+              + Add more pages
+            </label>
+            <input id="add-more" type="file" style={{ display: 'none' }} multiple accept="image/*,application/pdf" onChange={handleInput} />
+          </div>
+        </>
 
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
@@ -272,40 +382,115 @@ function AppPageContent() {
           onClose={() => setShowScanner(false)}
         />
       )}
-      {showDictate && (
+      {(showDictate || activeDraft) && (
         <DictateModal
-          onClose={() => setShowDictate(false)}
-          onTranscribeComplete={(_, id) => { setShowDictate(false); fetchSession(id); }}
+          draftId={activeDraft?.id}
+          initialAudioUrl={activeDraft?.audioUrl}
+          onClose={() => { setShowDictate(false); setActiveDraft(null); }}
+          onTranscribeComplete={(_, id) => { setShowDictate(false); setActiveDraft(null); fetchSession(id); }}
         />
       )}
 
       <div style={{ paddingTop: 32, paddingBottom: 32, fontFamily: UI }}>
 
-        {/* Greeting */}
-        <div style={{ marginBottom: 36 }}>
-          <p style={{ fontSize: 12, fontWeight: 600, color: C.warmMid, margin: '0 0 4px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            {greeting}
-          </p>
-          <h1
+        {/* Top Header: Wordmark left, Profile right */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 40 }}>
+          <InktoWordmark size={30} />
+          <button
+            onClick={() => router.push('/account')}
             style={{
-              fontFamily: DISPLAY,
-              fontSize: 28,
-              fontWeight: 700,
-              color: C.ink,
-              margin: '0 0 6px',
-              letterSpacing: '-0.03em',
-              lineHeight: 1.15,
+              background: 'none', border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0
             }}
           >
-            {firstName || 'Inkto'}
-          </h1>
-          <p style={{ fontSize: 13, color: C.inkMute, margin: 0 }}>What would you like to do today?</p>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: C.blueSub, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: C.blue }}>
+              {firstName ? firstName[0].toUpperCase() : 'U'}
+            </div>
+          </button>
         </div>
 
-        {/* PDF download banner — uses Seal Brass as the one premium accent */}
+        {/* Big Central Capture Button */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '48px 0 32px' }}>
+          <button
+            onClick={() => setShowScanner(true)}
+            style={{
+              width: 144,
+              height: 144,
+              borderRadius: '50%',
+              background: '#FFFFFF',
+              border: `3px solid ${C.blue}`,
+              boxShadow: `0 8px 24px rgba(36, 70, 122, 0.06)`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              cursor: 'pointer',
+              transition: 'transform 150ms ease, box-shadow 150ms ease',
+            }}
+            onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.96)'; }}
+            onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+          >
+            <div style={{ width: 44, height: 44, borderRadius: '50%', background: C.blueSub, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Camera size={22} color={C.blue} strokeWidth={2} />
+            </div>
+            <span style={{ fontSize: 15, fontWeight: 700, color: C.ink, fontFamily: UI }}>Capture</span>
+          </button>
+        </div>
+
+        {/* Record & Import row */}
+        <div style={{ display: 'flex', gap: 16, width: '100%', maxWidth: 280, margin: '0 auto 48px' }}>
+          <button
+            onClick={() => setShowDictate(true)}
+            style={{
+              flex: 1,
+              height: 44,
+              background: '#FFFFFF',
+              border: `1px solid ${C.border}`,
+              borderRadius: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: 600,
+              color: C.inkMid,
+              fontFamily: UI,
+            }}
+          >
+            <Mic size={15} color={C.blue} />
+            Record
+          </button>
+          <label
+            htmlFor="file-upload"
+            style={{
+              flex: 1,
+              height: 44,
+              background: '#FFFFFF',
+              border: `1px solid ${C.border}`,
+              borderRadius: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: 600,
+              color: C.inkMid,
+              fontFamily: UI,
+              boxSizing: 'border-box',
+            }}
+          >
+            <FileText size={15} color={C.blue} />
+            Import
+          </label>
+        </div>
+
+        {/* PDF download banner if active */}
         {savedPdf && (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 0', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 0', marginBottom: 24 }}>
               <Download size={15} color={C.brass} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 13, fontWeight: 700, color: C.inkMid, margin: '0 0 1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -321,43 +506,92 @@ function AppPageContent() {
                 Re-download
               </a>
             </div>
-            <div style={{ height: 1, background: C.border, marginBottom: 16 }} />
+            <div style={{ height: 1, background: C.border, marginBottom: 24 }} />
           </>
         )}
 
-        {/* Action list — horizontal rules, not cards */}
-        <div>
-          {ACTIONS.map(({ id, icon, label, sub, trigger }, i) => (
-            <div key={id}>
-              {i > 0 && <div style={{ height: 1, background: C.border }} />}
-              {trigger === 'upload' ? (
-                <label
-                  htmlFor="file-upload"
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 16, padding: '18px 0',
-                    cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
-                  }}
-                >
-                  <ActionRow icon={icon} label={label} sub={sub} />
-                </label>
-              ) : (
-                <button
-                  onClick={() => trigger === 'scanner' ? setShowScanner(true) : setShowDictate(true)}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: 16, padding: '18px 0',
-                    background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-                    fontFamily: UI, WebkitTapHighlightColor: 'transparent',
-                  }}
-                >
-                  <ActionRow icon={icon} label={label} sub={sub} />
-                </button>
-              )}
+        {/* Recent Items section */}
+        <div style={{ marginBottom: 36 }}>
+          <h3 style={{ fontSize: 11, fontWeight: 700, color: C.warmMid, letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 16px' }}>
+            Recent Documents
+          </h3>
+          
+          {recentsLoading ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 44 }}>
+              <Loader2 size={16} color={C.blue} style={{ animation: 'spin 0.8s linear infinite' }} />
+              <span style={{ fontSize: 13, color: C.inkMute }}>Loading recents...</span>
             </div>
-          ))}
-          <div style={{ height: 1, background: C.border }} />
+          ) : recents.length === 0 ? (
+            <p style={{ fontSize: 13, color: C.inkMute, margin: 0, fontStyle: 'italic', lineHeight: 1.5 }}>
+              Nothing yet — capture or record something to get started.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {recents.map(item => {
+                const isScan = item.type === 'scan';
+                const isVoice = item.type === 'voice' || item.type === 'draft';
+                const Icon = isScan ? Camera : isVoice ? Mic : FileText;
+                
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => fetchSession(item.id)}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 16,
+                      padding: '12px 14px',
+                      background: '#FFFFFF',
+                      border: `1px solid ${C.border}`,
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      fontFamily: UI,
+                    }}
+                  >
+                    <div style={{ width: 32, height: 32, borderRadius: 6, background: C.blueSub, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Icon size={16} color={C.blue} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: C.ink, margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {item.title}
+                      </p>
+                      <p style={{ fontSize: 11, color: C.inkMute, margin: 0 }}>
+                        {new Date(item.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {item.type === 'draft' && <span style={{ color: C.red, marginLeft: 8, fontWeight: 600 }}>Draft</span>}
+                      </p>
+                    </div>
+                    <ChevronRight size={14} color={C.warmMid} />
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* File inputs */}
+        {/* Secondary Action CTA: New Draft */}
+        <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 24, textAlign: 'center' }}>
+          <button
+            onClick={() => router.push('/draft')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: C.blue,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+              fontFamily: UI,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6
+            }}
+          >
+            <span>✨ Start a New Document Draft</span>
+          </button>
+        </div>
+
+        {/* Hidden File Input for Native Picker */}
         <input
           id="file-upload"
           type="file"
@@ -366,22 +600,8 @@ function AppPageContent() {
           accept="image/*,application/pdf"
           onChange={handleInput}
         />
-      </div>
-    </>
-  );
-}
 
-function ActionRow({ icon, label, sub }: { icon: React.ReactNode; label: string; sub: string }) {
-  return (
-    <>
-      <div style={{ width: 36, height: 36, borderRadius: 8, background: '#EEF2F8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        {icon}
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: 15, fontWeight: 700, color: '#0B0D12', margin: '0 0 2px', letterSpacing: '-0.01em' }}>{label}</p>
-        <p style={{ fontSize: 12, color: '#6B6760', margin: 0, lineHeight: 1.4 }}>{sub}</p>
-      </div>
-      <ChevronRight size={16} color="#C8C4BA" />
     </>
   );
 }

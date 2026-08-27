@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/contexts/auth-context';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import {
@@ -14,7 +15,7 @@ interface HistoryEntry {
   preview: string;
   createdAt: string;
   sourceImageCount: number;
-  type: 'scan' | 'transcription' | 'voice';
+  type: 'scan' | 'transcription' | 'voice' | 'draft';
   fileUrl: string | null;
   hasText: boolean;
 }
@@ -23,12 +24,14 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
   scan: ScanLine,
   transcription: FileText,
   voice: FileText,
+  draft: Clock,
 };
 
 const TYPE_LABEL: Record<string, string> = {
   scan: 'Scan',
   transcription: 'Text',
   voice: 'Voice',
+  draft: 'Draft',
 };
 
 function formatDate(iso: string) {
@@ -66,12 +69,21 @@ function RenameInput({
 
 export default function HistoryPage() {
   const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/login');
+    }
+  }, [loading, user, router]);
+
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [fetching, setFetching] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'scan' | 'transcription' | 'voice'>('all');
+  const [filter, setFilter] = useState<'all' | 'scan' | 'transcription' | 'voice' | 'draft'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [convertingId, setConvertingId] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -97,8 +109,15 @@ export default function HistoryPage() {
   const fetchHistory = useCallback(async (q = '') => {
     setFetching(true);
     try {
-      const url = q ? `/api/history?search=${encodeURIComponent(q)}` : '/api/history';
-      const r = await fetch(url, { credentials: 'include' });
+      const cacheBust = `t=${Date.now()}`;
+      const url = q ? `/api/history?search=${encodeURIComponent(q)}&${cacheBust}` : `/api/history?${cacheBust}`;
+      const r = await fetch(url, { 
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       const data = await r.json();
       if (data.history) setHistory(data.history);
     } catch (e) {
@@ -134,8 +153,8 @@ export default function HistoryPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this document? This cannot be undone.')) return;
     setDeletingId(id);
+    setConfirmDeleteId(null);
     try {
       await fetch('/api/delete-document', {
         method: 'DELETE',
@@ -157,18 +176,7 @@ export default function HistoryPage() {
   }
 
   if (!user) {
-    return (
-      <div className="flex flex-col h-full pt-16 pb-4 items-center text-center">
-        <Clock className="w-12 h-12 text-muted-foreground mb-4" />
-        <h2 className="text-xl font-bold tracking-tight mb-2">Your History</h2>
-        <p className="text-muted-foreground text-sm mb-8 max-w-xs">
-          Sign in to access your saved documents and transcriptions.
-        </p>
-        <Link href="/login">
-          <Button size="lg" className="w-full">Sign in to view history</Button>
-        </Link>
-      </div>
-    );
+    return null;
   }
 
   const filtered = filter === 'all' ? history : history.filter(h => h.type === filter);
@@ -194,19 +202,28 @@ export default function HistoryPage() {
 
       {/* Filter chips */}
       <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
-        {(['all', 'scan', 'transcription', 'voice'] as const).map(f => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
-              filter === f
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-            }`}
-          >
-            {f === 'all' ? 'All' : TYPE_LABEL[f] ?? f}
-          </button>
-        ))}
+        {(['all', 'scan', 'transcription', 'voice', 'draft'] as const).map(f => {
+          const filterLabels: Record<string, string> = {
+            all: 'All',
+            scan: 'Scans',
+            transcription: 'Text',
+            voice: 'Voice',
+            draft: 'Drafts',
+          };
+          return (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+                filter === f
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              {filterLabels[f] ?? f}
+            </button>
+          );
+        })}
       </div>
 
       {fetching ? (
@@ -278,7 +295,7 @@ export default function HistoryPage() {
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => handleDelete(entry.id)}
+                      onClick={() => setConfirmDeleteId(entry.id)}
                       disabled={isDeleting}
                       className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                       title="Delete"
@@ -291,43 +308,80 @@ export default function HistoryPage() {
                 {/* Open buttons */}
                 {!isRenaming && (
                   <div className="flex gap-2 mt-3 pt-3 border-t">
-                    {entry.hasText && (
-                      <Link href={`/app?doc=${entry.id}`} className="flex-1">
-                        <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5">
-                          <FileText className="w-3 h-3" /> Open in editor
+                    {entry.type === 'draft' ? (
+                      <Link href={`/app?resume=${entry.id}`} className="flex-1">
+                        <Button size="sm" variant="default" className="w-full h-8 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-medium hover:text-white border-none">
+                          <Clock className="w-3 h-3" /> Resume Recording
                         </Button>
                       </Link>
-                    )}
-                    {entry.fileUrl && (
-                      <a href={entry.fileUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
-                        <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5">
-                          <ExternalLink className="w-3 h-3" /> {entry.type === 'voice' ? 'Listen Audio' : 'View PDF'}
-                        </Button>
-                      </a>
-                    )}
-                    {((entry.type === 'scan' || entry.type === 'voice') && !entry.hasText && entry.fileUrl) && (
-                      <Button
-                        size="sm"
-                        onClick={() => handleConvertScan(entry)}
-                        disabled={convertingId !== null}
-                        className="flex-1 h-8 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-medium hover:text-white"
-                      >
-                        {convertingId === entry.id ? (
-                          <>
-                            <Loader2 className="w-3 h-3 animate-spin" /> Converting…
-                          </>
-                        ) : (
-                          <>
-                            <FileText className="w-3 h-3" /> Convert to Text
-                          </>
+                    ) : (
+                      <>
+                        {entry.hasText && (
+                          <Link href={`/app?doc=${entry.id}`} className="flex-1">
+                            <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5">
+                              <FileText className="w-3 h-3" /> Open in editor
+                            </Button>
+                          </Link>
                         )}
-                      </Button>
+                        {entry.fileUrl && (
+                          <a href={entry.fileUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
+                            <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5">
+                              <ExternalLink className="w-3 h-3" /> {entry.type === 'voice' ? 'Listen Audio' : 'View PDF'}
+                            </Button>
+                          </a>
+                        )}
+                        {((entry.type === 'scan' || entry.type === 'voice') && !entry.hasText && entry.fileUrl) && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleConvertScan(entry)}
+                            disabled={convertingId !== null}
+                            className="flex-1 h-8 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-medium hover:text-white"
+                          >
+                            {convertingId === entry.id ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Converting…
+                              </>
+                            ) : (
+                              <>
+                                <FileText className="w-3.5 h-3.5" /> Convert to Text
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
               </div>
             );
           })}
+        </div>
+      )}
+
+      {confirmDeleteId && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: '#FFFFFF', color: '#0B0D12', borderRadius: 16, width: '100%', maxWidth: 360, padding: 24, boxShadow: '0 12px 36px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div>
+              <h3 style={{ fontSize: 18, fontWeight: 700, fontFamily: 'Georgia, serif', margin: '0 0 8px 0' }}>Delete Document?</h3>
+              <p style={{ fontSize: 13, color: '#6B6760', margin: 0, lineHeight: 1.5 }}>
+                Are you sure you want to delete this document? This action is permanent and cannot be undone.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                style={{ flex: 1, height: 40, border: '1.5px solid #E4E2DC', background: 'transparent', borderRadius: 8, fontSize: 13, fontWeight: 700, color: '#57534E', cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(confirmDeleteId)}
+                style={{ flex: 1, height: 40, border: 'none', background: '#DC2626', borderRadius: 8, fontSize: 13, fontWeight: 700, color: '#FFFFFF', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 2px 8px rgba(220,38,38,0.2)' }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

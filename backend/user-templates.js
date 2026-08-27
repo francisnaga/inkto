@@ -31,7 +31,7 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const email = require('./_utils/auth').getAuthEmail(req);
+  const email = await require('./_utils/auth').getAuthEmail(req);
   if (!email) return res.status(401).json({ error: 'Unauthorized', requireAuth: true });
 
   try {

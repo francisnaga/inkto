@@ -29,7 +29,7 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'PATCH') return res.status(405).json({ error: 'Method not allowed' });
 
-  const email = require('./_utils/auth').getAuthEmail(req);
+  const email = await require('./_utils/auth').getAuthEmail(req);
   if (!email) return res.status(401).json({ error: 'Unauthorized' });
 
   const { id, title } = req.body || {};

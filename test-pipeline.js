@@ -2,7 +2,7 @@ const crypto = require('crypto');
 
 // Load environment variables
 require('dotenv').config();
-
+process.env.INKTO_TESTING = 'true';
 const COOKIE_SECRET = process.env.COOKIE_SECRET || process.env.SUPABASE_ANON_KEY || 'inkto-default-secret';
 const testEmail = 'test-user@inkto.org';
 
@@ -26,7 +26,7 @@ if (!process.env.GEMINI_API_KEY) {
         })
       };
     }
-    return originalFetch.apply(this, arguments);
+    return originalFetch(url, options);
   };
   process.env.GEMINI_API_KEY = 'mocked-key-for-test';
 }
@@ -70,6 +70,8 @@ async function runTests() {
       method,
       body,
       headers: {
+        authorization: `Bearer test-token:${testEmail}`,
+        'x-inkto-auth': `test-token:${testEmail}`,
         cookie,
         'content-type': 'application/json',
         ...headers
@@ -167,6 +169,22 @@ async function runTests() {
     }
   } catch (e) {
     console.error('✗ User templates test failed:', e.message);
+    process.exit(1);
+  }
+
+  // 5. Test Profile Update (optional phone number)
+  console.log('\n--- TESTING /api/update-profile ---');
+  try {
+    const handler = require('./backend/update-profile');
+    const { req, res } = mockReqRes('POST', { phone: '+2348012345678' });
+    await handler(req, res);
+    if (res.statusCode === 200 && res.data.phone === '+2348012345678') {
+      console.log('✓ /api/update-profile passed.');
+    } else {
+      throw new Error(`Failed update: ${res.statusCode} ${JSON.stringify(res.data)}`);
+    }
+  } catch (e) {
+    console.error('✗ Profile update test failed:', e.message);
     process.exit(1);
   }
 

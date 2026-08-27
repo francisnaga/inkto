@@ -12,7 +12,7 @@ interface ScannerModalProps {
   onConvertToText: (pages: File[]) => void;
   onClose: () => void;
 }
-type Phase = 'scanning' | 'adjusting' | 'reviewing' | 'gallery';
+type Phase = 'scanning' | 'adjusting' | 'reviewing' | 'choice';
 type EnhanceMode = 'auto' | 'color' | 'bw';
 interface Pt { x: number; y: number; }
 type Quad = [Pt, Pt, Pt, Pt];
@@ -537,11 +537,25 @@ export default function ScannerModal({ onScanComplete, onConvertToText, onClose 
   }, [enhanceMode, phase]);
 
   // ── Page management ───────────────────────────────────────────────────────
-  const acceptPage = useCallback(() => {
+  const addAnotherPage = useCallback(() => {
     if (!reviewBlob || !reviewUrl) return;
     const file = new File([reviewBlob], `page-${pages.length + 1}.jpg`, { type: 'image/jpeg' });
-    setPages(p => [...p, file]); setPageUrls(u => [...u, reviewUrl]);
-    setReviewUrl(null); setReviewBlob(null); setPhase('gallery');
+    setPages(p => [...p, file]);
+    setPageUrls(u => [...u, reviewUrl]);
+    setReviewUrl(null);
+    setReviewBlob(null);
+    lastQuadRef.current = null;
+    setPhase('scanning');
+  }, [reviewBlob, reviewUrl, pages.length]);
+
+  const doneReviewing = useCallback(() => {
+    if (!reviewBlob || !reviewUrl) return;
+    const file = new File([reviewBlob], `page-${pages.length + 1}.jpg`, { type: 'image/jpeg' });
+    setPages(p => [...p, file]);
+    setPageUrls(u => [...u, reviewUrl]);
+    setReviewUrl(null);
+    setReviewBlob(null);
+    setPhase('choice');
   }, [reviewBlob, reviewUrl, pages.length]);
 
   const retake = useCallback(() => {
@@ -549,39 +563,47 @@ export default function ScannerModal({ onScanComplete, onConvertToText, onClose 
     setReviewUrl(null); setReviewBlob(null); lastQuadRef.current = null; setPhase('scanning');
   }, [reviewUrl]);
 
-  const removePage = useCallback((idx: number) => {
-    URL.revokeObjectURL(pageUrls[idx]);
-    setPages(p => p.filter((_, i) => i !== idx)); setPageUrls(u => u.filter((_, i) => i !== idx));
-    setGalleryIdx(g => Math.max(0, Math.min(g, pages.length - 2)));
-  }, [pageUrls, pages.length]);
-
   // ── PDF generation ────────────────────────────────────────────────────────
-  const generatePdf = useCallback(async (): Promise<Blob> => {
+  const generatePdf = useCallback(async (currentPages: File[], currentUrls: string[]): Promise<Blob> => {
     const { jsPDF } = window.jspdf; let pdf: any = null;
-    for (let i = 0; i < pages.length; i++) {
-      const img = await new Promise<HTMLImageElement>((res, rej) => { const el = new Image(); el.onload = () => res(el); el.onerror = rej; el.src = pageUrls[i]; });
+    for (let i = 0; i < currentPages.length; i++) {
+      const img = await new Promise<HTMLImageElement>((res, rej) => {
+        const el = new Image();
+        el.onload = () => res(el);
+        el.onerror = rej;
+        el.src = currentUrls[i];
+      });
       const landscape = img.naturalWidth > img.naturalHeight;
       const [pw, ph] = landscape ? [297, 210] : [210, 297];
       if (!pdf) pdf = new jsPDF({ orientation: landscape ? 'landscape' : 'portrait', unit: 'mm', format: 'a4' });
       else pdf.addPage('a4', landscape ? 'landscape' : 'portrait');
-      pdf.addImage(pageUrls[i], 'JPEG', 0, 0, pw, ph);
+      pdf.addImage(currentUrls[i], 'JPEG', 0, 0, pw, ph);
     }
     return pdf.output('blob');
-  }, [pages, pageUrls]);
+  }, []);
 
-  const handleDone = useCallback(async () => {
-    if (!pages.length) return; setGeneratingPdf(true);
-    try { onScanComplete(pages, await generatePdf()); }
-    catch { onScanComplete(pages, new Blob(pages, { type: 'application/pdf' })); }
-    finally { setGeneratingPdf(false); }
-  }, [pages, generatePdf, onScanComplete]);
+  const handleSaveAsScan = useCallback(async () => {
+    if (!pages.length) return;
+    setGeneratingPdf(true);
+    try {
+      const pdfBlob = await generatePdf(pages, pageUrls);
+      onScanComplete(pages, pdfBlob);
+    } catch {
+      onScanComplete(pages, new Blob(pages, { type: 'application/pdf' }));
+    } finally {
+      setGeneratingPdf(false);
+    }
+  }, [pages, pageUrls, generatePdf, onScanComplete]);
 
-  const handleConvert = useCallback(() => { if (!pages.length) return; onConvertToText(pages); }, [pages, onConvertToText]);
+  const handleConvertToWord = useCallback(() => {
+    if (!pages.length) return;
+    onConvertToText(pages);
+  }, [pages, onConvertToText]);
 
   const headerLabel = phase === 'scanning' ? (pages.length > 0 ? `Page ${pages.length + 1}` : 'Scan Document')
     : phase === 'adjusting' ? 'Adjust Corners'
     : phase === 'reviewing' ? 'Review & Enhance'
-    : `${pages.length} page${pages.length !== 1 ? 's' : ''} scanned`;
+    : 'Choose Save Option';
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
@@ -658,33 +680,31 @@ export default function ScannerModal({ onScanComplete, onConvertToText, onClose 
           </div>
         </>)}
 
-        {/* Gallery phase */}
-        {phase === 'gallery' && pages.length > 0 && (
-          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-              <img src={pageUrls[galleryIdx]} alt={`Page ${galleryIdx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
-              <div style={{ position: 'absolute', top: 14, right: 14, background: 'rgba(0,0,0,0.72)', color: '#fff', borderRadius: 20, padding: '5px 14px', fontSize: 12, fontWeight: 700, backdropFilter: 'blur(6px)' }}>
-                {galleryIdx + 1} / {pages.length}
+        {/* Choice phase */}
+        {phase === 'choice' && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 24, boxSizing: 'border-box' }}>
+            <div style={{ width: '100%', maxWidth: 320, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: 24, boxSizing: 'border-box', textAlign: 'center', boxShadow: '0 12px 36px rgba(0,0,0,0.5)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 12 }}>
+                Scan Complete
               </div>
-              <button onClick={() => removePage(galleryIdx)} style={{ position: 'absolute', top: 14, left: 14, background: 'rgba(239,68,68,0.88)', border: 'none', borderRadius: '50%', width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}>
-                <X size={15} />
-              </button>
-              {pages.length > 1 && (<>
-                <button onClick={() => setGalleryIdx(i => Math.max(0, i - 1))} disabled={galleryIdx === 0} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.60)', border: 'none', borderRadius: '50%', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff', opacity: galleryIdx === 0 ? 0.28 : 1 }}>
-                  <ChevronLeft size={22} />
-                </button>
-                <button onClick={() => setGalleryIdx(i => Math.min(pages.length - 1, i + 1))} disabled={galleryIdx === pages.length - 1} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.60)', border: 'none', borderRadius: '50%', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff', opacity: galleryIdx === pages.length - 1 ? 0.28 : 1 }}>
-                  <ChevronRight size={22} />
-                </button>
-              </>)}
-            </div>
-            {pages.length > 1 && (
-              <div style={{ height: 76, display: 'flex', gap: 6, padding: '8px 12px', overflowX: 'auto', background: 'rgba(0,0,0,0.80)', alignItems: 'center' }}>
+              <div style={{ fontFamily: 'Georgia, serif', fontSize: 22, fontWeight: 700, color: '#FFFFFF', marginBottom: 20 }}>
+                {pages.length} Page{pages.length !== 1 ? 's' : ''} Scanned
+              </div>
+              
+              {/* Horizontal thumbnail strips */}
+              <div style={{ display: 'flex', gap: 10, overflowX: 'auto', padding: '4px 0 16px', marginBottom: 16, justifyContent: 'center' }}>
                 {pageUrls.map((url, i) => (
-                  <img key={i} src={url} onClick={() => setGalleryIdx(i)} style={{ height: 54, width: 42, objectFit: 'cover', borderRadius: 6, cursor: 'pointer', border: i === galleryIdx ? '2.5px solid #3B82F6' : '2.5px solid transparent', flexShrink: 0, opacity: i === galleryIdx ? 1 : 0.52, transition: 'all 0.15s' }} />
+                  <div key={i} style={{ position: 'relative', height: 76, width: 56, borderRadius: 6, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.2)', flexShrink: 0 }}>
+                    <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
                 ))}
               </div>
-            )}
+              
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: '12px 0 20px' }} />
+              <p style={{ fontSize: 13, color: '#94A3B8', margin: 0, lineHeight: 1.5 }}>
+                Save directly to your history as a PDF scan, or send to AI to convert into an editable document.
+              </p>
+            </div>
           </div>
         )}
 
@@ -712,12 +732,12 @@ export default function ScannerModal({ onScanComplete, onConvertToText, onClose 
         {phase === 'scanning' && !error && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 36 }}>
             {pages.length > 0 ? (
-              <button onClick={() => setPhase('gallery')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: 10, fontWeight: 700, letterSpacing: '0.5px' }}>
+              <button onClick={() => setPhase('choice')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', fontSize: 10, fontWeight: 700, letterSpacing: '0.5px' }}>
                 <div style={{ position: 'relative', width: 46, height: 46 }}>
                   <img src={pageUrls[pageUrls.length - 1]} alt="" style={{ width: 46, height: 46, objectFit: 'cover', borderRadius: 10, border: '2px solid rgba(255,255,255,0.28)' }} />
-                  <div style={{ position: 'absolute', top: -7, right: -7, background: '#2563EB', color: '#fff', borderRadius: '50%', width: 20, height: 20, fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{pages.length}</div>
+                  <div style={{ position: 'absolute', top: -7, right: -7, background: '#24467A', color: '#fff', borderRadius: '50%', width: 20, height: 20, fontSize: 11, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{pages.length}</div>
                 </div>
-                PAGES
+                DONE
               </button>
             ) : <div style={{ width: 46 }} />}
 
@@ -737,7 +757,7 @@ export default function ScannerModal({ onScanComplete, onConvertToText, onClose 
             <button onClick={() => { lastQuadRef.current = null; setPhase('scanning'); }} style={{ flex: 1, height: 54, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.22)', color: '#fff', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'inherit' }}>
               <RotateCcw size={15} /> Retake
             </button>
-            <button onClick={applyTransform} style={{ flex: 2, height: 54, background: '#2563EB', border: 'none', color: '#fff', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'inherit', boxShadow: '0 4px 16px rgba(37,99,235,0.4)' }}>
+            <button onClick={applyTransform} style={{ flex: 2, height: 54, background: '#24467A', border: 'none', color: '#fff', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'inherit', boxShadow: '0 4px 16px rgba(36,70,122,0.3)' }}>
               <ZapIcon size={15} /> Apply Correction
             </button>
           </div>
@@ -746,30 +766,35 @@ export default function ScannerModal({ onScanComplete, onConvertToText, onClose 
         {/* Reviewing controls */}
         {phase === 'reviewing' && (
           <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={retake} style={{ flex: 1, height: 56, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.22)', color: '#fff', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'inherit' }}>
-              <RotateCcw size={15} /> Retake
+            <button onClick={retake} style={{ flex: 1, height: 50, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.22)', color: '#fff', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'inherit' }}>
+              <RotateCcw size={14} /> Retake
             </button>
-            <button onClick={acceptPage} style={{ flex: 1, height: 56, background: '#16A34A', border: 'none', color: '#fff', borderRadius: 14, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'inherit', boxShadow: '0 4px 16px rgba(22,163,74,0.35)' }}>
-              <Check size={15} /> Use Page
+            <button onClick={addAnotherPage} style={{ flex: 1.2, height: 50, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.22)', color: '#fff', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'inherit' }}>
+              <Plus size={14} /> Add Page
+            </button>
+            <button onClick={doneReviewing} style={{ flex: 1.2, height: 50, background: '#24467A', border: 'none', color: '#fff', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'inherit', boxShadow: '0 4px 16px rgba(36,70,122,0.3)' }}>
+              <Check size={14} /> Done ({pages.length + 1})
             </button>
           </div>
         )}
 
-        {/* Gallery controls */}
-        {phase === 'gallery' && (<>
-          <button onClick={() => setPhase('scanning')} style={{ width: '100%', height: 48, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.22)', color: '#fff', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'inherit' }}>
-            <Plus size={15} /> Scan another page
-          </button>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={handleDone} disabled={generatingPdf} style={{ flex: 1, height: 56, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.22)', color: '#fff', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontFamily: 'inherit', opacity: generatingPdf ? 0.65 : 1 }}>
-              {generatingPdf ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Download size={15} />}
-              {generatingPdf ? 'Building PDF…' : `Save PDF (${pages.length}p)`}
-            </button>
-            <button onClick={handleConvert} style={{ flex: 1, height: 56, background: '#2563EB', border: 'none', color: '#fff', borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontFamily: 'inherit', boxShadow: '0 4px 16px rgba(37,99,235,0.38)' }}>
-              <FileText size={15} /> Convert to Text
+        {/* Choice controls */}
+        {phase === 'choice' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '10px 0' }}>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={handleSaveAsScan} disabled={generatingPdf} style={{ flex: 1, height: 52, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.22)', color: '#fff', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontFamily: 'inherit', opacity: generatingPdf ? 0.65 : 1 }}>
+                {generatingPdf ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Download size={15} />}
+                {generatingPdf ? 'Building PDF…' : `Save as Scan`}
+              </button>
+              <button onClick={handleConvertToWord} style={{ flex: 1, height: 52, background: '#24467A', border: 'none', color: '#fff', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontFamily: 'inherit', boxShadow: '0 4px 16px rgba(36,70,122,0.35)' }}>
+                <FileText size={15} /> Convert to Word
+              </button>
+            </div>
+            <button onClick={() => setPhase('scanning')} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: 12, fontWeight: 600, cursor: 'pointer', marginTop: 8 }}>
+              ← Scan more pages
             </button>
           </div>
-        </>)}
+        )}
       </div>
     </div>
   );

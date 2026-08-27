@@ -165,7 +165,7 @@ module.exports = async function handler(req, res) {
     };
 
     const cookies = parseCookie(req.headers.cookie || '');
-    const userEmail = require('./_utils/auth').getAuthEmail(req);
+    const userEmail = await require('./_utils/auth').getAuthEmail(req);
 
     if (!userEmail) {
         return res.status(401).json({ error: 'Please sign in to convert documents.', requireAuth: true });
@@ -180,13 +180,26 @@ module.exports = async function handler(req, res) {
             const db = require('./_utils/supabase').checkSupabase();
 
             // Check subscription status
-            const { data: userRow } = await db
-                .from('users')
-                .select('subscription_status, plan_expires_at')
-                .eq('email', userEmail)
-                .single();
+            let userRow = null;
+            try {
+                const { data, error } = await db
+                    .from('users')
+                    .select('subscription_status, plan_expires_at, is_pro')
+                    .eq('email', userEmail)
+                    .single();
+                if (error && (error.code === '42703' || error.message?.includes('does not exist'))) {
+                    const fallback = await db
+                        .from('users')
+                        .select('subscription_status, plan_expires_at')
+                        .eq('email', userEmail)
+                        .single();
+                    userRow = fallback.data;
+                } else {
+                    userRow = data;
+                }
+            } catch {}
 
-            const isPaid = userRow?.subscription_status === 'active' && userRow?.plan_expires_at && new Date(userRow.plan_expires_at) > new Date();
+            const isPaid = userRow?.is_pro === true || (userRow?.subscription_status === 'active' && userRow?.plan_expires_at && new Date(userRow.plan_expires_at) > new Date());
 
             if (!isPaid) {
                 // Count today's AI transcription calls for this user

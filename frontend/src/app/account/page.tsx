@@ -1,10 +1,10 @@
 'use client';
 
 import { Suspense, useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import Link from 'next/link';
-import { Loader2, LogOut, ChevronRight, Crown, MessageSquare, FileText, Lock, Shield } from 'lucide-react';
+import { Loader2, LogOut, ChevronRight, Crown, MessageSquare, FileText, Lock, Shield, Phone, Check } from 'lucide-react';
 
 const C = {
   paper:   '#FBFAF7',
@@ -31,42 +31,77 @@ const SETTINGS = [
 
 function AccountPageContent() {
   const { user, loading, logout } = useAuth();
-  const [plan, setPlan]           = useState<{ status: string; expiresAt: string | null }>({ status: 'free', expiresAt: null });
+  const router = useRouter();
+  const [plan, setPlan]           = useState<{ status: string; expiresAt: string | null; isPro: boolean }>({ status: 'free', expiresAt: null, isPro: false });
+  const [phone, setPhone]         = useState('');
+  const [savingPhone, setSavingPhone] = useState(false);
+  const [phoneSaved, setPhoneSaved]   = useState(false);
   const [upgrading, setUpgrading] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const searchParams = useSearchParams();
   const upgraded = searchParams.get('upgrade') === 'success';
 
   useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/login');
+    }
+  }, [loading, user, router]);
+
+  useEffect(() => {
     if (!user) return;
-    fetch('/api/user-status', { credentials: 'include' })
+    fetch(`/api/user-status?t=${Date.now()}`, { credentials: 'include', headers: { 'Cache-Control': 'no-cache' } })
       .then(r => r.json())
-      .then(d => { if (d.subscription_status) setPlan({ status: d.subscription_status, expiresAt: d.plan_expires_at }); })
+      .then(d => {
+        if (d.subscription_status) {
+          setPlan({
+            status: d.subscription_status,
+            expiresAt: d.plan_expires_at,
+            isPro: d.is_pro === true || d.subscription_status === 'active'
+          });
+        }
+        if (d.phone) {
+          setPhone(d.phone);
+        }
+      })
       .catch(() => {});
   }, [user]);
 
-  if (loading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80, fontFamily: UI }}><Loader2 size={20} color={C.blue} style={{ animation: 'spin 0.8s linear infinite' }} /><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style></div>;
-  }
+  const handleSavePhone = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingPhone(true);
+    try {
+      const res = await fetch('/api/update-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone })
+      });
+      if (res.ok) {
+        setPhoneSaved(true);
+        setTimeout(() => setPhoneSaved(false), 3000);
+      } else {
+        alert('Could not update phone number.');
+      }
+    } catch {
+      alert('Network error — please try again.');
+    } finally {
+      setSavingPhone(false);
+    }
+  };
 
-  if (!user) {
+  if (loading) {
     return (
-      <div style={{ paddingTop: 80, paddingBottom: 32, fontFamily: UI }}>
-        <h1 style={{ fontFamily: DISPLAY, fontSize: 26, fontWeight: 700, color: C.ink, margin: '0 0 10px', letterSpacing: '-0.02em' }}>Account</h1>
-        <div style={{ height: 1, background: C.border, marginBottom: 24 }} />
-        <p style={{ fontSize: 14, color: C.inkMute, margin: '0 0 24px', lineHeight: 1.6 }}>
-          Sign in to manage your subscription, history, and settings.
-        </p>
-        <Link href="/login">
-          <button style={{ height: 48, padding: '0 28px', background: C.blue, border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: UI }}>
-            Sign in
-          </button>
-        </Link>
+      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80, fontFamily: UI }}>
+        <Loader2 size={20} color={C.blue} style={{ animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
   }
 
-  const isPro = plan.status === 'active' && (!plan.expiresAt || new Date(plan.expiresAt) > new Date());
+  if (!user) {
+    return null;
+  }
+
+  const isPro = plan.isPro || plan.status === 'active';
   const displayName = user.email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
   const upgrade = async () => {
@@ -101,6 +136,70 @@ function AccountPageContent() {
         </p>
       )}
 
+      {/* Profile: Optional Phone Number */}
+      <div style={{ marginTop: 20, padding: '16px', background: '#FFFFFF', border: `1px solid ${C.border}`, borderRadius: 8 }}>
+        <p style={{ fontSize: 11, fontWeight: 700, color: C.warmMid, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          Contact Phone (Optional)
+        </p>
+        <form onSubmit={handleSavePhone} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <Phone size={14} color={C.inkMute} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+            <input
+              type="tel"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              placeholder="e.g. 08012345678"
+              style={{
+                width: '100%',
+                height: 40,
+                paddingLeft: 34,
+                paddingRight: 12,
+                background: C.paper,
+                border: `1px solid ${C.border}`,
+                borderRadius: 6,
+                fontSize: 13,
+                color: C.ink,
+                outline: 'none',
+                fontFamily: UI,
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={savingPhone}
+            style={{
+              height: 40,
+              padding: '0 16px',
+              background: phoneSaved ? '#2E7D32' : C.blue,
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: savingPhone ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              transition: 'background 150ms ease'
+            }}
+          >
+            {savingPhone ? (
+              <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />
+            ) : phoneSaved ? (
+              <>
+                <Check size={14} /> Saved
+              </>
+            ) : (
+              'Save'
+            )}
+          </button>
+        </form>
+        <p style={{ fontSize: 11, color: C.inkMute, margin: '8px 0 0', lineHeight: 1.4 }}>
+          Used for service updates and direct assistance. Protected under our privacy policy.
+        </p>
+      </div>
+
       {/* Letterhead rule */}
       <div style={{ height: 1, background: C.border, margin: '24px 0' }} />
 
@@ -112,11 +211,11 @@ function AccountPageContent() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
           {[
-            { label: 'Unlimited document scanning',                      ok: true },
+            { label: 'Unlimited document scanning',                              ok: true },
             { label: isPro ? 'Unlimited text conversions' : '5 conversions/day', ok: true },
             { label: isPro ? 'Unlimited history'          : '7-day history',     ok: true },
-            { label: 'Voice-to-text dictation',                          ok: isPro },
-            { label: 'Priority AI processing',                           ok: isPro },
+            { label: 'Voice-to-text dictation',                                  ok: isPro },
+            { label: 'Priority AI processing',                                   ok: isPro },
           ].map(({ label, ok }) => (
             <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: 13, color: ok ? C.blue : C.border, flexShrink: 0, fontWeight: 700 }}>{ok ? '✓' : '–'}</span>
@@ -131,7 +230,6 @@ function AccountPageContent() {
             disabled={upgrading}
             style={{
               width: '100%', height: 48,
-              /* Seal Brass as the premium upgrade CTA — the one secondary accent */
               background: C.brassS,
               border: `1px solid ${C.brass}`,
               borderRadius: 6, fontSize: 14, fontWeight: 700, color: C.brass,

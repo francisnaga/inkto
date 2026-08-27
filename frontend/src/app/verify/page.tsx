@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, Suspense } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import Link from 'next/link';
@@ -25,7 +25,13 @@ function VerifyForm() {
   const router = useRouter();
   const params = useSearchParams();
   const email  = params.get('email') || '';
-  const { refreshUser } = useAuth();
+  const { user, loading, refreshUser } = useAuth();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace('/app');
+    }
+  }, [user, loading, router]);
 
   const [otp, setOtp]         = useState('');
   const [busy, setBusy]       = useState(false);

@@ -32,8 +32,7 @@ export default function RootPage() {
       <Onboarding
         onComplete={() => {
           localStorage.setItem('inkto_onboarded', 'true');
-          setOnboarded(true);
-          router.push('/login');
+          router.replace('/login');
         }}
       />
     );

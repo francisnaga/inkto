@@ -117,25 +117,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // 1. Check if Supabase redirected with access_token / refresh_token in URL hash
-    if (typeof window !== 'undefined' && window.location.hash) {
-      try {
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const accessToken = hashParams.get('access_token');
-        const refreshToken = hashParams.get('refresh_token');
-        if (accessToken) {
-          localStorage.setItem('inkto_session', accessToken);
-          if (refreshToken) {
-            localStorage.setItem('inkto_refresh_token', refreshToken);
-          }
-          window.history.replaceState(null, '', window.location.pathname);
-        }
-      } catch (e) {
-        console.error('Hash parsing error:', e);
-      }
-    }
+    const initAuth = async () => {
+      if (typeof window === 'undefined') return;
 
-    refreshUser().finally(() => setLoading(false));
+      // 1. Check if Supabase redirected with access_token / refresh_token in URL hash
+      if (window.location.hash) {
+        try {
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+          if (accessToken) {
+            localStorage.setItem('inkto_session', accessToken);
+            if (refreshToken) {
+              localStorage.setItem('inkto_refresh_token', refreshToken);
+            }
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+        } catch (e) {
+          console.error('Hash parsing error:', e);
+        }
+      }
+
+      // 2. Check if Supabase redirected with ?code= or ?token_hash= in URL query params
+      if (window.location.search) {
+        try {
+          const searchParams = new URLSearchParams(window.location.search);
+          const code = searchParams.get('code');
+          const token_hash = searchParams.get('token_hash');
+          const type = searchParams.get('type') || undefined;
+
+          if (code || token_hash) {
+            const exRes = await fetch('/api/exchange-code', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code, token_hash, type })
+            });
+            if (exRes.ok) {
+              const exData = await exRes.json();
+              if (exData.sessionToken) {
+                localStorage.setItem('inkto_session', exData.sessionToken);
+              }
+              if (exData.refreshToken) {
+                localStorage.setItem('inkto_refresh_token', exData.refreshToken);
+              }
+              window.history.replaceState(null, '', window.location.pathname);
+            }
+          }
+        } catch (e) {
+          console.error('Query code exchange error:', e);
+        }
+      }
+
+      await refreshUser();
+    };
+
+    initAuth().finally(() => setLoading(false));
   }, []);
 
   const logout = async () => {

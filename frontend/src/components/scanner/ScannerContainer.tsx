@@ -32,22 +32,49 @@ export function ScannerContainer({
   const pendingCornersRef = useRef<Quad | null>(null);
 
   // ── Stage 1: Camera Captured ──────────────────────────────────────────────
-  const handleCapture = useCallback((canvas: HTMLCanvasElement, corners: Quad) => {
+  const handleCapture = useCallback(async (canvas: HTMLCanvasElement, corners: Quad) => {
     pendingCornersRef.current = corners;
+    setProcessing(true);
+    setProcMsg('Auto-cropping document…');
 
-    const newPage: ScannedPage = {
-      id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
-      originalCanvas: canvas,
-      corners,
-      warpedCanvas: canvas,
-      enhancedCanvas: canvas,
-      filter: 'magic_color',
-      rotation: 0,
-    };
+    try {
+      // Immediately apply the warp and filter (skipping manual crop step!)
+      const warped = await opencvBridge.warpPerspective(canvas, corners);
+      
+      setProcMsg('Enhancing with Magic Color…');
+      const enhanced = await opencvBridge.applyFilter(warped, 'magic_color');
 
-    setPages(prev => [...prev, newPage]);
-    setActivePageIndex(pages.length);
-    setStage('crop');
+      const newPage: ScannedPage = {
+        id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+        originalCanvas: canvas,
+        corners,
+        warpedCanvas: warped,
+        enhancedCanvas: enhanced,
+        filter: 'magic_color',
+        rotation: 0,
+      };
+
+      setPages(prev => [...prev, newPage]);
+      setActivePageIndex(pages.length);
+      setStage('filter');
+    } catch (e) {
+      console.warn('Auto-crop failed, falling back to manual:', e);
+      // Fallback to manual crop if processing fails
+      const newPage: ScannedPage = {
+        id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+        originalCanvas: canvas,
+        corners,
+        warpedCanvas: canvas,
+        enhancedCanvas: canvas,
+        filter: 'magic_color',
+        rotation: 0,
+      };
+      setPages(prev => [...prev, newPage]);
+      setActivePageIndex(pages.length);
+      setStage('crop');
+    } finally {
+      setProcessing(false);
+    }
   }, [pages.length]);
 
   const handleImportFiles = useCallback(async (files: File[]) => {
@@ -69,22 +96,38 @@ export function ScannerContainer({
       URL.revokeObjectURL(url);
 
       const corners = await opencvBridge.detectEdges(canvas);
-      importedPages.push({
-        id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
-        originalCanvas: canvas,
-        corners,
-        warpedCanvas: canvas,
-        enhancedCanvas: canvas,
-        filter: 'magic_color',
-        rotation: 0,
-      });
+      
+      try {
+        const warped = await opencvBridge.warpPerspective(canvas, corners);
+        const enhanced = await opencvBridge.applyFilter(warped, 'magic_color');
+        
+        importedPages.push({
+          id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+          originalCanvas: canvas,
+          corners,
+          warpedCanvas: warped,
+          enhancedCanvas: enhanced,
+          filter: 'magic_color',
+          rotation: 0,
+        });
+      } catch (e) {
+        importedPages.push({
+          id: `p_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+          originalCanvas: canvas,
+          corners,
+          warpedCanvas: canvas,
+          enhancedCanvas: canvas,
+          filter: 'magic_color',
+          rotation: 0,
+        });
+      }
     }
 
     setPages(prev => [...prev, ...importedPages]);
     setActivePageIndex(pages.length);
     pendingCornersRef.current = importedPages[0]?.corners || null;
     setProcessing(false);
-    setStage('crop');
+    setStage('filter'); // Go directly to filter preview!
   }, [pages.length]);
 
   // ── Stage 2: Apply Crop ───────────────────────────────────────────────────

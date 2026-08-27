@@ -31,6 +31,10 @@ export function CameraCapture({
   const [hasTorch, setHasTorch] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [detectedLiveCorners, setDetectedLiveCorners] = useState<Quad | null>(null);
+  const [autoMode, setAutoMode] = useState(true);
+
+  // Auto-capture steady state tracking
+  const steadyRef = useRef({ frames: 0, lastCorners: null as Quad | null, capturing: false });
 
   const startCamera = useCallback(async () => {
     setCameraReady(false);
@@ -102,43 +106,11 @@ export function CameraCapture({
     }
   }, [torchOn]);
 
-  // Live Edge Detection loop
-  useEffect(() => {
-    if (!cameraReady) return;
-    let animId: number;
-    let lastScan = 0;
-
-    const loop = async (time: number) => {
-      if (videoRef.current && liveCanvasRef.current && videoRef.current.videoWidth > 0) {
-        const video = videoRef.current;
-        const canvas = liveCanvasRef.current;
-        const ctx = canvas.getContext('2d');
-
-        if (ctx && canvas.width !== 640) {
-          canvas.width = 640;
-          canvas.height = Math.round((video.videoHeight / (video.videoWidth || 1)) * 640) || 480;
-        }
-
-        if (time - lastScan > 300 && ctx && canvas.width > 0 && canvas.height > 0) {
-          lastScan = time;
-          try {
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const corners = await opencvBridge.detectEdges(canvas);
-            setDetectedLiveCorners(corners);
-          } catch {}
-        }
-      }
-      animId = requestAnimationFrame(loop);
-    };
-
-    animId = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(animId);
-  }, [cameraReady]);
-
   // Shutter action
   const handleShutter = useCallback(async () => {
     if (!videoRef.current) return;
     if (navigator.vibrate) navigator.vibrate(40);
+    steadyRef.current.capturing = true;
 
     const video = videoRef.current;
     const captureCanvas = document.createElement('canvas');
@@ -162,7 +134,69 @@ export function CameraCapture({
     }
 
     onCapture(captureCanvas, corners);
+    
+    // Reset after capture processing is handed off
+    setTimeout(() => {
+      steadyRef.current.capturing = false;
+      steadyRef.current.frames = 0;
+    }, 1500);
   }, [onCapture]);
+
+  // Live Edge Detection loop
+  useEffect(() => {
+    if (!cameraReady) return;
+    let animId: number;
+    let lastScan = 0;
+
+    const isSteady = (c1: Quad, c2: Quad) => {
+      let maxDiff = 0;
+      for (let i = 0; i < 4; i++) {
+        maxDiff = Math.max(maxDiff, Math.hypot(c1[i].x - c2[i].x, c1[i].y - c2[i].y));
+      }
+      return maxDiff < 15; // Within 15 pixels of movement
+    };
+
+    const loop = async (time: number) => {
+      if (videoRef.current && liveCanvasRef.current && videoRef.current.videoWidth > 0) {
+        const video = videoRef.current;
+        const canvas = liveCanvasRef.current;
+        const ctx = canvas.getContext('2d');
+
+        if (ctx && canvas.width !== 640) {
+          canvas.width = 640;
+          canvas.height = Math.round((video.videoHeight / (video.videoWidth || 1)) * 640) || 480;
+        }
+
+        if (time - lastScan > 250 && ctx && canvas.width > 0 && canvas.height > 0 && !steadyRef.current.capturing) {
+          lastScan = time;
+          try {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const corners = await opencvBridge.detectEdges(canvas);
+            setDetectedLiveCorners(corners);
+
+            if (autoMode) {
+              const last = steadyRef.current.lastCorners;
+              if (last && isSteady(corners, last)) {
+                steadyRef.current.frames += 1;
+                if (steadyRef.current.frames >= 4) { // Roughly 1 second steady
+                   handleShutter();
+                }
+              } else {
+                steadyRef.current.frames = 0;
+              }
+              steadyRef.current.lastCorners = corners;
+            } else {
+              steadyRef.current.frames = 0;
+            }
+          } catch {}
+        }
+      }
+      animId = requestAnimationFrame(loop);
+    };
+
+    animId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animId);
+  }, [cameraReady, autoMode, handleShutter]);
 
   const onFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
@@ -208,6 +242,26 @@ export function CameraCapture({
         <span style={{ fontSize: 14, fontWeight: 700, color: '#fff', letterSpacing: '0.02em' }}>
           {pageCount > 0 ? `${pageCount} Page${pageCount > 1 ? 's' : ''} Scanned` : 'Scan Document'}
         </span>
+
+        {/* Auto Mode Toggle */}
+        <div
+          onClick={() => setAutoMode(!autoMode)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: autoMode ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255,255,255,0.1)',
+            border: autoMode ? '1px solid #22C55E' : '1px solid rgba(255,255,255,0.2)',
+            borderRadius: 16,
+            padding: '4px 10px',
+            cursor: 'pointer',
+            fontSize: 12,
+            fontWeight: 700,
+            color: autoMode ? '#22C55E' : '#A3A3A3',
+          }}
+        >
+          {autoMode ? 'AUTO' : 'MANUAL'}
+        </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
           <motion.button

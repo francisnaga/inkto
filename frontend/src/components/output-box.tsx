@@ -449,7 +449,10 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         );
     };
 
-    const isNoText = value.startsWith('[No handwritten text found');
+    const isNoText = value.startsWith('[No handwritten text found') || 
+                     value.startsWith('[No text present') || 
+                     value.startsWith('[Raw voice dictation') || 
+                     value.startsWith('[No legible text');
 
     const handleSaveTemplate = async () => {
         const title = prompt('Enter a title for this custom template:');
@@ -491,11 +494,10 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     useEffect(() => () => clearTimeout(debounceTimer.current), []);
 
     const stats = useMemo(() => {
-        // Strip bracketed placeholder text like [No text present in the image] or [No handwritten text found...]
-        const cleanText = deferredValue.replace(/\[[^\]]*\]/g, '').trim();
-        const words = cleanText ? cleanText.split(/\s+/).filter(Boolean).length : 0;
+        if (isNoText) return { words: 0 };
+        const words = deferredValue.trim().split(/\s+/).filter(Boolean).length;
         return { words };
-    }, [deferredValue]);
+    }, [deferredValue, isNoText]);
 
     const handleCopy = async () => {
         try { await navigator.clipboard.writeText(value); }

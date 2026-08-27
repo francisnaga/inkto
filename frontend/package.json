@@ -13,6 +13,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@supabase/supabase-js": "^2.112.4",
     "@techstark/opencv-js": "^5.0.0-release.1",
     "@tiptap/react": "^3.30.3",
     "@tiptap/starter-kit": "^3.30.3",

@@ -549,22 +549,18 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     };
 
     const handleSaveHistory = async () => {
-        if (!hasReviewed) {
-            alert("Please review and confirm the AI transcript first.");
-            return;
-        }
-        if (!validateEmail(email)) {
-            setEmailStatus({ type: 'error', msg: 'Enter a valid email address.' });
-            return;
-        }
         setSendingEmail(true);
         setEmailStatus(null);
-        localStorage.setItem('inkto_last_email', email);
         try {
+            const token = localStorage.getItem('inkto_session');
+            const userEmail = email || (typeof window !== 'undefined' ? localStorage.getItem('inkto_user_email') : '');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
             const res = await fetch('/api/save-history', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, sessionId }),
+                headers,
+                credentials: 'include',
+                body: JSON.stringify({ email: userEmail, sessionId }),
             });
             const ct = res.headers.get('content-type') || '';
             const data = ct.includes('json') ? await res.json() : { error: await res.text() };

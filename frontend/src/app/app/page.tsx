@@ -493,8 +493,8 @@ function AppPageContent() {
           </button>
         </div>
 
-        {/* Record & Import row */}
-        <div style={{ display: 'flex', gap: 16, width: '100%', maxWidth: 280, margin: '0 auto 48px' }}>
+        {/* Record & Convert to Text row */}
+        <div style={{ display: 'flex', gap: 12, width: '100%', maxWidth: 320, margin: '0 auto 48px' }}>
           <button
             onClick={() => setShowDictate(true)}
             style={{
@@ -506,7 +506,7 @@ function AppPageContent() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 8,
+              gap: 7,
               cursor: 'pointer',
               fontSize: 13,
               fontWeight: 600,
@@ -520,7 +520,7 @@ function AppPageContent() {
           <label
             htmlFor="file-upload"
             style={{
-              flex: 1,
+              flex: 1.3,
               height: 44,
               background: '#FFFFFF',
               border: `1px solid ${C.border}`,
@@ -528,17 +528,18 @@ function AppPageContent() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 8,
+              gap: 7,
               cursor: 'pointer',
               fontSize: 13,
               fontWeight: 600,
               color: C.inkMid,
               fontFamily: UI,
               boxSizing: 'border-box',
+              whiteSpace: 'nowrap'
             }}
           >
             <FileText size={15} color={C.blue} />
-            Import
+            Convert to Text
           </label>
         </div>
 

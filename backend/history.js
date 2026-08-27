@@ -31,7 +31,7 @@ module.exports = async function handler(req, res) {
 
         if (error) throw error;
 
-        let validDocs = (data || []).filter(doc => new Date(doc.expires_at) > new Date());
+        let validDocs = (data || []).filter(doc => !doc.expires_at || new Date(doc.expires_at) > new Date());
 
         if (search) {
             const q = search.toLowerCase();

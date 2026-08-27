@@ -8,14 +8,10 @@ module.exports = async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { email, sessionId } = req.body || {};
-    if (!email || !sessionId) {
+    const authEmail = await require('./_utils/auth').getAuthEmail(req);
+    const targetEmail = authEmail || (email ? email.toLowerCase() : null);
+    if (!targetEmail || !sessionId) {
         return res.status(400).json({ error: 'Email and Session ID are required.' });
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        return res.status(400).json({ error: 'Invalid email address.' });
     }
 
     try {
@@ -25,7 +21,7 @@ module.exports = async function handler(req, res) {
         const { error } = await db
             .from('documents')
             .update({ 
-                email: email.toLowerCase(),
+                email: targetEmail.toLowerCase(),
                 expires_at: new Date('2099-12-31T23:59:59.999Z').toISOString()
             })
             .eq('id', sessionId);

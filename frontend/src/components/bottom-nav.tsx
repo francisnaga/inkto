@@ -30,9 +30,10 @@ export function BottomNav() {
     setNavigatingTo(null);
   }, [pathname]);
 
-  // Hidden on routes that have their own full-screen UI
-  const hidden = ['/', '/login', '/verify'].includes(pathname);
-  if (hidden) return null;
+  // Strictly show ONLY on the 4 primary app tabs
+  const allowedTabs = ['/app', '/templates', '/history', '/account'];
+  const shouldShow = allowedTabs.some(tab => pathname === tab || (tab !== '/app' && pathname?.startsWith(tab)));
+  if (!shouldShow) return null;
 
   return (
     <>

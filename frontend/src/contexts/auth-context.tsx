@@ -117,6 +117,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // 1. Check if Supabase redirected with access_token / refresh_token in URL hash
+    if (typeof window !== 'undefined' && window.location.hash) {
+      try {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        if (accessToken) {
+          localStorage.setItem('inkto_session', accessToken);
+          if (refreshToken) {
+            localStorage.setItem('inkto_refresh_token', refreshToken);
+          }
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+      } catch (e) {
+        console.error('Hash parsing error:', e);
+      }
+    }
+
     refreshUser().finally(() => setLoading(false));
   }, []);
 

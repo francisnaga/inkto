@@ -95,7 +95,7 @@ export default function HistoryPage() {
       const res = await fetch('/api/transcribe-past', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileUrl: entry.fileUrl, title: entry.title }),
+        body: JSON.stringify({ id: entry.id, fileUrl: entry.fileUrl, title: entry.title }),
         credentials: 'include'
       });
       const data = await res.json();

@@ -185,21 +185,6 @@ export function CameraCapture({
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             const corners = await opencvBridge.detectEdges(canvas);
             setDetectedLiveCorners(corners);
-
-            if (autoMode) {
-              const last = steadyRef.current.lastCorners;
-              if (last && isSteady(corners, last)) {
-                steadyRef.current.frames += 1;
-                if (steadyRef.current.frames >= 4) { // Roughly 1 second steady
-                   handleShutter();
-                }
-              } else {
-                steadyRef.current.frames = 0;
-              }
-              steadyRef.current.lastCorners = corners;
-            } else {
-              steadyRef.current.frames = 0;
-            }
           } catch {}
         }
       }
@@ -208,7 +193,7 @@ export function CameraCapture({
 
     animId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animId);
-  }, [cameraReady, autoMode, handleShutter]);
+  }, [cameraReady]);
 
   const onFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
@@ -282,25 +267,6 @@ export function CameraCapture({
           {pageCount > 0 ? `${pageCount} Page${pageCount > 1 ? 's' : ''} Scanned` : 'Scan Document'}
         </span>
 
-        {/* Auto Mode Toggle */}
-        <div
-          onClick={() => setAutoMode(!autoMode)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: autoMode ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255,255,255,0.1)',
-            border: autoMode ? '1px solid #22C55E' : '1px solid rgba(255,255,255,0.2)',
-            borderRadius: 16,
-            padding: '4px 10px',
-            cursor: 'pointer',
-            fontSize: 12,
-            fontWeight: 700,
-            color: autoMode ? '#22C55E' : '#A3A3A3',
-          }}
-        >
-          {autoMode ? 'AUTO' : 'MANUAL'}
-        </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
           <motion.button

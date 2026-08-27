@@ -412,7 +412,7 @@ function AppPageContent() {
             >
               + Add more pages
             </label>
-            <input id="add-more" type="file" style={{ display: 'none' }} multiple accept="image/*,application/pdf" onChange={handleInput} />
+            <input id="add-more" type="file" style={{ display: 'none' }} multiple accept="image/*,application/pdf,audio/*,.mp3,.wav,.m4a,.aac,.webm,.ogg,.mp4" onChange={handleInput} />
           </div>
         </>
 
@@ -653,7 +653,7 @@ function AppPageContent() {
           type="file"
           style={{ display: 'none' }}
           multiple
-          accept="image/*,application/pdf"
+          accept="image/*,application/pdf,audio/*,.mp3,.wav,.m4a,.aac,.webm,.ogg,.mp4"
           onChange={handleInput}
         />
 

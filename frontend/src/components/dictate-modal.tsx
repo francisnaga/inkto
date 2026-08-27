@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { X, Mic, Square, Pause, Play, Save, RefreshCw, Loader2, CloudLightning } from 'lucide-react';
+import { X, Mic, Square, Pause, Play, Save, RefreshCw, Loader2, CloudLightning, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { saveOfflineRecording } from '@/lib/indexeddb';
 import { nanoid } from 'nanoid';
@@ -304,9 +304,46 @@ export default function DictateModal({ onClose, onTranscribeComplete, draftId, i
         {/* Action Controller */}
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
           {status === 'idle' && (
-            <Button onClick={startRecording} size="lg" className="w-full h-14 rounded-xl gap-2 font-semibold">
-              <Mic size={18} /> Start Recording
-            </Button>
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <Button onClick={startRecording} size="lg" className="w-full h-14 rounded-xl gap-2 font-semibold">
+                <Mic size={18} /> Start Recording
+              </Button>
+              
+              <label
+                htmlFor="audio-file-upload"
+                style={{
+                  width: '100%',
+                  height: 48,
+                  border: '1.5px solid #E4E1D9',
+                  borderRadius: 12,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: '#444240',
+                  boxSizing: 'border-box',
+                  background: '#FBFAF7'
+                }}
+              >
+                <Upload size={16} color="#24467A" />
+                Upload Audio File (.mp3, .wav, .m4a)
+              </label>
+              <input
+                id="audio-file-upload"
+                type="file"
+                accept="audio/*,.mp3,.wav,.m4a,.aac,.webm,.ogg,.mp4"
+                style={{ display: 'none' }}
+                onChange={async (e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    const file = e.target.files[0];
+                    await handleAudioStopped(file);
+                  }
+                }}
+              />
+            </div>
           )}
 
           {(status === 'recording' || status === 'paused') && (

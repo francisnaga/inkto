@@ -223,6 +223,39 @@ module.exports = async function handler(req, res) {
         }
     }
 
+    if (isFinalize) {
+        try {
+            const db = require('./_utils/supabase').checkSupabase();
+            const { sessionId, text, totalFilesCount } = req.body || {};
+            if (!sessionId || !text) {
+                return res.status(400).json({ error: 'sessionId and text are required for finalize' });
+            }
+
+            const lines = text.split('\n').filter(Boolean);
+            const firstLine = lines.length > 0 ? lines[0].replace(/^--- Page \d+ ---\s*/i, '').substring(0, 80) : 'Legal Transcription';
+            const autoTitle = firstLine.trim() || 'Legal Transcription';
+
+            const { data, error: dbErr } = await db.from('documents').upsert([{
+                id: sessionId,
+                email: userEmail.toLowerCase(),
+                transcript_text: text,
+                source_image_count: Number(totalFilesCount) || 1,
+                title: autoTitle,
+                type: 'transcription'
+            }], { onConflict: 'id' });
+
+            if (dbErr) {
+                console.error('Supabase finalize insert error:', dbErr.message);
+                return res.status(500).json({ error: dbErr.message });
+            }
+
+            return res.json({ success: true, sessionId, message: 'Document saved to history' });
+        } catch (err) {
+            console.error('Finalize error:', err.message);
+            return res.status(500).json({ error: err.message });
+        }
+    }
+
     // ---- IP Rate Limiting ----
     if (redis) {
         const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';

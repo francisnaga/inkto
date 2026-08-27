@@ -12,7 +12,7 @@ class ScannerBridge {
   private isReady = false;
   private pendingRequests = new Map<
     string,
-    { resolve: (val: any) => void; reject: (err: Error) => void }
+    { resolve: (val: any) => void; reject: (err: Error) => void; timer: any }
   >();
   private reqSeq = 0;
 
@@ -34,6 +34,7 @@ class ScannerBridge {
 
         if (id && this.pendingRequests.has(id)) {
           const req = this.pendingRequests.get(id)!;
+          clearTimeout(req.timer);
           this.pendingRequests.delete(id);
           if (type === 'SUCCESS') {
             req.resolve(result);
@@ -51,7 +52,7 @@ class ScannerBridge {
     }
   }
 
-  private dispatch<T>(type: string, payload: any, transfer: Transferable[] = []): Promise<T> {
+  private dispatch<T>(type: string, payload: any, timeoutMs = 2500, transfer: Transferable[] = []): Promise<T> {
     return new Promise((resolve, reject) => {
       if (!this.worker) {
         this.initWorker();
@@ -61,11 +62,35 @@ class ScannerBridge {
       }
 
       const id = `req_${++this.reqSeq}_${Date.now()}`;
-      this.pendingRequests.set(id, { resolve, reject });
+      
+      const timer = setTimeout(() => {
+        if (this.pendingRequests.has(id)) {
+          this.pendingRequests.delete(id);
+          // If detection timed out, return fallback rather than crashing
+          if (type === 'DETECT_CORNERS' && payload?.imageData) {
+            const w = payload.imageData.width;
+            const h = payload.imageData.height;
+            const p = 0.08;
+            resolve([
+              { x: Math.round(w * p), y: Math.round(h * p) },
+              { x: Math.round(w * (1 - p)), y: Math.round(h * p) },
+              { x: Math.round(w * (1 - p)), y: Math.round(h * (1 - p)) },
+              { x: Math.round(w * p), y: Math.round(h * (1 - p)) }
+            ] as unknown as T);
+          } else if (type === 'FILTER' && payload?.imageData) {
+            resolve(payload.imageData as T);
+          } else {
+            reject(new Error(`Operation ${type} timed out`));
+          }
+        }
+      }, timeoutMs);
+
+      this.pendingRequests.set(id, { resolve, reject, timer });
 
       try {
         this.worker.postMessage({ id, type, payload }, transfer);
       } catch (e: any) {
+        clearTimeout(timer);
         this.pendingRequests.delete(id);
         reject(e);
       }
@@ -83,7 +108,7 @@ class ScannerBridge {
       imgData = canvasOrImageData;
     }
 
-    return this.dispatch<Quad>('DETECT_CORNERS', { imageData: imgData });
+    return this.dispatch<Quad>('DETECT_CORNERS', { imageData: imgData }, 1500);
   }
 
   // 4-Point Homography Perspective Warp
@@ -98,7 +123,7 @@ class ScannerBridge {
     const warpedImgData = await this.dispatch<ImageData>('WARP', {
       imageData: imgData,
       corners,
-    });
+    }, 4000);
 
     const outCanvas = document.createElement('canvas');
     outCanvas.width = warpedImgData.width;
@@ -124,7 +149,7 @@ class ScannerBridge {
     const filteredImgData = await this.dispatch<ImageData>('FILTER', {
       imageData: imgData,
       filter,
-    });
+    }, 4000);
 
     const outCanvas = document.createElement('canvas');
     outCanvas.width = filteredImgData.width;
@@ -141,6 +166,7 @@ class ScannerBridge {
       this.worker.terminate();
       this.worker = null;
     }
+    this.pendingRequests.forEach(req => clearTimeout(req.timer));
     this.pendingRequests.clear();
   }
 }

@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { ChevronRight, FileText, Search, FileDown, File, Loader2, Trash2, Bookmark } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { BottomNav } from '@/components/bottom-nav';
 
 async function downloadFile(endpoint: string, text: string, filename: string, fallbackMsg: string) {
   try {
@@ -737,6 +738,7 @@ export default function TemplatesPage() {
           </div>
         </div>
       )}
+      <BottomNav />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import Link from 'next/link';
 import { Loader2, LogOut, ChevronRight, Crown, MessageSquare, FileText, Lock, Shield, Phone, Check } from 'lucide-react';
+import { BottomNav } from '@/components/bottom-nav';
 
 const C = {
   paper:   '#FBFAF7',
@@ -307,6 +308,7 @@ function AccountPageContent() {
       </button>
 
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <BottomNav />
     </div>
   );
 }

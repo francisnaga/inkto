@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { BottomNav } from "@/components/bottom-nav";
 import { AuthProvider } from "@/contexts/auth-context";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 
@@ -52,7 +51,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             >
               {children}
             </main>
-            <BottomNav />
           </div>
         </AuthProvider>
         <ServiceWorkerRegister />

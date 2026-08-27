@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { InktoWordmark } from '@/components/inkto-logo';
+import { BottomNav } from '@/components/bottom-nav';
 
 const ThumbnailGrid = dynamic(() => import('@/components/thumbnail-grid'), { ssr: false });
 const OutputBox     = dynamic(() => import('@/components/output-box'), { ssr: false });
@@ -602,6 +603,7 @@ function AppPageContent() {
         />
 
       </div>
+      {!showScanner && !showDictate && <BottomNav />}
     </>
   );
 }

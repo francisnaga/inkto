@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/auth-context';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { BottomNav } from '@/components/bottom-nav';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Clock, FileText, ScanLine, Search, Trash2, Pencil, Check, X, ExternalLink, Loader2,
@@ -384,6 +385,7 @@ export default function HistoryPage() {
           </div>
         </div>
       )}
+      <BottomNav />
     </div>
   );
 }

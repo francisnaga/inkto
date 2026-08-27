@@ -63,7 +63,7 @@ function VerifyForm() {
       }
       setDone(true);
       await refreshUser();
-      setTimeout(() => router.replace('/app'), 700);
+      setTimeout(() => router.replace('/app'), 500);
     } catch {
       setErr('Network error — please try again.');
     } finally {
@@ -77,7 +77,7 @@ function VerifyForm() {
     try { await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }); } catch {}
   };
 
-  const ready = otp.length === 6;
+  const ready = otp.length >= 6 && otp.length <= 8;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', fontFamily: UI }}>
@@ -100,7 +100,7 @@ function VerifyForm() {
         </div>
         <h1
           style={{
-            fontFamily: 'Georgia, "Iowan Old Style", "Times New Roman", serif',
+            fontFamily: UI,
             fontSize: 24,
             fontWeight: 700,
             color: C.ink,
@@ -111,7 +111,7 @@ function VerifyForm() {
           Check your email
         </h1>
         <p style={{ fontSize: 14, color: C.inkMute, margin: 0, lineHeight: 1.6 }}>
-          We sent a 6-digit code to{' '}
+          We sent a verification code to{' '}
           <span style={{ fontFamily: 'ui-monospace, "SF Mono", Consolas, monospace', fontSize: 13, fontWeight: 600, color: C.ink }}>{email}</span>
         </p>
       </div>
@@ -122,7 +122,7 @@ function VerifyForm() {
       <form onSubmit={verify} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div>
           <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: C.inkMid, marginBottom: 10, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            6-digit code
+            Verification Code
           </label>
           <input
             ref={inputRef}
@@ -130,16 +130,16 @@ function VerifyForm() {
             inputMode="numeric"
             pattern="[0-9]*"
             autoComplete="one-time-code"
-            maxLength={6}
+            maxLength={8}
             placeholder="000000"
             value={otp}
-            onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 8))}
             autoFocus
             style={{
               width: '100%', height: 60, padding: '0 16px',
-              fontSize: 28,
+              fontSize: 26,
               fontFamily: 'ui-monospace, "SF Mono", Consolas, monospace',
-              letterSpacing: '0.4em', textAlign: 'center',
+              letterSpacing: '0.3em', textAlign: 'center',
               border: `1px solid ${err ? C.red : ready ? C.blue : C.border}`,
               borderRadius: 8, background: '#FFFFFF', color: C.ink,
               outline: 'none', boxSizing: 'border-box',
@@ -178,35 +178,40 @@ function VerifyForm() {
             ? <><Spinner /> Verifying…</>
             : 'Verify & sign in'}
         </button>
+
+        {/* Resend */}
+        <div style={{ textAlign: 'center', paddingTop: 8 }}>
+          {cooldown > 0 ? (
+            <span style={{ fontSize: 13, color: C.inkMute }}>
+              Resend code in <strong style={{ color: C.inkMid }}>{cooldown}s</strong>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={resend}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: C.blue, fontFamily: UI, padding: 0 }}
+            >
+              {resent ? 'Resend code again' : 'Didn’t receive a code? Resend'}
+            </button>
+          )}
+        </div>
       </form>
-
-      {/* Resend */}
-      <div style={{ height: 1, background: C.border, margin: '32px 0 20px' }} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <p style={{ fontSize: 13, color: C.inkMute, margin: 0 }}>Didn&apos;t receive it?</p>
-        <button
-          onClick={resend}
-          disabled={cooldown > 0}
-          style={{ fontSize: 13, fontWeight: 700, color: cooldown > 0 ? C.warmMid : C.blue, background: 'none', border: 'none', cursor: cooldown > 0 ? 'default' : 'pointer', fontFamily: UI, padding: 0 }}
-        >
-          {cooldown > 0 ? `Resend in ${cooldown}s` : resent ? '✓ Resent' : 'Resend code'}
-        </button>
-      </div>
-
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
 
 function Spinner() {
   return (
-    <span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,0.35)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite', flexShrink: 0 }} />
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" style={{ animation: 'spin 0.8s linear infinite' }}>
+      <circle cx="7.5" cy="7.5" r="6" stroke="rgba(255,255,255,0.35)" strokeWidth="2" />
+      <path d="M7.5 1.5A6 6 0 0 1 13.5 7.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+    </svg>
   );
 }
 
 export default function VerifyPage() {
   return (
-    <Suspense fallback={<div style={{ height: 200 }} />}>
+    <Suspense fallback={<div style={{ minHeight: '100vh' }} />}>
       <VerifyForm />
     </Suspense>
   );

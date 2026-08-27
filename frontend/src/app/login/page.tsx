@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
-import { InktoWordmark } from '@/components/inkto-logo';
+import { InktoLogo } from '@/components/inkto-logo';
 
 /* Inkto design tokens */
 const C = {
@@ -19,7 +19,7 @@ const C = {
   red:     '#B23A34',
   warmMid: '#C8C4BA',
 };
-const UI  = '-apple-system, "Segoe UI", Roboto, sans-serif';
+const UI = '-apple-system, "Segoe UI", Roboto, sans-serif';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -55,10 +55,10 @@ export default function LoginPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', fontFamily: UI }}>
 
-      {/* Top mark — nib animates on first load (this is the one signature moment) */}
+      {/* Top mark */}
       <div style={{ paddingTop: 72, paddingBottom: 56, textAlign: 'center' }}>
-        <div style={{ marginBottom: 24 }}>
-          <InktoWordmark size={36} animate />
+        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'center' }}>
+          <InktoLogo size={42} />
         </div>
 
         {/* Thin letterhead rule */}
@@ -66,7 +66,7 @@ export default function LoginPage() {
 
         <h1
           style={{
-            fontFamily: 'Georgia, "Iowan Old Style", "Times New Roman", serif',
+            fontFamily: UI,
             fontSize: 26,
             fontWeight: 700,
             color: C.ink,
@@ -77,7 +77,7 @@ export default function LoginPage() {
           Sign in to Inkto
         </h1>
         <p style={{ fontSize: 14, color: C.inkMute, margin: 0, lineHeight: 1.6 }}>
-          No password — we email you a 6-digit code.
+          No password — we email you a verification code.
         </p>
       </div>
 
@@ -90,7 +90,15 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="email"
-              style={{ display: 'block', fontSize: 11, fontWeight: 700, color: C.inkMid, marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}
+              style={{
+                display: 'block',
+                fontSize: 11,
+                fontWeight: 700,
+                color: C.inkMid,
+                marginBottom: 8,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+              }}
             >
               Email address
             </label>
@@ -99,16 +107,23 @@ export default function LoginPage() {
               type="email"
               autoComplete="email"
               inputMode="email"
-              placeholder="you@example.com"
+              placeholder="name@firm.com"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              required
+              autoFocus
               style={{
-                width: '100%', height: 48, padding: '0 14px',
-                fontSize: 15, fontFamily: UI,
+                width: '100%',
+                height: 48,
+                padding: '0 16px',
+                fontSize: 15,
                 border: `1px solid ${err ? C.red : C.border}`,
-                borderRadius: 8, background: '#FFFFFF', color: C.ink,
-                outline: 'none', boxSizing: 'border-box',
+                borderRadius: 8,
+                background: '#FFFFFF',
+                color: C.ink,
+                outline: 'none',
+                fontFamily: UI,
+                boxSizing: 'border-box',
+                transition: 'border-color 150ms ease',
               }}
               onFocus={e => { e.target.style.borderColor = C.blue; e.target.style.boxShadow = `0 0 0 2px ${C.blueSub}`; }}
               onBlur={e => { e.target.style.borderColor = err ? C.red : C.border; e.target.style.boxShadow = 'none'; }}
@@ -116,49 +131,54 @@ export default function LoginPage() {
           </div>
 
           {err && (
-            <p style={{ margin: 0, fontSize: 13, color: C.red, lineHeight: 1.5 }}>{err}</p>
+            <p style={{ margin: 0, fontSize: 13, color: C.red, lineHeight: 1.5 }}>
+              {err}
+            </p>
           )}
 
           <button
             type="submit"
-            disabled={busy || !isValidEmail}
+            disabled={!isValidEmail || busy}
             style={{
-              width: '100%', height: 48,
-              background: busy || !isValidEmail ? C.warmMid : C.blue,
-              border: 'none', borderRadius: 8,
-              fontSize: 14, fontWeight: 700, color: '#fff',
-              cursor: busy || !isValidEmail ? 'not-allowed' : 'pointer',
-              fontFamily: UI, letterSpacing: '0.01em',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              width: '100%',
+              height: 48,
+              background: !isValidEmail || busy ? C.warmMid : C.blue,
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 700,
+              color: '#fff',
+              cursor: !isValidEmail || busy ? 'not-allowed' : 'pointer',
+              fontFamily: UI,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
               transition: 'background 150ms ease',
             }}
-            onMouseEnter={e => { if (!busy && isValidEmail) (e.currentTarget as HTMLButtonElement).style.background = '#3A5C94'; }}
-            onMouseLeave={e => { if (!busy && isValidEmail) (e.currentTarget as HTMLButtonElement).style.background = C.blue; }}
+            onMouseEnter={e => { if (isValidEmail && !busy) (e.currentTarget as HTMLButtonElement).style.background = '#3A5C94'; }}
+            onMouseLeave={e => { if (isValidEmail && !busy) (e.currentTarget as HTMLButtonElement).style.background = C.blue; }}
           >
-            {busy
-              ? <><Spinner /> Sending code…</>
-              : 'Continue'}
+            {busy ? (
+              <>
+                <Spinner />
+                Sending code…
+              </>
+            ) : (
+              'Continue with Email'
+            )}
           </button>
         </form>
-
-        {/* Bottom rule + fine print */}
-        <div style={{ height: 1, background: C.border, margin: '32px 0 20px' }} />
-
-        <p style={{ fontSize: 11, color: C.warmMid, margin: 0, lineHeight: 1.7, textAlign: 'center' }}>
-          By continuing you agree to our{' '}
-          <a href="/terms" style={{ color: C.inkMute, textDecoration: 'underline', textUnderlineOffset: 2 }}>Terms</a>
-          {' '}and{' '}
-          <a href="/privacy" style={{ color: C.inkMute, textDecoration: 'underline', textUnderlineOffset: 2 }}>Privacy Policy</a>.
-        </p>
       </div>
-
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
 
 function Spinner() {
   return (
-    <span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,0.35)', borderTopColor: '#fff', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite', flexShrink: 0 }} />
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" style={{ animation: 'spin 0.8s linear infinite' }}>
+      <circle cx="7.5" cy="7.5" r="6" stroke="rgba(255,255,255,0.35)" strokeWidth="2" />
+      <path d="M7.5 1.5A6 6 0 0 1 13.5 7.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+    </svg>
   );
 }

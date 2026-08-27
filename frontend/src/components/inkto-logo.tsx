@@ -1,112 +1,52 @@
 'use client';
 
 /**
- * InktoLogo — The pen-nib SVG wordmark.
- *
- * animate=true  → stroke-in animation (0.6s, ease-out). Use ONCE per session
- *                 on the first screen the user sees.
- * animate=false → static, for nav bars and repeated occurrences.
- *
- * The animation class is defined in globals.css and respects
- * prefers-reduced-motion — do not duplicate it here.
+ * InktoLogo — The original Inkto icon (August 21 brand mark).
+ * Precision SVG featuring the pen-nib facet with horizontal document lines.
  */
 
 interface Props {
-  /** Pixel height of the SVG. Width scales proportionally. */
   size?: number;
-  /** Play the stroke-in animation. Default false. */
   animate?: boolean;
-  /** Ink Black by default — override for light-on-dark contexts. */
   color?: string;
 }
 
-export function InktoLogo({ size = 28, animate = false, color = '#0B0D12' }: Props) {
-  const accentColor = '#24467A'; // Ink Blue
-
+export function InktoLogo({ size = 26, animate = false, color = '#24467A' }: Props) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 56 56"
+      viewBox="0 0 100 100"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-label="Inkto"
+      style={animate ? { animation: 'pulse 1.5s ease-in-out' } : undefined}
     >
-      {/*
-        Pen nib — two angled faces meeting at the tip, with a slit down the centre.
-        All strokes are drawn on a 56×56 grid so the nib is legible at 24px.
-      */}
-
-      {/* Left face of nib */}
-      <path
-        d="M28 8 L10 40 L28 36 Z"
-        stroke={accentColor}
-        strokeWidth="2.2"
-        strokeLinejoin="round"
-        fill={accentColor}
-        fillOpacity="0.12"
-        className={animate ? 'nib-path' : undefined}
-        style={animate ? undefined : { strokeDashoffset: 0 }}
-      />
-
-      {/* Right face of nib */}
-      <path
-        d="M28 8 L46 40 L28 36 Z"
-        stroke={accentColor}
-        strokeWidth="2.2"
-        strokeLinejoin="round"
-        fill={accentColor}
-        fillOpacity="0.06"
-        className={animate ? 'nib-path' : undefined}
-        style={animate ? { animationDelay: '0.08s' } : { strokeDashoffset: 0 }}
-      />
-
-      {/* Centre slit */}
-      <path
-        d="M28 20 L28 36"
-        stroke={accentColor}
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        className={animate ? 'nib-path' : undefined}
-        style={animate ? { animationDelay: '0.22s' } : { strokeDashoffset: 0 }}
-      />
-
-      {/* Ink reservoir (horizontal flat at top of nib) */}
-      <path
-        d="M20 14 L36 14"
-        stroke={accentColor}
-        strokeWidth="2"
-        strokeLinecap="round"
-        className={animate ? 'nib-path' : undefined}
-        style={animate ? { animationDelay: '0.34s' } : { strokeDashoffset: 0 }}
-      />
-
-      {/* Nib tip dot — ink bead. Appears last, as if the stroke just landed. */}
-      <circle
-        cx="28"
-        cy="40"
-        r="2.4"
-        fill={accentColor}
-        className={animate ? 'nib-dot' : undefined}
-      />
+      <path d="M16 50 L36 28 L54 38 L54 62 L36 72 Z" fill={color} />
+      <circle cx="30" cy="50" r="3.5" fill="white" />
+      <line x1="16" y1="50" x2="36" y2="50" stroke="white" strokeWidth="3" strokeLinecap="round" />
+      <line x1="36" y1="28" x2="36" y2="72" stroke="white" strokeWidth="2" strokeLinecap="round" />
+      <rect x="57" y="30" width="28" height="7" rx="3.5" fill={color} />
+      <rect x="57" y="46.5" width="26" height="7" rx="3.5" fill={color} />
+      <rect x="57" y="63" width="20" height="7" rx="3.5" fill={color} />
     </svg>
   );
 }
 
-/** Wordmark: nib + "Inkto" text side by side */
-export function InktoWordmark({ size = 28, animate = false }: { size?: number; animate?: boolean }) {
+/** Wordmark: original logo icon + bold "Inkto" text */
+export function InktoWordmark({ size = 26, animate = false }: { size?: number; animate?: boolean }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
       <InktoLogo size={size} animate={animate} />
       <span
         style={{
-          fontFamily: 'Georgia, "Iowan Old Style", "Times New Roman", serif',
-          fontSize: size * 0.72,
-          fontWeight: 700,
+          fontWeight: 800,
+          fontSize: Math.round(size * 0.68),
+          letterSpacing: '-0.4px',
           color: '#0B0D12',
-          letterSpacing: '-0.02em',
           lineHeight: 1,
           userSelect: 'none',
+          fontFamily: '-apple-system, "Segoe UI", Roboto, sans-serif',
         }}
       >
         Inkto

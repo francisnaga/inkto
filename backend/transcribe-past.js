@@ -42,8 +42,10 @@ CRITICAL VOICE TRANSCRIPTION RULES:
 4. FILLER WORDS: Clean up basic vocal filler words (like "um", "ah", "you know") to make it readable, unless in formal testimony where exact phrasing matters.
 5. NO CHATTER: Output ONLY the clean transcribed text. No preamble, no commentary, no markdown formatting.`;
 
-async function callGemini(apiKey, parts, systemPrompt = SYSTEM_PROMPT) {
-  const models = ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+async function callGemini(apiKey, parts, systemPrompt = SYSTEM_PROMPT, isAudio = false) {
+  const models = isAudio
+    ? ['gemini-3.5-transcribe', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash']
+    : ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
   for (const model of models) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -130,7 +132,7 @@ module.exports = async function handler(req, res) {
     }];
 
     const systemPrompt = isAudio ? VOICE_SYSTEM_PROMPT : SYSTEM_PROMPT;
-    const transcription = await callGemini(geminiKey, parts, systemPrompt);
+    const transcription = await callGemini(geminiKey, parts, systemPrompt, isAudio);
 
     // 4. Update existing or Save new transcription document
     if (isAudio && id) {

@@ -63,9 +63,11 @@ function cleanSinglePageText(text) {
 }
 
 // Call Gemini REST API directly — bypasses SDK OAuth bugs
-async function callGemini(apiKey, parts, timeoutMs, systemPrompt = SYSTEM_PROMPT) {
-    // Model chain: prefer low-latency multimodal models, then fall back.
-    const models = ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+async function callGemini(apiKey, parts, timeoutMs, systemPrompt = SYSTEM_PROMPT, isAudio = false) {
+    // Model chain: prefer dedicated transcribe model for audio, then low-latency multimodal models, then fall back.
+    const models = isAudio
+        ? ['gemini-3.5-transcribe', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash']
+        : ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
     const deadline = Date.now() + timeoutMs;
 
     for (const model of models) {
@@ -319,7 +321,7 @@ module.exports = async function handler(req, res) {
             // Single-pass transcription — fast, lean, reliable
             // Reserve 50s for the AI call (leaving 10s headroom under Vercel's 60s limit)
             const systemPrompt = isAudio ? VOICE_SYSTEM_PROMPT : SYSTEM_PROMPT;
-            const finalText = cleanSinglePageText(await callGemini(geminiKey, parts, 50000, systemPrompt));
+            const finalText = cleanSinglePageText(await callGemini(geminiKey, parts, 50000, systemPrompt, isAudio));
 
             // Detect blank/no-text responses (only for images)
             outputText = finalText;

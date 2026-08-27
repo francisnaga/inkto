@@ -21,7 +21,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body style={{ background: "#0B0D12", margin: 0, padding: 0 }}>
+      <body style={{ background: "#FBFAF7", margin: 0, padding: 0 }}>
         <AuthProvider>
           {/*
             Phone-width shell.

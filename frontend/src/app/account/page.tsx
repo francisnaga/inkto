@@ -265,15 +265,27 @@ function AccountPageContent() {
         {SETTINGS.map(({ icon, label, href, ext }, i) => (
           <div key={label}>
             {i > 0 && <div style={{ height: 1, background: C.border }} />}
-            <a
-              href={href}
-              {...(ext ? { target: '_blank', rel: 'noreferrer' } : {})}
-              style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', textDecoration: 'none' }}
-            >
-              {icon}
-              <span style={{ flex: 1, fontSize: 14, color: C.inkMid, fontWeight: 500 }}>{label}</span>
-              <ChevronRight size={15} color={C.warmMid} />
-            </a>
+            {ext ? (
+              <a
+                href={href}
+                target="_blank"
+                rel="noreferrer"
+                style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', textDecoration: 'none' }}
+              >
+                {icon}
+                <span style={{ flex: 1, fontSize: 14, color: C.inkMid, fontWeight: 500 }}>{label}</span>
+                <ChevronRight size={15} color={C.warmMid} />
+              </a>
+            ) : (
+              <Link
+                href={href}
+                style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', textDecoration: 'none' }}
+              >
+                {icon}
+                <span style={{ flex: 1, fontSize: 14, color: C.inkMid, fontWeight: 500 }}>{label}</span>
+                <ChevronRight size={15} color={C.warmMid} />
+              </Link>
+            )}
           </div>
         ))}
         <div style={{ height: 1, background: C.border }} />

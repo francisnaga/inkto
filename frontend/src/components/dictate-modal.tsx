@@ -161,21 +161,10 @@ export default function DictateModal({ onClose, onTranscribeComplete, draftId, i
     }
   };
 
-  const checkConnectivity = async (): Promise<boolean> => {
-    if (!navigator.onLine) return false;
-    try {
-      const ping = await fetch('/api/user-status', { method: 'HEAD' });
-      return ping.ok;
-    } catch {
-      return false;
-    }
-  };
-
   const handleAudioStopped = async (blob: Blob) => {
     setStatus('transcribing');
     setProgressStep(1);
 
-    // Auto-advance progress UI to show user what is happening under the hood
     const t1 = setTimeout(() => setProgressStep(2), 800);
     const t2 = setTimeout(() => setProgressStep(3), 2000);
     const t3 = setTimeout(() => setProgressStep(4), 3800);
@@ -190,7 +179,7 @@ export default function DictateModal({ onClose, onTranscribeComplete, draftId, i
       }
     }
 
-    const online = await checkConnectivity();
+    const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
 
     if (!online) {
       clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);

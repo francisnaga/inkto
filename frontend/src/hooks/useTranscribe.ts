@@ -17,8 +17,23 @@ export function useTranscribe() {
     const [audioUrl, setAudioUrl] = useState(null);
     const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
 
-    const addFiles = (newFiles) => {
-        setFiles(prev => [...prev, ...newFiles]);
+    const addFiles = async (newFiles) => {
+        let processedFiles = [];
+        for (const f of newFiles) {
+            if (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')) {
+                try {
+                    const { convertPdfToImages } = await import('../lib/pdfHelper');
+                    const pages = await convertPdfToImages(f);
+                    processedFiles.push(...pages);
+                } catch (e) {
+                    console.warn('PDF client conversion error, using raw file:', e);
+                    processedFiles.push(f);
+                }
+            } else {
+                processedFiles.push(f);
+            }
+        }
+        setFiles(prev => [...prev, ...processedFiles]);
         if (state === 'idle') setState('uploading');
     };
 

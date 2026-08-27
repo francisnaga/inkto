@@ -455,13 +455,21 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         const title = prompt('Enter a title for this custom template:');
         if (!title || !title.trim()) return;
         try {
+            const token = localStorage.getItem('inkto_session');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+                headers['X-Inkto-Auth'] = token;
+            }
             const res = await fetch('/api/user-templates', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
+                credentials: 'include',
                 body: JSON.stringify({ title, content: value })
             });
-            if (!res.ok) throw new Error('Save template failed');
-            alert('Saved to \"My Templates\" in the Templates tab!');
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Save template failed');
+            alert('Saved to "My Templates" in the Templates tab!');
         } catch (e) {
             alert(e.message || 'Failed to save template. Please try again.');
         }
@@ -500,19 +508,11 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     };
 
     const handleDownloadDocx = () => {
-        if (!hasReviewed) {
-            alert("Please review and confirm the AI transcript first.");
-            return;
-        }
         const date = new Date().toISOString().slice(0, 10);
         downloadFile('/api/download-docx', value, `inkto-transcript-${date}.docx`, 'Could not generate Word document.');
     };
 
     const handleDownloadPdf = () => {
-        if (!hasReviewed) {
-            alert("Please review and confirm the AI transcript first.");
-            return;
-        }
         const date = new Date().toISOString().slice(0, 10);
         downloadFile('/api/download-pdf', value, `inkto-transcript-${date}.pdf`, 'Could not generate PDF.');
     };

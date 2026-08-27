@@ -47,7 +47,7 @@ export default function DraftPage() {
     setError(null);
 
     try {
-      const token = localStorage.getItem('inkto_auth_token');
+      const token = localStorage.getItem('inkto_session');
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
@@ -109,105 +109,110 @@ export default function DraftPage() {
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: C.blueSub, display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'pulse 1.5s infinite' }}>
               <Sparkles size={28} color={C.blue} className="animate-pulse" />
             </div>
-            <h2 style={{ fontFamily: DISPLAY, fontSize: 20, fontWeight: 700, margin: 0 }}>Gemini is drafting your document…</h2>
+            <h2 style={{ fontFamily: UI, fontSize: 20, fontWeight: 700, margin: 0 }}>Inkto AI is drafting your document…</h2>
             <p style={{ fontSize: 13, color: C.inkMute, margin: 0, maxWidth: 300, lineHeight: 1.5 }}>
               Restructuring according to legal terms, formatting clauses, and standardizing signature sections under Nigerian law.
             </p>
           </div>
         ) : (
           <div>
-            <h1 style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 700, margin: '0 0 8px 0' }}>AI Document Drafter</h1>
+            <h1 style={{ fontFamily: UI, fontSize: 26, fontWeight: 700, margin: '0 0 8px 0' }}>AI Document Drafter</h1>
             <p style={{ fontSize: 14, color: C.inkMute, margin: '0 0 32px 0', lineHeight: 1.5 }}>
-              Describe your legal document in plain words. Gemini will build a professional draft standardizing clauses under Nigerian legal syntax.
+              Describe the legal document you need. Inkto generates a complete, Nigerian law-compliant draft formatted for legal use.
             </p>
 
-            <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: C.inkMute }}>
+            {error && (
+              <div style={{ padding: '12px 16px', background: '#FEF2F2', border: `1px solid ${C.red}33`, borderRadius: 8, color: C.red, fontSize: 13, marginBottom: 24 }}>
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: C.inkMid, marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                   Document Category
                 </label>
                 <select
                   value={category}
                   onChange={e => setCategory(e.target.value)}
                   style={{
+                    width: '100%',
                     height: 48,
-                    padding: '0 12px',
-                    border: `1.5px solid ${C.border}`,
+                    padding: '0 16px',
                     borderRadius: 8,
+                    border: `1px solid ${C.border}`,
                     background: '#FFFFFF',
-                    fontSize: 14,
                     color: C.ink,
-                    fontFamily: 'inherit',
-                    outline: 'none'
+                    fontSize: 14,
+                    fontFamily: UI,
+                    outline: 'none',
                   }}
                 >
-                  <option>Agreement</option>
-                  <option>Affidavit</option>
-                  <option>Legal Letter</option>
-                  <option>Power of Attorney</option>
-                  <option>Will / Trust</option>
-                  <option>Others</option>
+                  <option value="Agreement">Agreement (General)</option>
+                  <option value="Tenancy & Lease">Tenancy & Lease Agreement</option>
+                  <option value="Affidavit">Affidavit</option>
+                  <option value="Employment">Employment Contract</option>
+                  <option value="Non-Disclosure">Non-Disclosure Agreement (NDA)</option>
+                  <option value="Power of Attorney">Power of Attorney</option>
+                  <option value="Commercial">Commercial / Business Contract</option>
                 </select>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: C.inkMute }}>
-                  Description & Details
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: C.inkMid, marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  Document Details & Requirements
                 </label>
                 <textarea
+                  rows={5}
                   value={description}
                   onChange={e => setDescription(e.target.value)}
-                  placeholder="E.g., A tenancy agreement for a 3-bedroom apartment at Lekki Phase 1. Landlord Alhaji Tunde Cole, tenant Dr. Emeka Obi. Rent is N3.5M per year. Include clauses for 2-year duration, quarterly maintenance reviews, and utility payment schedules..."
-                  required
+                  placeholder="e.g. A 1-year tenancy agreement for a 3-bedroom apartment in Lekki Phase 1 between Landlord Alhaji Sani and Tenant Mr. Emeka Obi. Rent is N3,500,000 per annum payable upfront..."
                   style={{
-                    height: 180,
-                    padding: 12,
-                    border: `1.5px solid ${C.border}`,
+                    width: '100%',
+                    padding: 16,
                     borderRadius: 8,
-                    fontSize: 14,
+                    border: `1px solid ${C.border}`,
+                    background: '#FFFFFF',
                     color: C.ink,
-                    fontFamily: 'inherit',
+                    fontSize: 14,
+                    fontFamily: UI,
                     outline: 'none',
+                    lineHeight: 1.6,
                     resize: 'none',
-                    lineHeight: 1.5
+                    boxSizing: 'border-box'
                   }}
                 />
               </div>
 
-              {error && (
-                <p style={{ fontSize: 13, color: C.red, fontWeight: 600, margin: 0 }}>
-                  {error}
+              <div style={{ padding: 16, background: C.blueSub, borderRadius: 8, border: `1px solid ${C.blue}20` }}>
+                <p style={{ fontSize: 12, color: C.blue, margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
+                  💡 Inkto automatically includes statutory Nigerian legal boilerplates, stamp duties sections, and standard attestation clauses.
                 </p>
-              )}
+              </div>
 
               <Button
                 type="submit"
                 disabled={!description.trim()}
                 style={{
-                  height: 52,
+                  height: 48,
                   background: C.blue,
-                  color: '#FFFFFF',
+                  color: '#fff',
                   fontSize: 14,
                   fontWeight: 700,
                   borderRadius: 8,
-                  marginTop: 12,
-                  boxShadow: '0 4px 16px rgba(36, 70, 122, 0.15)'
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  cursor: !description.trim() ? 'not-allowed' : 'pointer'
                 }}
               >
-                Generate Document Draft
+                <Sparkles size={16} /> Generate Draft with Inkto AI
               </Button>
             </form>
           </div>
         )}
       </div>
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 0.6; transform: scale(0.98); }
-          50% { opacity: 1; transform: scale(1.02); }
-        }
-      `}</style>
     </div>
   );
 }

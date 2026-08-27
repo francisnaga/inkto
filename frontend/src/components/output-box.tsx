@@ -491,7 +491,9 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     useEffect(() => () => clearTimeout(debounceTimer.current), []);
 
     const stats = useMemo(() => {
-        const words = deferredValue.trim().split(/\s+/).filter(Boolean).length;
+        // Strip bracketed placeholder text like [No text present in the image] or [No handwritten text found...]
+        const cleanText = deferredValue.replace(/\[[^\]]*\]/g, '').trim();
+        const words = cleanText ? cleanText.split(/\s+/).filter(Boolean).length : 0;
         return { words };
     }, [deferredValue]);
 
@@ -775,7 +777,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         resize: isNoText ? 'none' : 'vertical',
     };
 
-    /* â”€â”€ Status badge â”€â”€ */
+    /* -- Status badge -- */
     const statusBadge = (
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
             <div style={{
@@ -783,7 +785,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                 background: isNoText ? '#F59E0B' : '#15803D', color: '#fff',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '800',
             }}>
-                {isNoText ? '!' : '✓'}
+                {isNoText ? '!' : <Check size={13} strokeWidth={3} />}
             </div>
             <span style={{ fontSize: '13px', fontWeight: '700', color: '#44403C' }}>
                 {isNoText ? 'No text found' : 'Transcription complete'}

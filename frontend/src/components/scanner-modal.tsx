@@ -31,108 +31,135 @@ function loadScript(src: string): Promise<void> {
 declare global { interface Window { jscanify: any; jspdf: any; cv: any; } }
 
 // ── Geometry helpers ────────────────────────────────────────────────────────
-function dist(a: Pt, b: Pt) { return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2); }
-function quadSize([tl, tr, br, bl]: Quad) {
-  return {
-    w: Math.max(100, Math.round((dist(tl, tr) + dist(bl, br)) / 2)),
-    h: Math.max(100, Math.round((dist(tl, bl) + dist(tr, br)) / 2)),
-  };
+function dist(a: Pt, b: Pt) { 
+  if (!a || !b) return 0;
+  return Math.sqrt(((a.x || 0) - (b.x || 0)) ** 2 + ((a.y || 0) - (b.y || 0)) ** 2); 
+}
+function quadSize(corners: Quad) {
+  if (!corners || !Array.isArray(corners) || corners.length < 4) {
+    return { w: 800, h: 1000 };
+  }
+  const [tl, tr, br, bl] = corners;
+  if (!tl || !tr || !br || !bl) return { w: 800, h: 1000 };
+  const w = Math.max(100, Math.round((dist(tl, tr) + dist(bl, br)) / 2));
+  const h = Math.max(100, Math.round((dist(tl, bl) + dist(tr, br)) / 2));
+  return { w: isNaN(w) || w <= 0 ? 800 : w, h: isNaN(h) || h <= 0 ? 1000 : h };
 }
 function defaultCorners(W: number, H: number): Quad {
   const p = 0.10;
-  return [{ x: W * p, y: H * p }, { x: W * (1 - p), y: H * p }, { x: W * (1 - p), y: H * (1 - p) }, { x: W * p, y: H * (1 - p) }];
+  const safeW = Math.max(100, W || 800);
+  const safeH = Math.max(100, H || 1000);
+  return [{ x: safeW * p, y: safeH * p }, { x: safeW * (1 - p), y: safeH * p }, { x: safeW * (1 - p), y: safeH * (1 - p) }, { x: safeW * p, y: safeH * (1 - p) }];
 }
 type TR = { scale: number; ox: number; oy: number };
 function getTransform(iW: number, iH: number, cW: number, cH: number): TR {
-  const scale = Math.min(cW / iW, cH / iH);
-  return { scale, ox: (cW - iW * scale) / 2, oy: (cH - iH * scale) / 2 };
+  const safeIW = Math.max(1, iW || 1);
+  const safeIH = Math.max(1, iH || 1);
+  const scale = Math.min(cW / safeIW, cH / safeIH);
+  return { scale: isNaN(scale) || scale <= 0 ? 1 : scale, ox: (cW - safeIW * scale) / 2, oy: (cH - safeIH * scale) / 2 };
 }
-function i2c(p: Pt, t: TR) { return { x: t.ox + p.x * t.scale, y: t.oy + p.y * t.scale }; }
+function i2c(p: Pt, t: TR) { return { x: t.ox + (p?.x || 0) * t.scale, y: t.oy + (p?.y || 0) * t.scale }; }
 function c2i(x: number, y: number, t: TR) { return { x: (x - t.ox) / t.scale, y: (y - t.oy) / t.scale }; }
 
 // ── Pure-JS bilinear perspective warp (OpenCV fallback) ─────────────────────
-// Uses a 4-point homography computed in pure JS — no WASM allocation needed.
-function multiply(A: number[][], B: number[][]): number[][] {
-  const R = Array.from({ length: A.length }, () => Array(B[0].length).fill(0));
-  for (let i = 0; i < A.length; i++)
-    for (let k = 0; k < B.length; k++)
-      for (let j = 0; j < B[0].length; j++)
-        R[i][j] += A[i][k] * B[k][j];
-  return R;
-}
 function computeHomography(src: Pt[], dst: Pt[]): number[] {
+  if (!src || !dst || src.length < 4 || dst.length < 4) {
+    return [1, 0, 0, 0, 1, 0, 0, 0, 1];
+  }
   // 8-point DLT
   const A: number[][] = [];
   for (let i = 0; i < 4; i++) {
-    const { x: X, y: Y } = src[i];
-    const { x: u, y: v } = dst[i];
+    const { x: X = 0, y: Y = 0 } = src[i] || {};
+    const { x: u = 0, y: v = 0 } = dst[i] || {};
     A.push([-X, -Y, -1, 0, 0, 0, u * X, u * Y, u]);
     A.push([0, 0, 0, -X, -Y, -1, v * X, v * Y, v]);
   }
-  // Gaussian elimination to solve Ah=0 (last column = h[8]=1)
   const n = 8;
   const M: number[][] = A.map(row => [...row.slice(0, n), -row[n]]);
   for (let col = 0; col < n; col++) {
     let maxRow = col;
-    for (let r = col + 1; r < n; r++) if (Math.abs(M[r][col]) > Math.abs(M[maxRow][col])) maxRow = r;
-    [M[col], M[maxRow]] = [M[maxRow], M[col]];
-    if (Math.abs(M[col][col]) < 1e-10) continue;
+    for (let r = col + 1; r < n; r++) {
+      if (Math.abs(M[r]?.[col] || 0) > Math.abs(M[maxRow]?.[col] || 0)) maxRow = r;
+    }
+    if (M[maxRow] && M[col]) {
+      [M[col], M[maxRow]] = [M[maxRow], M[col]];
+    }
+    if (!M[col] || Math.abs(M[col][col]) < 1e-10) continue;
     for (let r = 0; r < n; r++) {
       if (r === col) continue;
       const f = M[r][col] / M[col][col];
       for (let c = col; c <= n; c++) M[r][c] -= f * M[col][c];
     }
   }
-  const h = M.map((row, i) => row[n] / row[i]);
+  const h = M.map((row, i) => {
+    const divisor = row?.[i];
+    return !divisor || Math.abs(divisor) < 1e-10 ? 0 : (row[n] / divisor);
+  });
   return [...h, 1];
 }
+
 function jsWarp(srcCanvas: HTMLCanvasElement, corners: Quad): HTMLCanvasElement {
+  if (!srcCanvas || !corners || corners.length < 4) return srcCanvas;
   const { w, h } = quadSize(corners);
   const [tl, tr, br, bl] = corners;
+  if (!tl || !tr || !br || !bl) return srcCanvas;
+
   const srcPts = [tl, tr, br, bl];
   const dstPts = [{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }];
-  // Compute inverse homography (dst → src)
   const H = computeHomography(dstPts, srcPts);
-  const out = document.createElement('canvas'); out.width = w; out.height = h;
-  const ctx = out.getContext('2d')!;
-  const srcCtx = srcCanvas.getContext('2d')!;
-  const srcImg = srcCtx.getImageData(0, 0, srcCanvas.width, srcCanvas.height);
-  const dstImg = ctx.createImageData(w, h);
-  const sW = srcCanvas.width, sH = srcCanvas.height;
-  const sd = srcImg.data, dd = dstImg.data;
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const denom = H[6] * x + H[7] * y + H[8];
-      const sx = (H[0] * x + H[1] * y + H[2]) / denom;
-      const sy = (H[3] * x + H[4] * y + H[5]) / denom;
-      if (sx < 0 || sy < 0 || sx >= sW - 1 || sy >= sH - 1) continue;
-      // Bilinear interpolation
-      const fx = Math.floor(sx), fy = Math.floor(sy);
-      const dx = sx - fx, dy = sy - fy;
-      const i00 = (fy * sW + fx) * 4;
-      const i10 = (fy * sW + fx + 1) * 4;
-      const i01 = ((fy + 1) * sW + fx) * 4;
-      const i11 = ((fy + 1) * sW + fx + 1) * 4;
-      const di = (y * w + x) * 4;
-      for (let c = 0; c < 3; c++) {
-        dd[di + c] = Math.round(
-          sd[i00 + c] * (1 - dx) * (1 - dy) +
-          sd[i10 + c] * dx * (1 - dy) +
-          sd[i01 + c] * (1 - dx) * dy +
-          sd[i11 + c] * dx * dy
-        );
+
+  const out = document.createElement('canvas');
+  out.width = Math.max(1, w);
+  out.height = Math.max(1, h);
+  const ctx = out.getContext('2d');
+  const srcCtx = srcCanvas.getContext('2d');
+  if (!ctx || !srcCtx) return srcCanvas;
+
+  try {
+    const srcImg = srcCtx.getImageData(0, 0, srcCanvas.width, srcCanvas.height);
+    const dstImg = ctx.createImageData(out.width, out.height);
+    const sW = srcCanvas.width, sH = srcCanvas.height;
+    const sd = srcImg.data, dd = dstImg.data;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const denom = H[6] * x + H[7] * y + H[8];
+        if (Math.abs(denom) < 1e-10) continue;
+        const sx = (H[0] * x + H[1] * y + H[2]) / denom;
+        const sy = (H[3] * x + H[4] * y + H[5]) / denom;
+        if (sx < 0 || sy < 0 || sx >= sW - 1 || sy >= sH - 1 || isNaN(sx) || isNaN(sy)) continue;
+        const fx = Math.floor(sx), fy = Math.floor(sy);
+        const dx = sx - fx, dy = sy - fy;
+        const i00 = (fy * sW + fx) * 4;
+        const i10 = (fy * sW + fx + 1) * 4;
+        const i01 = ((fy + 1) * sW + fx) * 4;
+        const i11 = ((fy + 1) * sW + fx + 1) * 4;
+        const di = (y * w + x) * 4;
+        if (i00 < 0 || i11 + 3 >= sd.length || di < 0 || di + 3 >= dd.length) continue;
+        for (let c = 0; c < 3; c++) {
+          dd[di + c] = Math.round(
+            sd[i00 + c] * (1 - dx) * (1 - dy) +
+            sd[i10 + c] * dx * (1 - dy) +
+            sd[i01 + c] * (1 - dx) * dy +
+            sd[i11 + c] * dx * dy
+          );
+        }
+        dd[di + 3] = 255;
       }
-      dd[di + 3] = 255;
     }
+    ctx.putImageData(dstImg, 0, 0);
+    return out;
+  } catch (err) {
+    console.warn("jsWarp error fallback:", err);
+    return srcCanvas;
   }
-  ctx.putImageData(dstImg, 0, 0);
-  return out;
 }
 
 // ── OpenCV-based warp (preferred when available) ────────────────────────────
 function ocvWarp(src: HTMLCanvasElement, corners: Quad): HTMLCanvasElement {
   const cv = window.cv;
+  if (!cv || !cv.imread || !corners || corners.length < 4) return jsWarp(src, corners);
   const [tl, tr, br, bl] = corners;
+  if (!tl || !tr || !br || !bl) return jsWarp(src, corners);
   const { w, h } = quadSize(corners);
   let srcMat: any, dstMat: any, srcPts: any, dstPts: any, M: any;
   try {
@@ -145,6 +172,9 @@ function ocvWarp(src: HTMLCanvasElement, corners: Quad): HTMLCanvasElement {
     const out = document.createElement('canvas'); out.width = w; out.height = h;
     cv.imshow(out, dstMat);
     return out;
+  } catch (e) {
+    console.warn("ocvWarp failed, falling back to jsWarp:", e);
+    return jsWarp(src, corners);
   } finally {
     try { srcMat?.delete(); } catch {}
     try { dstMat?.delete(); } catch {}
@@ -483,7 +513,10 @@ export default function ScannerModal({ onScanComplete, onConvertToText, onClose 
   // ── Apply perspective correction ──────────────────────────────────────────
   const applyTransform = useCallback(async () => {
     const src = capturedRef.current, corners = liveCornersRef.current;
-    if (!src || !corners) return;
+    if (!src || !corners || !Array.isArray(corners) || corners.length < 4) {
+      setError("Couldn't apply the crop — try adjusting the corners again.");
+      return;
+    }
     setProcessing(true); setProcMsg('Applying perspective correction…');
     await new Promise(r => setTimeout(r, 40));
     let corrected: HTMLCanvasElement;
@@ -502,22 +535,33 @@ export default function ScannerModal({ onScanComplete, onConvertToText, onClose 
       } else {
         corrected = perspectiveWarp(src, corners);
       }
+      if (!corrected) {
+        corrected = src;
+      }
     } catch (e: any) {
-      setError(`Couldn't process this photo — ${e?.message || 'try again'}.`);
-      setProcessing(false); return;
+      console.warn("Perspective crop error:", e);
+      setError("Couldn't apply the crop — try adjusting the corners again.");
+      setProcessing(false);
+      return;
     }
     baseRef.current = corrected;
     setProcMsg('Enhancing image…'); await new Promise(r => setTimeout(r, 40));
     try {
       const enhanced = enhance(corrected, 'auto'); setEnhanceMode('auto');
       enhanced.toBlob(blob => {
-        if (!blob) { setProcessing(false); return; }
+        if (!blob) {
+          setError("Couldn't apply the crop — try adjusting the corners again.");
+          setProcessing(false);
+          return;
+        }
         if (reviewUrl) URL.revokeObjectURL(reviewUrl);
         setReviewUrl(URL.createObjectURL(blob)); setReviewBlob(blob);
         setPhase('reviewing'); setProcessing(false); setProcMsg('');
       }, 'image/jpeg', 0.92);
     } catch (e: any) {
-      setError(`Enhancement failed — ${e?.message || 'try again'}.`); setProcessing(false);
+      console.warn("Enhance error:", e);
+      setError("Couldn't apply the crop — try adjusting the corners again.");
+      setProcessing(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

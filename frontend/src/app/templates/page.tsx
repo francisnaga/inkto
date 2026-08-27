@@ -8,6 +8,7 @@ import { ChevronRight, FileText, Search, FileDown, File, Loader2, Trash2, Bookma
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { BottomNav } from '@/components/bottom-nav';
+import { motion, AnimatePresence } from 'framer-motion';
 
 async function downloadFile(endpoint: string, text: string, filename: string, fallbackMsg: string) {
   try {
@@ -586,17 +587,19 @@ export default function TemplatesPage() {
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Categories</h3>
             <div className="grid grid-cols-2 gap-3">
               {TEMPLATE_CATEGORIES.map(cat => (
-                <button
+                <motion.button
                   key={cat.id}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                   onClick={() => handleCategorySelect(cat)}
-                  className="p-4 rounded-xl border bg-card text-left hover:bg-muted/40 transition-colors active:scale-[0.98]"
+                  className="p-4 rounded-xl border bg-card text-left hover:bg-muted/40 transition-colors"
                 >
                   <div className="text-2xl mb-2">{cat.icon}</div>
                   <p className="text-sm font-semibold leading-tight">{cat.name}</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {cat.templates.length} templates
                   </p>
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
@@ -620,7 +623,12 @@ export default function TemplatesPage() {
             ) : (
               <div className="space-y-2">
                 {userTemplates.map(t => (
-                  <div key={t.id} className="p-4 rounded-xl border bg-card flex items-center justify-between gap-3">
+                  <motion.div
+                    key={t.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-4 rounded-xl border bg-card flex items-center justify-between gap-3"
+                  >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-foreground truncate">{t.title}</p>
                       <p className="text-[10px] text-muted-foreground uppercase mt-0.5 font-medium">Custom Template</p>
@@ -628,11 +636,11 @@ export default function TemplatesPage() {
                     <div className="flex items-center gap-2">
                       <Button size="sm" className="h-8 text-xs px-2" onClick={() => handleUseBlank({ ...t, name: t.title })}>Use</Button>
                       <Button size="sm" variant="outline" className="h-8 text-xs px-2" onClick={() => setFittingTemplate({ ...t, name: t.title })}>Fit</Button>
-                      <button onClick={(e) => handleDeleteUserTemplate(t.id, e)} className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors" title="Delete">
+                      <motion.button whileTap={{ scale: 0.85 }} onClick={(e) => handleDeleteUserTemplate(t.id, e)} className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors" title="Delete">
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </motion.button>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             )}
@@ -641,103 +649,117 @@ export default function TemplatesPage() {
       )}
 
       {/* AI-Fit Input Modal */}
-      {fittingTemplate && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ background: '#fff', color: '#1c1917', borderRadius: 24, width: '100%', maxWidth: 440, padding: 28, position: 'relative', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: '-0.3px', fontFamily: 'Georgia, serif' }}>AI-Fit: {fittingTemplate.name}</h3>
-            
-            {isFitting ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 24, paddingBottom: 24, gap: 12 }}>
-                <Loader2 size={32} className="animate-spin text-primary" />
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#78716c' }}>AI is restructuring your document…</span>
-              </div>
-            ) : (
-              <>
-                {fitSourceMode === 'select' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    <p style={{ fontSize: 13, color: '#78716c', margin: '0 0 8px 0', lineHeight: 1.5 }}>
-                      Choose how you want to provide information to align to this template.
-                    </p>
-                    <Button onClick={() => setFitSourceMode('paste')} className="w-full h-11 justify-start gap-3 rounded-xl border" variant="outline">
-                      ✍️ Paste Details Manually
-                    </Button>
-                    <Button onClick={() => setFitSourceMode('history')} className="w-full h-11 justify-start gap-3 rounded-xl border" variant="outline">
-                      📜 Choose from Saved History
-                    </Button>
-                    <Button onClick={() => setFittingTemplate(null)} className="w-full h-11 mt-4 rounded-xl" variant="ghost">
-                      Cancel
-                    </Button>
-                  </div>
-                )}
+      <AnimatePresence>
+        {fittingTemplate && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+          >
+            <motion.div
+              initial={{ scale: 0.94, opacity: 0, y: 16 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.94, opacity: 0, y: 16 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+              style={{ background: '#fff', color: '#1c1917', borderRadius: 24, width: '100%', maxWidth: 440, padding: 28, position: 'relative', display: 'flex', flexDirection: 'column', gap: 16 }}
+            >
+              <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: '-0.3px', fontFamily: 'Georgia, serif' }}>AI-Fit: {fittingTemplate.name}</h3>
+              
+              {isFitting ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 24, paddingBottom: 24, gap: 12 }}>
+                  <Loader2 size={32} className="animate-spin text-primary" />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#78716c' }}>AI is restructuring your document…</span>
+                </div>
+              ) : (
+                <>
+                  {fitSourceMode === 'select' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <p style={{ fontSize: 13, color: '#78716c', margin: '0 0 8px 0', lineHeight: 1.5 }}>
+                        Choose how you want to provide information to align to this template.
+                      </p>
+                      <Button onClick={() => setFitSourceMode('paste')} className="w-full h-11 justify-start gap-3 rounded-xl border" variant="outline">
+                        ✍️ Paste Details Manually
+                      </Button>
+                      <Button onClick={() => setFitSourceMode('history')} className="w-full h-11 justify-start gap-3 rounded-xl border" variant="outline">
+                        📜 Choose from Saved History
+                      </Button>
+                      <Button onClick={() => setFittingTemplate(null)} className="w-full h-11 mt-4 rounded-xl" variant="ghost">
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
 
-                {fitSourceMode === 'paste' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                    <p style={{ fontSize: 13, color: '#78716c', margin: 0, lineHeight: 1.5 }}>
-                      Review or edit the source details below, then click Align to structure it.
-                    </p>
-                    <textarea
-                      value={fittingInput}
-                      onChange={e => setFittingInput(e.target.value)}
-                      style={{ width: '100%', height: 160, padding: 12, border: '1px solid #e4e2dc', borderRadius: 12, resize: 'none', background: '#fafaf9', fontSize: 14, outline: 'none' }}
-                      placeholder="E.g., Landlord is Alhaji Tunde Cole. Tenant is Dr. Emeka Obi. Rent is N1,200,000 per annum starting October 1st..."
-                    />
-                    <div style={{ display: 'flex', gap: 10 }}>
-                      <Button variant="outline" style={{ flex: 1 }} onClick={() => setFitSourceMode('select')}>
+                  {fitSourceMode === 'paste' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      <p style={{ fontSize: 13, color: '#78716c', margin: 0, lineHeight: 1.5 }}>
+                        Review or edit the source details below, then click Align to structure it.
+                      </p>
+                      <textarea
+                        value={fittingInput}
+                        onChange={e => setFittingInput(e.target.value)}
+                        style={{ width: '100%', height: 160, padding: 12, border: '1px solid #e4e2dc', borderRadius: 12, resize: 'none', background: '#fafaf9', fontSize: 14, outline: 'none' }}
+                        placeholder="E.g., Landlord is Alhaji Tunde Cole. Tenant is Dr. Emeka Obi. Rent is N1,200,000 per annum starting October 1st..."
+                      />
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <Button variant="outline" style={{ flex: 1 }} onClick={() => setFitSourceMode('select')}>
+                          Back
+                        </Button>
+                        <Button style={{ flex: 1 }} onClick={handleRunAiFit} disabled={!fittingInput.trim()}>
+                          Align to Template
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {fitSourceMode === 'history' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      <p style={{ fontSize: 13, color: '#78716c', margin: 0, lineHeight: 1.5 }}>
+                        Select a document from your history to load its text.
+                      </p>
+                      <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid #e4e2dc', borderRadius: 12, padding: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {historyLoading ? (
+                          <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}>
+                            <Loader2 className="animate-spin text-muted-foreground w-5 h-5" />
+                          </div>
+                        ) : historyItems.length === 0 ? (
+                          <div style={{ textAlign: 'center', fontSize: 12, color: '#78716c', padding: 20 }}>
+                            No past transcriptions found.
+                          </div>
+                        ) : (
+                          historyItems.map(item => (
+                            <button
+                              key={item.id}
+                              onClick={() => handleHistorySelect(item.id)}
+                              disabled={loadingDocId !== null}
+                              style={{
+                                width: '100%', padding: '10px 12px', border: 'none', background: '#fafaf9', borderRadius: 8, textAlign: 'left',
+                                cursor: loadingDocId ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8
+                              }}
+                            >
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: '#1c1917', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
+                                <div style={{ fontSize: 10, color: '#78716c', marginTop: 2 }}>{new Date(item.createdAt).toLocaleDateString()}</div>
+                              </div>
+                              {loadingDocId === item.id && (
+                                <Loader2 className="animate-spin text-muted-foreground w-4 h-4" />
+                              )}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                      <Button variant="outline" className="w-full" onClick={() => setFitSourceMode('select')}>
                         Back
                       </Button>
-                      <Button style={{ flex: 1 }} onClick={handleRunAiFit} disabled={!fittingInput.trim()}>
-                        Align to Template
-                      </Button>
                     </div>
-                  </div>
-                )}
-
-                {fitSourceMode === 'history' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                    <p style={{ fontSize: 13, color: '#78716c', margin: 0, lineHeight: 1.5 }}>
-                      Select a document from your history to load its text.
-                    </p>
-                    <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid #e4e2dc', borderRadius: 12, padding: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {historyLoading ? (
-                        <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}>
-                          <Loader2 className="animate-spin text-muted-foreground w-5 h-5" />
-                        </div>
-                      ) : historyItems.length === 0 ? (
-                        <div style={{ textAlign: 'center', fontSize: 12, color: '#78716c', padding: 20 }}>
-                          No past transcriptions found.
-                        </div>
-                      ) : (
-                        historyItems.map(item => (
-                          <button
-                            key={item.id}
-                            onClick={() => handleHistorySelect(item.id)}
-                            disabled={loadingDocId !== null}
-                            style={{
-                              width: '100%', padding: '10px 12px', border: 'none', background: '#fafaf9', borderRadius: 8, textAlign: 'left',
-                              cursor: loadingDocId ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8
-                            }}
-                          >
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 12, fontWeight: 700, color: '#1c1917', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
-                              <div style={{ fontSize: 10, color: '#78716c', marginTop: 2 }}>{new Date(item.createdAt).toLocaleDateString()}</div>
-                            </div>
-                            {loadingDocId === item.id && (
-                              <Loader2 className="animate-spin text-muted-foreground w-4 h-4" />
-                            )}
-                          </button>
-                        ))
-                      )}
-                    </div>
-                    <Button variant="outline" className="w-full" onClick={() => setFitSourceMode('select')}>
-                      Back
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      )}
+                  )}
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <BottomNav />
     </div>
   );

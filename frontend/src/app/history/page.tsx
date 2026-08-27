@@ -9,6 +9,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Clock, FileText, ScanLine, Search, Trash2, Pencil, Check, X, ExternalLink, Loader2,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface HistoryEntry {
   id: string;
@@ -212,8 +213,10 @@ export default function HistoryPage() {
             draft: 'Drafts',
           };
           return (
-            <button
+            <motion.button
               key={f}
+              whileTap={{ scale: 0.93 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 28 }}
               onClick={() => setFilter(f)}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
                 filter === f
@@ -222,7 +225,7 @@ export default function HistoryPage() {
               }`}
             >
               {filterLabels[f] ?? f}
-            </button>
+            </motion.button>
           );
         })}
       </div>
@@ -245,14 +248,17 @@ export default function HistoryPage() {
         </div>
       ) : (
         <div className="space-y-3 overflow-y-auto flex-1">
-          {filtered.map(entry => {
+          {filtered.map((entry, idx) => {
             const Icon = TYPE_ICONS[entry.type] ?? FileText;
             const isDeleting = deletingId === entry.id;
             const isRenaming = renamingId === entry.id;
 
             return (
-              <div
+              <motion.div
                 key={entry.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.04, duration: 0.2, ease: 'easeOut' }}
                 className="p-4 rounded-xl border bg-card"
                 style={{ opacity: isDeleting ? 0.5 : 1 }}
               >
@@ -288,21 +294,23 @@ export default function HistoryPage() {
 
                   {/* Action buttons */}
                   <div className="flex items-center gap-1 shrink-0 ml-1">
-                    <button
+                    <motion.button
+                      whileTap={{ scale: 0.88 }}
                       onClick={() => setRenamingId(isRenaming ? null : entry.id)}
                       className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors"
                       title="Rename"
                     >
                       <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.88 }}
                       onClick={() => setConfirmDeleteId(entry.id)}
                       disabled={isDeleting}
                       className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                       title="Delete"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    </motion.button>
                   </div>
                 </div>
 
@@ -353,38 +361,55 @@ export default function HistoryPage() {
                     )}
                   </div>
                 )}
-              </div>
+              </motion.div>
             );
           })}
         </div>
       )}
 
-      {confirmDeleteId && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ background: '#FFFFFF', color: '#0B0D12', borderRadius: 16, width: '100%', maxWidth: 360, padding: 24, boxShadow: '0 12px 36px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div>
-              <h3 style={{ fontSize: 18, fontWeight: 700, fontFamily: 'Georgia, serif', margin: '0 0 8px 0' }}>Delete Document?</h3>
-              <p style={{ fontSize: 13, color: '#6B6760', margin: 0, lineHeight: 1.5 }}>
-                Are you sure you want to delete this document? This action is permanent and cannot be undone.
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-              <button
-                onClick={() => setConfirmDeleteId(null)}
-                style={{ flex: 1, height: 40, border: '1.5px solid #E4E2DC', background: 'transparent', borderRadius: 8, fontSize: 13, fontWeight: 700, color: '#57534E', cursor: 'pointer', fontFamily: 'inherit' }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDelete(confirmDeleteId)}
-                style={{ flex: 1, height: 40, border: 'none', background: '#DC2626', borderRadius: 8, fontSize: 13, fontWeight: 700, color: '#FFFFFF', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 2px 8px rgba(220,38,38,0.2)' }}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {confirmDeleteId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: '0' }}
+          >
+            <motion.div
+              initial={{ y: 48, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 48, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 340, damping: 28 }}
+              style={{ background: '#FFFFFF', color: '#0B0D12', borderRadius: '20px 20px 0 0', width: '100%', maxWidth: 448, padding: '28px 24px 40px', boxShadow: '0 -8px 40px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: 16 }}
+            >
+              <div style={{ width: 36, height: 4, background: '#E4E1D9', borderRadius: 2, margin: '0 auto 4px' }} />
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, fontFamily: 'Georgia, serif', margin: '0 0 8px 0' }}>Delete Document?</h3>
+                <p style={{ fontSize: 13, color: '#6B6760', margin: 0, lineHeight: 1.5 }}>
+                  Are you sure you want to delete this document? This action is permanent and cannot be undone.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setConfirmDeleteId(null)}
+                  style={{ flex: 1, height: 44, border: '1.5px solid #E4E2DC', background: 'transparent', borderRadius: 10, fontSize: 13, fontWeight: 700, color: '#57534E', cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => handleDelete(confirmDeleteId)}
+                  style={{ flex: 1, height: 44, border: 'none', background: '#DC2626', borderRadius: 10, fontSize: 13, fontWeight: 700, color: '#FFFFFF', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 2px 8px rgba(220,38,38,0.2)' }}
+                >
+                  Delete
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <BottomNav />
     </div>
   );

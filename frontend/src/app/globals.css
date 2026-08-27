@@ -125,7 +125,6 @@
   to   { opacity: 1; }
 }
 
-/* Only the nib SVG paths use this; all other motion stays functional (150-200ms) */
 .nib-path {
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
@@ -141,11 +140,39 @@
   .nib-dot  { animation: none; opacity: 1; }
 }
 
+/* ── Global motion primitives ────────────────────────────────────────────────
+   Defined ONCE here. Never redefine inline in components.
+   ─────────────────────────────────────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-scale {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.08); opacity: 0.8; }
+}
+
 /* ── Base layer ─────────────────────────────────────────────────────────────*/
 @layer base {
   * {
     @apply border-border outline-ring/50;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
   }
   body {
     background: var(--paper-white);
@@ -154,11 +181,9 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  /* Display elements use serif */
   h1, h2 {
     font-family: var(--font-display);
   }
-  /* Code / IDs / timestamps */
   code, pre, time[data-mono], .mono {
     font-family: var(--font-mono);
   }

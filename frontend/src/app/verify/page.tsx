@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import Link from 'next/link';
 import { InktoLogo } from '@/components/inkto-logo';
+import { motion } from 'framer-motion';
 
 const C = {
   paper:   '#FBFAF7',
@@ -87,7 +88,12 @@ function VerifyForm() {
   const ready = otp.length >= 6 && otp.length <= 8;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', fontFamily: UI }}>
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+      style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', fontFamily: UI }}
+    >
 
       {/* Back link */}
       <div style={{ paddingTop: 28 }}>
@@ -165,9 +171,12 @@ function VerifyForm() {
           </p>
         )}
 
-        <button
+        <motion.button
           type="submit"
           disabled={busy || !ready || done}
+          whileTap={!busy && ready && !done ? { scale: 0.97 } : undefined}
+          whileHover={!busy && ready && !done ? { background: '#3A5C94' } : undefined}
+          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           style={{
             width: '100%', height: 48,
             background: busy || !ready ? C.warmMid : C.blue,
@@ -176,15 +185,12 @@ function VerifyForm() {
             cursor: busy || !ready ? 'not-allowed' : 'pointer',
             fontFamily: UI,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            transition: 'background 150ms ease',
           }}
-          onMouseEnter={e => { if (!busy && ready) (e.currentTarget as HTMLButtonElement).style.background = '#3A5C94'; }}
-          onMouseLeave={e => { if (!busy && ready) (e.currentTarget as HTMLButtonElement).style.background = C.blue; }}
         >
           {busy
             ? <><Spinner /> Verifying…</>
             : 'Verify & sign in'}
-        </button>
+        </motion.button>
 
         {/* Resend */}
         <div style={{ textAlign: 'center', paddingTop: 8 }}>
@@ -193,17 +199,18 @@ function VerifyForm() {
               Resend code in <strong style={{ color: C.inkMid }}>{cooldown}s</strong>
             </span>
           ) : (
-            <button
+            <motion.button
               type="button"
+              whileTap={{ opacity: 0.6 }}
               onClick={resend}
               style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: C.blue, fontFamily: UI, padding: 0 }}
             >
               {resent ? 'Resend code again' : 'Didn’t receive a code? Resend'}
-            </button>
+            </motion.button>
           )}
         </div>
       </form>
-    </div>
+    </motion.div>
   );
 }
 

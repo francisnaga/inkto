@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { InktoWordmark } from '@/components/inkto-logo';
+import { motion, AnimatePresence } from 'framer-motion';
 
 /* ── Design tokens — exact values per Inkto spec ────────────────────────────*/
 const C = {
@@ -34,14 +35,28 @@ function FAQ({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div>
-      <button
+      <motion.button
+        whileTap={{ opacity: 0.7 }}
         onClick={() => setOpen(o => !o)}
         style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '17px 0', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: UI }}
       >
         <span style={{ fontSize: 15, fontWeight: 600, color: C.inkMid, lineHeight: 1.4 }}>{q}</span>
         <Chevron open={open} />
-      </button>
-      {open && <p style={{ margin: '0 0 14px', fontSize: 14, color: C.inkMute, lineHeight: 1.75 }}>{a}</p>}
+      </motion.button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="answer"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+            style={{ overflow: 'hidden' }}
+          >
+            <p style={{ margin: '0 0 14px', fontSize: 14, color: C.inkMute, lineHeight: 1.75 }}>{a}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div style={{ height: 1, background: C.border }} />
     </div>
   );
@@ -72,9 +87,30 @@ function BtnPrimary({ children, href, style: s }: { children: React.ReactNode; h
     cursor: 'pointer', fontFamily: UI, letterSpacing: '0.01em',
     textDecoration: 'none', ...s,
   };
-  return href
-    ? <Link href={href} style={base}>{children}</Link>
-    : <button style={base}>{children}</button>;
+  if (href) {
+    return (
+      <Link href={href} style={{ textDecoration: 'none' }}>
+        <motion.span
+          whileHover={{ background: C.blueMid }}
+          whileTap={{ scale: 0.96 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+          style={{ ...base, display: 'inline-flex' } as any}
+        >
+          {children}
+        </motion.span>
+      </Link>
+    );
+  }
+  return (
+    <motion.button
+      whileHover={{ background: C.blueMid }}
+      whileTap={{ scale: 0.96 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+      style={base}
+    >
+      {children}
+    </motion.button>
+  );
 }
 
 /* ── Landing Page ─────────────────────────────────────────────────────────*/
@@ -276,20 +312,21 @@ export default function LandingPage() {
           Seal Brass as the one secondary-accent CTA hover state on this page.
           Primary state is Ink Blue; hover shifts to Brass — exactly one moment of warmth.
         */}
-        <Link href="/app">
-          <button
+        <Link href="/app" style={{ textDecoration: 'none' }}>
+          <motion.button
+            whileHover={{ background: C.brass }}
+            whileTap={{ scale: 0.96 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 28 }}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
               padding: '13px 28px',
               background: C.blue, color: '#fff',
               border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 700,
-              cursor: 'pointer', fontFamily: UI, transition: 'background 200ms ease',
+              cursor: 'pointer', fontFamily: UI,
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = C.brass; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = C.blue; }}
           >
             Start transcribing <Arrow />
-          </button>
+          </motion.button>
         </Link>
       </section>
 

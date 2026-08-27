@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Home, FileText, Clock, User, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const NAV = [
   { name: 'Home',      href: '/app',       Icon: Home },
@@ -37,30 +38,21 @@ export function BottomNav() {
 
   return (
     <>
-      {/* Styles for premium loading and spin animations */}
-      <style>{`
-        @keyframes nav-loading-bar {
-          0% { left: 0; width: 0%; }
-          50% { left: 0; width: 70%; }
-          100% { left: 100%; width: 0%; }
-        }
-        @keyframes nav-spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
-
-      {/* Premium top loading progress bar */}
+      {/* Premium top loading progress bar — fixed: now has a width */}
       {navigatingTo && (
-        <div
+        <motion.div
+          initial={{ scaleX: 0, opacity: 1 }}
+          animate={{ scaleX: [0, 0.7, 1], opacity: [1, 1, 0] }}
+          transition={{ duration: 0.6, ease: 'easeInOut' }}
           style={{
             position: 'fixed',
             top: 0,
             left: 0,
+            right: 0,
             height: 3,
             background: C.active,
             zIndex: 99999,
-            animation: 'nav-loading-bar 1.5s infinite ease-in-out',
+            transformOrigin: 'left',
           }}
         />
       )}
@@ -86,6 +78,7 @@ export function BottomNav() {
             maxWidth: 448,
             margin: '0 auto',
             padding: '0 8px',
+            position: 'relative',
           }}
         >
           {NAV.map(({ name, href, Icon }) => {
@@ -110,10 +103,12 @@ export function BottomNav() {
                   gap: 3,
                   textDecoration: 'none',
                   minWidth: 0,
-                  WebkitTapHighlightColor: 'transparent',
+                  position: 'relative',
                 }}
               >
-                <div
+                <motion.div
+                  whileTap={{ scale: 0.85 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 25 }}
                   style={{
                     width: 36,
                     height: 28,
@@ -121,36 +116,53 @@ export function BottomNav() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderRadius: 8,
-                    background: active ? C.activeBg : 'transparent',
-                    transition: 'background 150ms ease',
+                    position: 'relative',
                   }}
                 >
-                  {isLoadingThis ? (
-                    <Loader2
-                      size={18}
-                      color={C.active}
-                      style={{ animation: 'nav-spin 1s linear infinite' }}
-                    />
-                  ) : (
-                    <Icon
-                      size={18}
-                      color={active ? C.active : C.inactive}
-                      strokeWidth={active ? 2.5 : 1.8}
+                  {/* Animated background pill — slides between tabs via layoutId */}
+                  {active && (
+                    <motion.div
+                      layoutId="nav-active-pill"
+                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        borderRadius: 8,
+                        background: C.activeBg,
+                      }}
                     />
                   )}
-                </div>
-                <span
+                  <div style={{ position: 'relative', zIndex: 1 }}>
+                    {isLoadingThis ? (
+                      <Loader2
+                        size={18}
+                        color={C.active}
+                        style={{ animation: 'spin 1s linear infinite' }}
+                      />
+                    ) : (
+                      <Icon
+                        size={18}
+                        color={active ? C.active : C.inactive}
+                        strokeWidth={active ? 2.5 : 1.8}
+                      />
+                    )}
+                  </div>
+                </motion.div>
+                <motion.span
+                  animate={{
+                    color: active ? C.active : C.inactive,
+                    fontWeight: active ? 700 : 500,
+                  }}
+                  transition={{ duration: 0.15 }}
                   style={{
                     fontSize: 10,
-                    fontWeight: active ? 700 : 500,
-                    color: active ? C.active : C.inactive,
                     letterSpacing: '0.01em',
                     lineHeight: 1,
                     fontFamily: '-apple-system, "Segoe UI", Roboto, sans-serif',
                   }}
                 >
                   {name}
-                </span>
+                </motion.span>
               </Link>
             );
           })}

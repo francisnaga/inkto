@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/auth-context';
 import Link from 'next/link';
 import { Loader2, LogOut, ChevronRight, Crown, MessageSquare, FileText, Lock, Shield, Phone, Check } from 'lucide-react';
 import { BottomNav } from '@/components/bottom-nav';
+import { motion } from 'framer-motion';
 
 const C = {
   paper:   '#FBFAF7',
@@ -93,7 +94,6 @@ function AccountPageContent() {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80, fontFamily: UI }}>
         <Loader2 size={20} color={C.blue} style={{ animation: 'spin 0.8s linear infinite' }} />
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
   }
@@ -116,7 +116,12 @@ function AccountPageContent() {
   };
 
   return (
-    <div style={{ paddingTop: 32, paddingBottom: 48, fontFamily: UI }}>
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+      style={{ paddingTop: 32, paddingBottom: 48, fontFamily: UI }}
+    >
 
       {upgraded && (
         <p style={{ fontSize: 13, color: C.blue, fontWeight: 600, marginBottom: 20 }}>
@@ -166,9 +171,11 @@ function AccountPageContent() {
               }}
             />
           </div>
-          <button
+          <motion.button
             type="submit"
             disabled={savingPhone}
+            whileTap={!savingPhone ? { scale: 0.96 } : undefined}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             style={{
               height: 40,
               padding: '0 16px',
@@ -182,7 +189,6 @@ function AccountPageContent() {
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              transition: 'background 150ms ease'
             }}
           >
             {savingPhone ? (
@@ -194,7 +200,7 @@ function AccountPageContent() {
             ) : (
               'Save'
             )}
-          </button>
+          </motion.button>
         </form>
         <p style={{ fontSize: 11, color: C.inkMute, margin: '8px 0 0', lineHeight: 1.4 }}>
           Used for service updates and direct assistance. Protected under our privacy policy.
@@ -226,9 +232,12 @@ function AccountPageContent() {
         </div>
 
         {!isPro && (
-          <button
+          <motion.button
             onClick={upgrade}
             disabled={upgrading}
+            whileTap={!upgrading ? { scale: 0.96 } : undefined}
+            whileHover={!upgrading ? { background: C.brass, color: '#fff' } : undefined}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             style={{
               width: '100%', height: 48,
               background: C.brassS,
@@ -236,15 +245,12 @@ function AccountPageContent() {
               borderRadius: 6, fontSize: 14, fontWeight: 700, color: C.brass,
               cursor: upgrading ? 'not-allowed' : 'pointer', fontFamily: UI,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              transition: 'background 150ms ease, color 150ms ease',
             }}
-            onMouseEnter={e => { if (!upgrading) { (e.currentTarget as HTMLButtonElement).style.background = C.brass; (e.currentTarget as HTMLButtonElement).style.color = '#fff'; } }}
-            onMouseLeave={e => { if (!upgrading) { (e.currentTarget as HTMLButtonElement).style.background = C.brassS; (e.currentTarget as HTMLButtonElement).style.color = C.brass; } }}
           >
             {upgrading && <Loader2 size={15} style={{ animation: 'spin 0.8s linear infinite' }} />}
             <Crown size={14} />
             Upgrade to Pro — ₦5,000/mo
-          </button>
+          </motion.button>
         )}
 
         {isPro && plan.expiresAt && (
@@ -266,24 +272,30 @@ function AccountPageContent() {
           <div key={label}>
             {i > 0 && <div style={{ height: 1, background: C.border }} />}
             {ext ? (
-              <a
+              <motion.a
                 href={href}
                 target="_blank"
                 rel="noreferrer"
+                whileTap={{ opacity: 0.6 }}
                 style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', textDecoration: 'none' }}
               >
                 {icon}
                 <span style={{ flex: 1, fontSize: 14, color: C.inkMid, fontWeight: 500 }}>{label}</span>
                 <ChevronRight size={15} color={C.warmMid} />
-              </a>
+              </motion.a>
             ) : (
               <Link
                 href={href}
-                style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', textDecoration: 'none' }}
+                style={{ textDecoration: 'none' }}
               >
-                {icon}
-                <span style={{ flex: 1, fontSize: 14, color: C.inkMid, fontWeight: 500 }}>{label}</span>
-                <ChevronRight size={15} color={C.warmMid} />
+                <motion.div
+                  whileTap={{ opacity: 0.6 }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0' }}
+                >
+                  {icon}
+                  <span style={{ flex: 1, fontSize: 14, color: C.inkMid, fontWeight: 500 }}>{label}</span>
+                  <ChevronRight size={15} color={C.warmMid} />
+                </motion.div>
               </Link>
             )}
           </div>
@@ -298,9 +310,11 @@ function AccountPageContent() {
       </p>
 
       {/* Sign out */}
-      <button
+      <motion.button
         onClick={async () => { setLoggingOut(true); await logout(); }}
         disabled={loggingOut}
+        whileTap={!loggingOut ? { scale: 0.96 } : undefined}
+        transition={{ type: 'spring', stiffness: 400, damping: 25 }}
         style={{
           height: 48, padding: '0 24px',
           background: 'none',
@@ -308,20 +322,15 @@ function AccountPageContent() {
           borderRadius: 6, fontSize: 14, fontWeight: 600, color: C.red,
           cursor: loggingOut ? 'not-allowed' : 'pointer', fontFamily: UI,
           display: 'flex', alignItems: 'center', gap: 8,
-          transition: 'border-color 150ms ease',
         }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.red; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.border; }}
       >
         {loggingOut
           ? <Loader2 size={15} style={{ animation: 'spin 0.8s linear infinite' }} />
           : <LogOut size={15} />}
         {loggingOut ? 'Signing out…' : 'Sign out'}
-      </button>
-
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </motion.button>
       <BottomNav />
-    </div>
+    </motion.div>
   );
 }
 

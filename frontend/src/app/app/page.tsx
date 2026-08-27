@@ -1,6 +1,6 @@
 'use client';
 
-import { Camera, Mic, FileText, X, Download, Loader2, ChevronRight, CheckCircle2, Crown } from 'lucide-react';
+import { Camera, Mic, FileText, X, Download, Loader2, ChevronRight, CheckCircle2, Crown, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useTranscribe } from '@/hooks/useTranscribe';
@@ -10,6 +10,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { InktoWordmark } from '@/components/inkto-logo';
 import { BottomNav } from '@/components/bottom-nav';
+import { motion } from 'framer-motion';
 
 const ThumbnailGrid = dynamic(() => import('@/components/thumbnail-grid'), { ssr: false });
 const OutputBox     = dynamic(() => import('@/components/output-box'), { ssr: false });
@@ -466,7 +467,9 @@ function AppPageContent() {
 
         {/* Big Central Capture Button */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '48px 0 32px' }}>
-          <button
+          <motion.button
+            whileTap={{ scale: 0.94 }}
+            transition={{ type: 'spring', stiffness: 450, damping: 22 }}
             onClick={() => setShowScanner(true)}
             style={{
               width: 144,
@@ -481,21 +484,20 @@ function AppPageContent() {
               justifyContent: 'center',
               gap: 8,
               cursor: 'pointer',
-              transition: 'transform 150ms ease, box-shadow 150ms ease',
             }}
-            onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.96)'; }}
-            onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
           >
             <div style={{ width: 44, height: 44, borderRadius: '50%', background: C.blueSub, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Camera size={22} color={C.blue} strokeWidth={2} />
             </div>
             <span style={{ fontSize: 15, fontWeight: 700, color: C.ink, fontFamily: UI }}>Capture</span>
-          </button>
+          </motion.button>
         </div>
 
         {/* Record & Convert to Text row */}
         <div style={{ display: 'flex', gap: 12, width: '100%', maxWidth: 320, margin: '0 auto 48px' }}>
-          <button
+          <motion.button
+            whileTap={{ scale: 0.96, background: '#F3F1EC' }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             onClick={() => setShowDictate(true)}
             style={{
               flex: 1,
@@ -516,9 +518,11 @@ function AppPageContent() {
           >
             <Mic size={15} color={C.blue} />
             Record
-          </button>
-          <label
+          </motion.button>
+          <motion.label
             htmlFor="file-upload"
+            whileTap={{ scale: 0.96, background: '#F3F1EC' }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             style={{
               flex: 1.3,
               height: 44,
@@ -535,12 +539,12 @@ function AppPageContent() {
               color: C.inkMid,
               fontFamily: UI,
               boxSizing: 'border-box',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
             }}
           >
             <FileText size={15} color={C.blue} />
             Convert to Text
-          </label>
+          </motion.label>
         </div>
 
         {/* PDF download banner if active */}
@@ -589,8 +593,12 @@ function AppPageContent() {
                 const Icon = isScan ? Camera : isVoice ? Mic : FileText;
                 
                 return (
-                  <button
+                  <motion.button
                     key={item.id}
+                    whileTap={{ scale: 0.985, background: '#F3F1EC' }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
                     onClick={() => fetchSession(item.id)}
                     style={{
                       width: '100%',
@@ -619,7 +627,7 @@ function AppPageContent() {
                       </p>
                     </div>
                     <ChevronRight size={14} color={C.warmMid} />
-                  </button>
+                  </motion.button>
                 );
               })}
             </div>
@@ -628,7 +636,9 @@ function AppPageContent() {
 
         {/* Secondary Action CTA: New Draft */}
         <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 24, textAlign: 'center' }}>
-          <button
+          <motion.button
+            whileTap={{ scale: 0.95, opacity: 0.75 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             onClick={() => router.push('/draft')}
             style={{
               background: 'none',
@@ -640,11 +650,12 @@ function AppPageContent() {
               fontFamily: UI,
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 6
+              gap: 6,
             }}
           >
-            <span>✨ Start a New Document Draft</span>
-          </button>
+            <Sparkles size={14} color={C.blue} />
+            <span>Start a New Document Draft</span>
+          </motion.button>
         </div>
 
         {/* Hidden File Input for Native Picker */}

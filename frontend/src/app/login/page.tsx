@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { InktoLogo } from '@/components/inkto-logo';
+import { motion } from 'framer-motion';
 
 /* Inkto design tokens */
 const C = {
@@ -53,7 +54,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', fontFamily: UI }}>
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+      style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', fontFamily: UI }}
+    >
 
       {/* Top mark */}
       <div style={{ paddingTop: 72, paddingBottom: 56, textAlign: 'center' }}>
@@ -136,9 +142,12 @@ export default function LoginPage() {
             </p>
           )}
 
-          <button
+          <motion.button
             type="submit"
             disabled={!isValidEmail || busy}
+            whileTap={isValidEmail && !busy ? { scale: 0.97 } : undefined}
+            whileHover={isValidEmail && !busy ? { background: '#3A5C94' } : undefined}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             style={{
               width: '100%',
               height: 48,
@@ -154,10 +163,7 @@ export default function LoginPage() {
               alignItems: 'center',
               justifyContent: 'center',
               gap: 8,
-              transition: 'background 150ms ease',
             }}
-            onMouseEnter={e => { if (isValidEmail && !busy) (e.currentTarget as HTMLButtonElement).style.background = '#3A5C94'; }}
-            onMouseLeave={e => { if (isValidEmail && !busy) (e.currentTarget as HTMLButtonElement).style.background = C.blue; }}
           >
             {busy ? (
               <>
@@ -167,10 +173,10 @@ export default function LoginPage() {
             ) : (
               'Continue with Email'
             )}
-          </button>
+          </motion.button>
         </form>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

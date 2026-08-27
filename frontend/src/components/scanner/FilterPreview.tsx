@@ -14,6 +14,7 @@ interface FilterPreviewProps {
   onReCrop: () => void;
   onAddPage: () => void;
   onFinish: () => void;
+  onCommitAdjustments: (bakedCanvas: HTMLCanvasElement) => void;
 }
 
 const FILTERS: { id: FilterType; label: string; icon: any }[] = [
@@ -33,10 +34,42 @@ export function FilterPreview({
   onReCrop,
   onAddPage,
   onFinish,
+  onCommitAdjustments,
 }: FilterPreviewProps) {
   const [brightness, setBrightness] = useState(100);
   const [contrast, setContrast] = useState(100);
   const [showSliders, setShowSliders] = useState(false);
+
+  const getBakedCanvas = () => {
+    if (brightness === 100 && contrast === 100) return page.enhancedCanvas;
+    const canvas = document.createElement('canvas');
+    canvas.width = page.enhancedCanvas.width;
+    canvas.height = page.enhancedCanvas.height;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.filter = `brightness(${brightness}%) contrast(${contrast}%)`;
+      ctx.drawImage(page.enhancedCanvas, 0, 0);
+    }
+    return canvas;
+  };
+
+  const handleFinish = () => {
+    onCommitAdjustments(getBakedCanvas());
+    onFinish();
+  };
+
+  const handleAddPage = () => {
+    onCommitAdjustments(getBakedCanvas());
+    onAddPage();
+  };
+
+  const handleRotate = () => {
+    onCommitAdjustments(getBakedCanvas());
+    onRotate();
+    setBrightness(100);
+    setContrast(100);
+  };
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', background: '#0B0D12' }}>
       {/* Top Header */}
@@ -75,7 +108,7 @@ export function FilterPreview({
 
         <motion.button
           whileTap={{ scale: 0.9 }}
-          onClick={onRotate}
+          onClick={handleRotate}
           style={{
             background: 'none',
             border: 'none',
@@ -210,7 +243,7 @@ export function FilterPreview({
       >
         <Button
           variant="outline"
-          onClick={onAddPage}
+          onClick={handleAddPage}
           style={{
             flex: 1,
             height: 48,
@@ -224,7 +257,7 @@ export function FilterPreview({
           <Plus size={16} style={{ marginRight: 6 }} /> Add Page
         </Button>
         <Button
-          onClick={onFinish}
+          onClick={handleFinish}
           style={{
             flex: 1.5,
             height: 48,

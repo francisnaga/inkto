@@ -30,11 +30,23 @@ export function CameraCapture({
   const [torchOn, setTorchOn] = useState(false);
   const [hasTorch, setHasTorch] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const [cvReady, setCvReady] = useState(false);
   const [detectedLiveCorners, setDetectedLiveCorners] = useState<Quad | null>(null);
   const [autoMode, setAutoMode] = useState(true);
 
   // Auto-capture steady state tracking
   const steadyRef = useRef({ frames: 0, lastCorners: null as Quad | null, capturing: false });
+
+  // Poll for OpenCV readiness
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (opencvBridge.getIsReady()) {
+        setCvReady(true);
+        clearInterval(interval);
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
 
   const startCamera = useCallback(async () => {
     setCameraReady(false);
@@ -207,6 +219,33 @@ export function CameraCapture({
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
+      
+      {/* CV Initialization Overlay */}
+      {cameraReady && !cvReady && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          background: 'rgba(0,0,0,0.7)',
+          padding: '12px 24px',
+          borderRadius: 30,
+          color: '#fff',
+          fontSize: 14,
+          fontWeight: 600,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          backdropFilter: 'blur(10px)',
+          pointerEvents: 'none',
+          zIndex: 40,
+        }}>
+          <div style={{ width: 16, height: 16, border: '2px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+          Initializing AI Scanner...
+          <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
+
       {/* Top Controls Header */}
       <div
         style={{

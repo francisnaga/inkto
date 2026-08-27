@@ -152,6 +152,10 @@ class OpenCVBridge {
     this.pendingRequests.forEach(req => clearTimeout(req.timer));
     this.pendingRequests.clear();
   }
+
+  public getIsReady() {
+    return this.isReady;
+  }
 }
 
 export const opencvBridge = new OpenCVBridge();

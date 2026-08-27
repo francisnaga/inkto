@@ -378,6 +378,13 @@ export function ScannerContainer({
           onReCrop={() => setStage('crop')}
           onAddPage={() => setStage('camera')}
           onFinish={() => setStage('batch')}
+          onCommitAdjustments={(bakedCanvas: HTMLCanvasElement) => {
+            setPages(prev => {
+              const next = [...prev];
+              next[activePageIndex] = { ...next[activePageIndex], enhancedCanvas: bakedCanvas };
+              return next;
+            });
+          }}
         />
       )}
 

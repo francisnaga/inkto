@@ -1,4 +1,4 @@
-﻿name: Build Android APK
+name: Build Android APK
 
 on:
   push:
@@ -11,6 +11,14 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: false
+    
+    - name: Remove broken submodule reference
+      run: |
+        git config --file=.gitmodules --remove-section submodule."Legal Text Ai Transcriber" || true
+        git add .gitmodules 2>/dev/null || true
+        git commit --allow-empty -m "Remove broken submodule" || true
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -39,7 +47,7 @@ jobs:
       working-directory: ./frontend/android
       run: |
         chmod +x ./gradlew
-        ./gradlew assembleDebug
+        ./gradlew assembleDebug --info
       
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4

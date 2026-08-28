@@ -14,11 +14,18 @@ jobs:
       with:
         submodules: false
     
-    - name: Remove broken submodule reference
+    - name: Configure git user
       run: |
-        git config --file=.gitmodules --remove-section submodule."Legal Text Ai Transcriber" || true
-        git add .gitmodules 2>/dev/null || true
-        git commit --allow-empty -m "Remove broken submodule" || true
+        git config --global user.email "ci@inkto.local"
+        git config --global user.name "CI Builder"
+    
+    - name: Remove broken submodule from git
+      run: |
+        git rm --cached "Legal Text Ai Transcriber" 2>/dev/null || true
+        rm -rf .git/modules/"Legal Text Ai Transcriber" 2>/dev/null || true
+        git config --file=.gitmodules --remove-section submodule."Legal Text Ai Transcriber" 2>/dev/null || true
+        git add -A
+        git commit -m "Remove broken submodule" || true
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -47,7 +54,7 @@ jobs:
       working-directory: ./frontend/android
       run: |
         chmod +x ./gradlew
-        ./gradlew assembleDebug --info
+        ./gradlew assembleDebug --debug 2>&1 | head -1000
       
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4

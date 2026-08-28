@@ -1,4 +1,4 @@
-/* eslint-disable */
+﻿/* eslint-disable */
 // @ts-nocheck
 'use client';
 import dynamic from 'next/dynamic';
@@ -6,7 +6,7 @@ const RichEditor = dynamic(() => import('./rich-editor'), { ssr: false });
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Copy, Check, RotateCcw, FileText, FileDown, ChevronUp, Mail, Pen, X, File, Image as ImageIcon, Bookmark, Mic, Loader2 } from 'lucide-react';
 
-/* â”€â”€ Inline SVGs â”€â”€ */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Inline SVGs Ã¢â€â‚¬Ã¢â€â‚¬ */
 const IconPaystack = ({ size = 16 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><path d="M4 17h6v4H4v-4zM14 17h6v4h-6v-4zM4 10h6v4H4v-4zM14 10h6v4h-6v-4zM4 3h6v4H4V3z" /></svg>
 );
@@ -17,7 +17,7 @@ const IconPayPal = ({ size = 16 }) => (
     </svg>
 );
 
-/* â”€â”€ Source document filmstrip viewer â”€â”€ */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Source document filmstrip viewer Ã¢â€â‚¬Ã¢â€â‚¬ */
 const FilmstripViewer = ({ images }) => {
     const [selected, setSelected] = useState(0);
     const [imgError, setImgError] = useState({});
@@ -144,7 +144,7 @@ const FilmstripViewer = ({ images }) => {
 };
 
 
-/* â”€â”€ Format picker modal for Inbox â”€â”€ */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Format picker modal for Inbox Ã¢â€â‚¬Ã¢â€â‚¬ */
 function InboxModal({ onClose, onSend }) {
     const [selected, setSelected] = useState({ docx: true, pdf: false });
 
@@ -262,7 +262,11 @@ function InboxModal({ onClose, onSend }) {
     );
 }
 
-/* â”€â”€ Download helper (works on mobile too) â”€â”€ */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Download helper (works on mobile too) Ã¢â€â‚¬Ã¢â€â‚¬ */
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
+
 async function downloadFile(endpoint, text, filename, fallbackMsg) {
     try {
         const res = await fetch(endpoint, {
@@ -278,20 +282,39 @@ async function downloadFile(endpoint, text, filename, fallbackMsg) {
             throw new Error(msg || fallbackMsg);
         }
         const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        
+        if (Capacitor.isNativePlatform()) {
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = async () => {
+                try {
+                    const base64data = reader.result.toString().split(',')[1];
+                    const writeRes = await Filesystem.writeFile({
+                        path: filename,
+                        data: base64data,
+                        directory: Directory.Cache
+                    });
+                    await Share.share({ title: filename, url: writeRes.uri });
+                } catch (e) {
+                    alert("Failed to share file: " + e.message);
+                }
+            };
+        } else {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
     } catch (err) {
         alert(err.message || fallbackMsg);
     }
 }
 
-/* â”€â”€ Main component â”€â”€ */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Main component Ã¢â€â‚¬Ã¢â€â‚¬ */
 export default function OutputBox({ text, sessionId, images = [], audioUrl = null, onReset }) {
     const [value, setValue] = useState(text);
     const [copied, setCopied] = useState(false);
@@ -364,13 +387,13 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
             return (
                 <div style={{ padding: '40px', background: '#FAFAF9', borderRadius: '12px', border: '1px solid #E4E2DC', margin: '20px 0', textAlign: 'left' }}>
                     <p style={{ fontWeight: '700', fontSize: '15px', color: '#1C1917', textAlign: 'center', marginBottom: '20px' }}>
-                        Transcribing voice recording…
+                        Transcribing voice recordingâ€¦
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '320px', margin: '0 auto' }}>
                         {/* Step 1 */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
                             {voiceProgressStep > 1 ? (
-                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>✓</div>
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>âœ“</div>
                             ) : (
                                 <Loader2 size={16} className="animate-spin text-primary shrink-0" />
                             )}
@@ -381,7 +404,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                         {/* Step 2 */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
                             {voiceProgressStep > 2 ? (
-                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>✓</div>
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>âœ“</div>
                             ) : voiceProgressStep === 2 ? (
                                 <Loader2 size={16} className="animate-spin text-primary shrink-0" />
                             ) : (
@@ -394,7 +417,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                         {/* Step 3 */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
                             {voiceProgressStep > 3 ? (
-                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>✓</div>
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>âœ“</div>
                             ) : voiceProgressStep === 3 ? (
                                 <Loader2 size={16} className="animate-spin text-primary shrink-0" />
                             ) : (
@@ -586,7 +609,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
 
     const scrollToTop = () => textareaRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
 
-    /* â”€â”€ Email row â”€â”€ */
+    /* Ã¢â€â‚¬Ã¢â€â‚¬ Email row Ã¢â€â‚¬Ã¢â€â‚¬ */
     const emailRow = (
         <div style={{
             background: '#fff', border: '1px solid #E4E2DC',
@@ -669,7 +692,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 
-    /* â”€â”€ Toolbar â”€â”€ */
+    /* Ã¢â€â‚¬Ã¢â€â‚¬ Toolbar Ã¢â€â‚¬Ã¢â€â‚¬ */
     const toolbar = (
         <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -762,10 +785,10 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 
-    /* ── Tip banner ── */
+    /* â”€â”€ Tip banner â”€â”€ */
     const tipBanner = null;
 
-    /* â”€â”€ Shared textarea styles â”€â”€ */
+    /* Ã¢â€â‚¬Ã¢â€â‚¬ Shared textarea styles Ã¢â€â‚¬Ã¢â€â‚¬ */
     const textareaStyleMobile = {
         display: 'block', width: '100%', height: isNoText ? 'auto' : '380px',
         minHeight: isNoText ? '80px' : undefined,
@@ -806,7 +829,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 
-    /* ── Tab toggle ── */
+    /* â”€â”€ Tab toggle â”€â”€ */
     const tabToggle = images.length > 0 && (
         <div style={{
             display: 'flex',
@@ -847,7 +870,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 
-    /* ── AI Review Gate banner ── */
+    /* â”€â”€ AI Review Gate banner â”€â”€ */
     const reviewBanner = !hasReviewed && !value.startsWith('[Raw voice dictation') && (
         <div style={{
             border: '1.5px solid #DC2626',
@@ -864,7 +887,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 13, color: '#991B1B', fontWeight: 700 }}>
-                    ⚠️ AI-generated — review carefully before use
+                    âš ï¸ AI-generated â€” review carefully before use
                 </span>
             </div>
             <button
@@ -890,7 +913,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 
-    /* ── Desktop layout ── */
+    /* â”€â”€ Desktop layout â”€â”€ */
     if (isDesktop) {
         return (
             <div style={{ display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.4s ease', gap: 16 }}>
@@ -933,12 +956,19 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                                         {value.startsWith('[Raw voice dictation') ? (
                                             renderRawAudioDashboard()
                                         ) : (
-                                            <RichEditor
-                                                content={value}
-                                                onChange={handleChange}
-                                                readOnly={!isEditing || isNoText}
-                                                style={textareaStyleDesktop}
-                                            />
+                                            <>
+                                                {audioUrl && !value.startsWith('[Raw voice dictation') && (
+                                                    <div style={{ padding: '12px 14px', borderBottom: '1px solid #E4E2DC', background: '#FAFAF9' }}>
+                                                        <audio src={audioUrl} controls style={{ width: '100%', height: '40px' }} />
+                                                    </div>
+                                                )}
+                                                <RichEditor
+                                                    content={value}
+                                                    onChange={handleChange}
+                                                    readOnly={!isEditing || isNoText}
+                                                    style={textareaStyleDesktop}
+                                                />
+                                            </>
                                         )}
                                         {showScrollTop && !value.startsWith('[Raw voice dictation') && (
                                             <button onClick={scrollToTop} style={{ position: 'absolute', bottom: '16px', right: '16px', width: '36px', height: '36px', background: 'rgba(28,25,23,0.65)', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
@@ -965,7 +995,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         );
     }
 
-    /* ── Mobile layout ── */
+    /* â”€â”€ Mobile layout â”€â”€ */
     return (
         <div style={{ animation: 'fadeIn 0.4s ease', display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: -4 }}>
@@ -1029,6 +1059,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 }
+
 
 
 

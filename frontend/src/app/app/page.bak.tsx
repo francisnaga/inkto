@@ -1,6 +1,6 @@
 'use client';
 
-import { Camera, Mic, FileText, X, Download, Loader2, ChevronRight, CheckCircle2, Crown, Sparkles, Plus, FolderOpen, FileEdit } from 'lucide-react';
+import { Camera, Mic, FileText, X, Download, Loader2, ChevronRight, CheckCircle2, Crown, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useTranscribe } from '@/hooks/useTranscribe';
@@ -13,10 +13,6 @@ import dynamic from 'next/dynamic';
 import { InktoWordmark } from '@/components/inkto-logo';
 import { BottomNav } from '@/components/bottom-nav';
 import { motion } from 'framer-motion';
-import { ScannerService } from '@/lib/ScannerService';
-import { PostScanResult } from '@/components/scanner/PostScanResult';
-import { startBackgroundTranscription } from '@/lib/background-transcriber';
-import { LocalQueue } from '@/lib/local-queue';
 
 const ThumbnailGrid = dynamic(() => import('@/components/thumbnail-grid'), { ssr: false });
 const OutputBox     = dynamic(() => import('@/components/output-box'), { ssr: false });
@@ -101,11 +97,8 @@ function AppPageContent() {
 
   const [showScanner, setShowScanner] = useState(false);
   const [showDictate, setShowDictate] = useState(false);
-  const [showActionSheet, setShowActionSheet] = useState(false);
-  const [postScanData, setPostScanData] = useState<{ pages: File[], pdfBlob?: Blob } | null>(null);
-  const [postScanProcessing, setPostScanProcessing] = useState(false);
-  
   const [activeDraft, setActiveDraft] = useState<{ id: string; audioUrl: string } | null>(null);
+  const [savedPdf, setSavedPdf]       = useState<{ url: string; name: string } | null>(null);
   const [procStep, setProcStep]       = useState(0);
   const searchParams = useSearchParams();
   const docId = searchParams.get('doc');
@@ -138,20 +131,7 @@ function AppPageContent() {
         });
         if (res.ok) {
           const data = await res.json();
-          const localJobs = LocalQueue.getJobs().filter(j => j.status === 'processing');
-          const merged = [...(data.history || [])];
-          for (const job of localJobs) {
-            const idx = merged.findIndex(h => h.id === job.id);
-            if (idx !== -1) {
-              if (!merged[idx].hasText) merged[idx].title = 'Processing: ' + merged[idx].title;
-            } else {
-              merged.unshift({
-                id: job.id, title: 'Processing: ' + job.title, preview: '', createdAt: new Date(job.createdAt).toISOString(), sourceImageCount: 0, type: 'transcription', fileUrl: null, hasText: false
-              } as HistoryEntry);
-            }
-          }
-          merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          setRecents(merged.slice(0, 3));
+          setRecents((data.history || []).slice(0, 2));
         }
       } catch (e) {
         console.error('Failed to load recent items:', e);
@@ -160,7 +140,7 @@ function AppPageContent() {
       }
     };
     loadRecents();
-  }, [state, postScanProcessing]);
+  }, [state]);
 
   useEffect(() => { if (docId) fetchSession(docId); }, [docId, fetchSession]);
 
@@ -211,70 +191,39 @@ function AppPageContent() {
     };
   }, []);
 
-  const startNativeScanner = async () => {
-    setShowActionSheet(false);
-    if (Capacitor.isNativePlatform()) {
-      const res = await ScannerService.scanNative();
-      if (res && res.pages.length > 0) setPostScanData(res);
-    } else {
-      alert('You are using the web version of Inkto. Google ML Kit is a native Android feature and only works when you install the actual APK. Falling back to the web scanner...');
-      setShowScanner(true);
-    }
-  };
-
-  const handleWebScanComplete = (pages: File[], pdfBlob: Blob) => {
+  const handleScanComplete = useCallback(async (pages: File[], pdfBlob: Blob) => {
     setShowScanner(false);
-    setPostScanData({ pages, pdfBlob });
-  };
+    if (savedPdf) URL.revokeObjectURL(savedPdf.url);
+    const url  = URL.createObjectURL(pdfBlob);
+    const name = `scan-${new Date().toISOString().slice(0, 10)}-${pages.length}p.pdf`;
+    setSavedPdf({ url, name });
+    const a = document.createElement('a'); a.href = url; a.download = name; a.click();
+    try { 
+      const fd = new FormData(); fd.append('file', pdfBlob, name); fd.append('title', name); 
+      await fetch('https://inkto.jointaccount.org/api/save-scan', { method: 'POST', credentials: 'include', body: fd }); 
+    } catch {}
+  }, [savedPdf]);
 
-  const uploadPdfToStorage = async (blob: Blob, pagesCount: number): Promise<{url: string, id: string}> => {
-    const name = `scan-${new Date().toISOString().slice(0, 10)}-${pagesCount}p.pdf`;
-    const fd = new FormData(); 
-    fd.append('file', blob, name); 
-    fd.append('title', name); 
-    const res = await fetch('https://inkto.jointaccount.org/api/save-scan', { method: 'POST', credentials: 'include', body: fd });
-    const data = await res.json();
-    return { url: '', id: data.id };
-  };
-
-  const handlePostScanSavePdf = async () => {
-    if (!postScanData?.pdfBlob) {
-        setPostScanData(null);
-        return;
-    }
-    setPostScanProcessing(true);
+  const handleConvertToText = useCallback((pages: File[]) => { setShowScanner(false); addFiles(pages); }, [addFiles]);
+  const startNativeScanner = async () => {
     try {
-      await uploadPdfToStorage(postScanData.pdfBlob, postScanData.pages.length);
-      setPostScanData(null);
-      router.push('/history');
-    } catch (e) {
-      alert('Failed to save PDF');
-    } finally { setPostScanProcessing(false); }
-  };
-
-  const handlePostScanTranscribe = async () => {
-    if (!postScanData) return;
-    setPostScanProcessing(true);
-    try {
-      await startBackgroundTranscription(postScanData.pages);
-      setPostScanData(null);
-      router.push('/history');
-    } catch {} finally { setPostScanProcessing(false); }
-  };
-
-  const handlePostScanSaveAndTranscribe = async () => {
-    if (!postScanData) return;
-    setPostScanProcessing(true);
-    try {
-      let existingId = undefined;
-      if (postScanData.pdfBlob) {
-        const { id } = await uploadPdfToStorage(postScanData.pdfBlob, postScanData.pages.length);
-        existingId = id;
+      const { scannedImages } = await DocumentScanner.scanDocument({
+        pageLimit: 20,
+        galleryImportAllowed: true,
+        resultFormats: 'JPEG'
+      });
+      if (scannedImages && scannedImages.length > 0) {
+        const newFiles = await Promise.all(scannedImages.map(async (pageUrl: string, i: number) => {
+           const webPath = Capacitor.convertFileSrc(pageUrl);
+           const res = await fetch(webPath);
+           const blob = await res.blob();
+           return new File([blob], `scan-${Date.now()}-${i}.jpeg`, { type: 'image/jpeg' });
+        }));
+        addFiles(newFiles);
       }
-      await startBackgroundTranscription(postScanData.pages, '', existingId);
-      setPostScanData(null);
-      router.push('/history');
-    } catch {} finally { setPostScanProcessing(false); }
+    } catch (e: any) {
+      if (e.message !== 'canceled' && e.message !== 'Canceled') alert('Scanner error: ' + e.message);
+    }
   };
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => { if (!e.target.files?.length) return; addFiles(Array.from(e.target.files)); if (e.target) e.target.value = ''; };
@@ -498,6 +447,8 @@ function AppPageContent() {
       </div>
     );
   }
+
+  /* ── Idle home ───────────────────────────────────── */
   const hour   = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   const firstName = user?.email
@@ -508,8 +459,8 @@ function AppPageContent() {
     <>
       {showScanner && (
         <ScannerModal
-          onScanComplete={handleWebScanComplete}
-          onConvertToText={(pages) => { setShowScanner(false); addFiles(pages); }}
+          onScanComplete={handleScanComplete}
+          onConvertToText={handleConvertToText}
           onClose={() => setShowScanner(false)}
         />
       )}
@@ -522,105 +473,229 @@ function AppPageContent() {
         />
       )}
 
-      {postScanData && (
-        <PostScanResult
-          pages={postScanData.pages}
-          pdfBlob={postScanData.pdfBlob}
-          isProcessing={postScanProcessing}
-          onAddPage={() => alert('Adding pages is supported via initial scan limit.')}
-          onRetake={startNativeScanner}
-          onSaveAsPdf={handlePostScanSavePdf}
-          onTranscribe={handlePostScanTranscribe}
-          onSaveAndTranscribe={handlePostScanSaveAndTranscribe}
-          onCancel={() => setPostScanData(null)}
-        />
-      )}
+      <div style={{ paddingTop: 32, paddingBottom: 32, fontFamily: UI }}>
 
-      <div style={{ paddingTop: 32, paddingBottom: 100, fontFamily: UI, minHeight: '100vh', background: C.paper }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, padding: '0 20px' }}>
+        {/* Top Header: Wordmark left, Profile right */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 40 }}>
           <InktoWordmark size={30} />
           <button
             onClick={() => router.push('/account')}
-            style={{ width: 32, height: 32, borderRadius: '50%', background: C.blueSub, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: C.blue, border: 'none' }}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0
+            }}
           >
-            {firstName ? firstName[0].toUpperCase() : 'U'}
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: C.blueSub, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: C.blue }}>
+              {firstName ? firstName[0].toUpperCase() : 'U'}
+            </div>
           </button>
         </div>
 
-        <div style={{ padding: '0 20px' }}>
-          <p style={{ fontSize: 14, color: C.inkMute, marginBottom: 4 }}>{greeting},</p>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: C.ink, marginBottom: 24 }}>{firstName}</h1>
-          
-          <Button 
-            onClick={() => setShowActionSheet(true)}
-            className="w-full h-14 rounded-xl text-lg font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md flex items-center justify-center gap-2"
+        {/* Big Central Capture Button */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '48px 0 32px' }}>
+          <motion.button
+            whileTap={{ scale: 0.94 }}
+            transition={{ type: 'spring', stiffness: 450, damping: 22 }}
+            onClick={() => setShowScanner(true)}
+            style={{
+              width: 144,
+              height: 144,
+              borderRadius: '50%',
+              background: '#FFFFFF',
+              border: `3px solid ${C.blue}`,
+              boxShadow: `0 8px 24px rgba(36, 70, 122, 0.06)`,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              cursor: 'pointer',
+            }}
           >
-            <Plus size={20} /> New document
-          </Button>
-
-          <div style={{ marginTop: 36 }}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold text-gray-800">Recent</h2>
-              <Link href="/history" className="text-sm font-semibold text-blue-600">View all</Link>
+            <div style={{ width: 44, height: 44, borderRadius: '50%', background: C.blueSub, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Camera size={22} color={C.blue} strokeWidth={2} />
             </div>
-            
-            <div className="space-y-3">
-              {recentsLoading ? (
-                <div className="animate-pulse h-16 bg-gray-200 rounded-xl w-full"></div>
-              ) : recents.length === 0 ? (
-                <div className="text-sm text-gray-500 text-center py-6">No recent documents.</div>
-              ) : (
-                recents.map(r => (
-                  <Link href={r.hasText ? '/app?doc=' + r.id : (r.type === 'draft' ? '/app?resume=' + r.id : '/history')} key={r.id}>
-                    <div className="bg-white border rounded-xl p-4 flex items-center gap-4 shadow-sm hover:border-blue-300 transition-colors">
-                      <div className="w-10 h-10 rounded-lg bg-gray-50 flex flex-col items-center justify-center text-gray-600">
-                        {r.type === 'voice' || r.type === 'draft' ? <Mic size={18} /> : (r.type === 'scan' ? <Camera size={18} /> : <FileText size={18} />)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 text-sm truncate">{r.title}</h3>
-                        <p className="text-xs text-gray-500 capitalize mt-0.5">{new Date(r.createdAt).toLocaleDateString()} � {r.type}</p>
-                      </div>
-                    </div>
-                  </Link>
-                ))
-              )}
-            </div>
-          </div>
+            <span style={{ fontSize: 15, fontWeight: 700, color: C.ink, fontFamily: UI }}>Capture</span>
+          </motion.button>
         </div>
 
-        {showActionSheet && (
-          <div className="fixed inset-0 z-50 flex flex-col justify-end">
-            <div className="absolute inset-0 bg-black/40" onClick={() => setShowActionSheet(false)} />
-            <motion.div 
-              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-              className="relative bg-white rounded-t-3xl p-6 pb-12 shadow-2xl"
-            >
-              <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6" />
-              <h2 className="text-lg font-bold text-gray-900 mb-4">New document</h2>
-              <div className="space-y-2">
-                <button onClick={startNativeScanner} className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 text-left transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600"><Camera size={20} /></div>
-                  <div><div className="font-bold text-gray-900">Scan document</div><div className="text-xs text-gray-500 mt-0.5">Scan paper documents with Inkto</div></div>
-                </button>
-                <label className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 text-left transition-colors cursor-pointer">
-                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600"><FolderOpen size={20} /></div>
-                  <div><div className="font-bold text-gray-900">Import file</div><div className="text-xs text-gray-500 mt-0.5">PDF, image or document</div></div>
-                  <input type="file" className="hidden" multiple accept="image/*,application/pdf" onChange={e => { if (e.target.files) { addFiles(Array.from(e.target.files)); setShowActionSheet(false); } }} />
-                </label>
-                <button onClick={() => { setShowDictate(true); setShowActionSheet(false); }} className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 text-left transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600"><Mic size={20} /></div>
-                  <div><div className="font-bold text-gray-900">Dictate</div><div className="text-xs text-gray-500 mt-0.5">Speak and create a document</div></div>
-                </button>
-                <button onClick={() => router.push('/templates')} className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-gray-50 text-left transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600"><FileEdit size={20} /></div>
-                  <div><div className="font-bold text-gray-900">Start from template</div><div className="text-xs text-gray-500 mt-0.5">Use an existing legal format</div></div>
-                </button>
+        {/* Record & Convert to Text row */}
+        <div style={{ display: 'flex', gap: 12, width: '100%', maxWidth: 320, margin: '0 auto 48px' }}>
+          <motion.button
+            whileTap={{ scale: 0.96, background: '#F3F1EC' }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            onClick={() => setShowDictate(true)}
+            style={{
+              flex: 1,
+              height: 44,
+              background: '#FFFFFF',
+              border: `1px solid ${C.border}`,
+              borderRadius: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 7,
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: 600,
+              color: C.inkMid,
+              fontFamily: UI,
+            }}
+          >
+            <Mic size={15} color={C.blue} />
+            Record
+          </motion.button>
+          <motion.label
+            htmlFor="file-upload"
+            whileTap={{ scale: 0.96, background: '#F3F1EC' }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            style={{
+              flex: 1.3,
+              height: 44,
+              background: '#FFFFFF',
+              border: `1px solid ${C.border}`,
+              borderRadius: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 7,
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: 600,
+              color: C.inkMid,
+              fontFamily: UI,
+              boxSizing: 'border-box',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <FileText size={15} color={C.blue} />
+            Convert to Text
+          </motion.label>
+        </div>
+
+        {/* PDF download banner if active */}
+        {savedPdf && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 0', marginBottom: 24 }}>
+              <Download size={15} color={C.brass} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: C.inkMid, margin: '0 0 1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {savedPdf.name}
+                </p>
+                <p style={{ fontSize: 11, color: C.warmMid, margin: 0 }}>Saved to Downloads</p>
               </div>
-            </motion.div>
-          </div>
+              <a
+                href={savedPdf.url}
+                download={savedPdf.name}
+                style={{ fontSize: 12, fontWeight: 700, color: C.brass, textDecoration: 'none', flexShrink: 0 }}
+              >
+                Re-download
+              </a>
+            </div>
+            <div style={{ height: 1, background: C.border, marginBottom: 24 }} />
+          </>
         )}
+
+        {/* Recent Items section */}
+        <div style={{ marginBottom: 36 }}>
+          <h3 style={{ fontSize: 11, fontWeight: 700, color: C.warmMid, letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 16px' }}>
+            Recent Documents
+          </h3>
+          
+          {recentsLoading ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 44 }}>
+              <Loader2 size={16} color={C.blue} style={{ animation: 'spin 0.8s linear infinite' }} />
+              <span style={{ fontSize: 13, color: C.inkMute }}>Loading recents...</span>
+            </div>
+          ) : recents.length === 0 ? (
+            <p style={{ fontSize: 13, color: C.inkMute, margin: 0, fontStyle: 'italic', lineHeight: 1.5 }}>
+              Nothing yet — capture or record something to get started.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {recents.map(item => {
+                const isScan = item.type === 'scan';
+                const isVoice = item.type === 'voice' || item.type === 'draft';
+                const Icon = isScan ? Camera : isVoice ? Mic : FileText;
+                
+                return (
+                  <motion.button
+                    key={item.id}
+                    whileTap={{ scale: 0.985, background: '#F3F1EC' }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onClick={() => fetchSession(item.id)}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 16,
+                      padding: '12px 14px',
+                      background: '#FFFFFF',
+                      border: `1px solid ${C.border}`,
+                      borderRadius: 8,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      fontFamily: UI,
+                    }}
+                  >
+                    <div style={{ width: 32, height: 32, borderRadius: 6, background: C.blueSub, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Icon size={16} color={C.blue} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: C.ink, margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {item.title}
+                      </p>
+                      <p style={{ fontSize: 11, color: C.inkMute, margin: 0 }}>
+                        {new Date(item.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {item.type === 'draft' && <span style={{ color: C.red, marginLeft: 8, fontWeight: 600 }}>Draft</span>}
+                      </p>
+                    </div>
+                    <ChevronRight size={14} color={C.warmMid} />
+                  </motion.button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Secondary Action CTA: New Draft */}
+        <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 24, textAlign: 'center' }}>
+          <motion.button
+            whileTap={{ scale: 0.95, opacity: 0.75 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            onClick={() => router.push('/draft')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: C.blue,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+              fontFamily: UI,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <Sparkles size={14} color={C.blue} />
+            <span>Start a New Document Draft</span>
+          </motion.button>
+        </div>
+
+        {/* Hidden File Input for Native Picker */}
+        <input
+          id="file-upload"
+          type="file"
+          style={{ display: 'none' }}
+          multiple
+          accept="image/*,application/pdf"
+          onChange={handleInput}
+        />
+
       </div>
-      <BottomNav />
+      {!showScanner && !showDictate && <BottomNav />}
     </>
   );
 }
@@ -632,5 +707,3 @@ export default function AppPage() {
     </Suspense>
   );
 }
-
-

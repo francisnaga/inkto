@@ -10,6 +10,7 @@ import {
   Clock, FileText, ScanLine, Search, Trash2, Pencil, Check, X, ExternalLink, Loader2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LocalQueue, LocalJob } from '@/lib/local-queue';
 
 interface HistoryEntry {
   id: string;
@@ -121,13 +122,47 @@ export default function HistoryPage() {
         }
       });
       const data = await r.json();
-      if (data.history) setHistory(data.history);
+      if (data.history) {
+        // Merge Local Queue
+        const localJobs = LocalQueue.getJobs();
+        const merged = [...data.history];
+        
+        for (const job of localJobs) {
+          if (job.status === 'processing') {
+             const existingIdx = merged.findIndex((h: HistoryEntry) => h.id === job.id);
+             if (existingIdx !== -1) {
+               // Update title if it doesn't have text yet
+               if (!merged[existingIdx].hasText) {
+                 merged[existingIdx].title = 'Processing: ' + merged[existingIdx].title;
+                 merged[existingIdx].preview = 'AI is currently transcribing this document...';
+               }
+             } else {
+               // It's entirely local (hasn't been saved to Supabase yet or wait, it's just processing)
+               merged.unshift({
+                 id: job.id,
+                 title: job.title,
+                 preview: 'AI is currently transcribing this document...',
+                 createdAt: new Date(job.createdAt).toISOString(),
+                 sourceImageCount: 0,
+                 type: 'transcription',
+                 fileUrl: null,
+                 hasText: false
+               });
+             }
+          }
+        }
+        
+        // Sort
+        merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setHistory(merged);
+      }
     } catch (e) {
       console.error(e);
     } finally {
       setFetching(false);
     }
   }, []);
+
 
   useEffect(() => {
     if (!user) return;
@@ -414,3 +449,5 @@ export default function HistoryPage() {
     </div>
   );
 }
+
+

@@ -19,11 +19,13 @@ export const viewport: Viewport = {
 };
 
 import { FetchInterceptor } from "@/components/fetch-interceptor";
+import { BackButtonHandler } from "@/components/back-button-handler";
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body style={{ background: "#FBFAF7", margin: 0, padding: 0 }}>
+        <BackButtonHandler />
         <FetchInterceptor />
         <AuthProvider>
           {/*

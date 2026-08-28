@@ -1,0 +1,46 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm install
+      
+    - name: Build Next.js App
+      working-directory: ./frontend
+      run: npm run build
+      
+    - name: Sync Capacitor
+      working-directory: ./frontend
+      run: npx cap sync android
+      
+    - name: Build APK
+      working-directory: ./frontend/android
+      run: ./gradlew assembleDebug
+      
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: inkto-app-debug
+        path: frontend/android/app/build/outputs/apk/debug/app-debug.apk

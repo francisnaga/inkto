@@ -51,13 +51,13 @@ const C = {
 const UI      = '-apple-system, "Segoe UI", Roboto, sans-serif';
 const DISPLAY = 'Georgia, "Iowan Old Style", "Times New Roman", serif';
 
-/* Action rows — thin horizontal rules between, no card boxes */
+/* Action rows â€” thin horizontal rules between, no card boxes */
 const ACTIONS = [
   {
     id: 'scan',
     icon: <Camera size={18} color={C.blue} strokeWidth={1.8} />,
     label: 'Scan Document',
-    sub: 'Photograph · crop · flatten · save as PDF',
+    sub: 'Photograph Â· crop Â· flatten Â· save as PDF',
     trigger: 'scanner',
   },
   {
@@ -279,18 +279,18 @@ function AppPageContent() {
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => { if (!e.target.files?.length) return; addFiles(Array.from(e.target.files)); if (e.target) e.target.value = ''; };
 
-  /* ── Loading session ─────────────────────────────── */
+  /* â”€â”€ Loading session â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   if (state === 'fetching_session') {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200, gap: 12, fontFamily: UI }}>
         <Loader2 size={20} color={C.blue} style={{ animation: 'spin 0.8s linear infinite' }} />
-        <span style={{ fontSize: 14, color: C.inkMute }}>Loading document…</span>
+        <span style={{ fontSize: 14, color: C.inkMute }}>Loading documentâ€¦</span>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
   }
 
-  /* ── Result ──────────────────────────────────────── */
+  /* â”€â”€ Result â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   if (state === 'success') {
     return (
       <OutputBox
@@ -316,7 +316,7 @@ function AppPageContent() {
     return null;
   }
 
-  /* ── Error ───────────────────────────────────────── */
+  /* â”€â”€ Error â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   if (state === 'error') {
     const errStr = String(error || '');
     const isLimit = errStr.toLowerCase().includes('limit') || errStr.toLowerCase().includes('free') || errStr.toLowerCase().includes('upgrade');
@@ -362,7 +362,7 @@ function AppPageContent() {
     );
   }
 
-  /* ── Preparing PDF (extracting pages client-side) ── */
+  /* â”€â”€ Preparing PDF (extracting pages client-side) â”€â”€ */
   if (state === 'preparing_pdf') {
     const cur = (pdfProgress as any)?.current || 1;
     const tot = (pdfProgress as any)?.total || 1;
@@ -383,10 +383,10 @@ function AppPageContent() {
           <FileText size={32} color={C.blue} />
         </div>
         <h2 style={{ fontFamily: UI, fontSize: 20, fontWeight: 700, color: C.ink, margin: '0 0 6px' }}>
-          Preparing PDF for Transcription…
+          Preparing PDF for Transcriptionâ€¦
         </h2>
         <p style={{ fontSize: 13, color: C.inkMute, margin: '0 0 20px', maxWidth: 320, lineHeight: 1.5 }}>
-          {(pdfProgress as any)?.fileName ? `${(pdfProgress as any).fileName} — ` : ''}Extracting page {cur} of {tot} ({pct}%)
+          {(pdfProgress as any)?.fileName ? `${(pdfProgress as any).fileName} â€” ` : ''}Extracting page {cur} of {tot} ({pct}%)
         </p>
         {/* Progress bar */}
         <div style={{ width: '100%', maxWidth: 280, height: 6, background: C.border, borderRadius: 99, overflow: 'hidden' }}>
@@ -402,7 +402,7 @@ function AppPageContent() {
     );
   }
 
-  /* ── Files staged / Processing ───────────────────── */
+  /* â”€â”€ Files staged / Processing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   if (state === 'uploading' || state === 'processing') {
     const processing = state === 'processing';
     if (processing) {
@@ -433,7 +433,7 @@ function AppPageContent() {
             `}</style>
           </div>
           <h2 style={{ fontFamily: UI, fontSize: 20, fontWeight: 700, color: C.ink, margin: '0 0 6px', letterSpacing: '-0.01em' }}>
-            Transcribing Legal Document…
+            Transcribing Legal Documentâ€¦
           </h2>
           <p style={{ fontSize: 13, color: C.inkMute, margin: '0 0 20px', maxWidth: 300, lineHeight: 1.5 }}>
             Inkto AI is transcribing page {Math.min(cur + 1, tot)} of {tot} ({pct}% complete)
@@ -482,7 +482,7 @@ function AppPageContent() {
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#3A5C94'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = C.blue; }}
             >
-              Convert to text →
+              Convert to text â†’
             </button>
             <label
               htmlFor="add-more"
@@ -578,7 +578,7 @@ function AppPageContent() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900 text-sm truncate">{r.title}</h3>
-                        <p className="text-xs text-gray-500 capitalize mt-0.5">{new Date(r.createdAt).toLocaleDateString()} � {r.type}</p>
+                        <p className="text-xs text-gray-500 capitalize mt-0.5">{new Date(r.createdAt).toLocaleDateString()} · {r.type}</p>
                       </div>
                     </div>
                   </Link>

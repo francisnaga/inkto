@@ -54,7 +54,7 @@ function VerifyForm() {
     e.preventDefault();
     setBusy(true); setErr('');
     try {
-      const res  = await fetch('/api/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ email, otp }) });
+      const res  = await fetch('https://inkto.jointaccount.org/api/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ email, otp }) });
       const data = await res.json();
       if (!res.ok) {
         setErr(data.error || 'Invalid code — try again.');
@@ -82,7 +82,7 @@ function VerifyForm() {
   const resend = async () => {
     if (cooldown > 0) return;
     startCooldown(); setResent(true);
-    try { await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }); } catch {}
+    try { await fetch('https://inkto.jointaccount.org/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }); } catch {}
   };
 
   const ready = otp.length >= 6 && otp.length <= 8;

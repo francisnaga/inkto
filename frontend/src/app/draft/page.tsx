@@ -58,7 +58,7 @@ export default function DraftPage() {
 
       const prompt = `Category: ${category}\nDescription: ${description}`;
 
-      const res = await fetch('/api/draft', {
+      const res = await fetch('https://inkto.jointaccount.org/api/draft', {
         method: 'POST',
         headers,
         body: JSON.stringify({

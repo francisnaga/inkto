@@ -299,7 +299,16 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
     const [isEditing, setIsEditing] = useState(false);
     const [activeTab, setActiveTab] = useState<'split' | 'original' | 'result'>('split');
-    const [hasReviewed, setHasReviewed] = useState(false);
+    const [hasReviewed, _setHasReviewed] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('inkto_reviewed_' + sessionId) === 'true';
+        }
+        return false;
+    });
+    const setHasReviewed = (val: boolean) => {
+        _setHasReviewed(val);
+        if (val) localStorage.setItem('inkto_reviewed_' + sessionId, 'true');
+    };
 
     const [email, setEmail] = useState(() => localStorage.getItem('inkto_last_email') || '');
     const [sendingEmail, setSendingEmail] = useState(false);
@@ -329,7 +338,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         const t3 = setTimeout(() => setVoiceProgressStep(4), 3800);
 
         try {
-            const res = await fetch('/api/transcribe-past', {
+            const res = await fetch('https://inkto.jointaccount.org/api/transcribe-past', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: sessionId, fileUrl: audioUrl, title: 'Voice Dictation' })
@@ -464,7 +473,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                 headers['Authorization'] = `Bearer ${token}`;
                 headers['X-Inkto-Auth'] = token;
             }
-            const res = await fetch('/api/user-templates', {
+            const res = await fetch('https://inkto.jointaccount.org/api/user-templates', {
                 method: 'POST',
                 headers,
                 credentials: 'include',
@@ -537,7 +546,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         setEmailStatus(null);
         localStorage.setItem('inkto_last_email', email);
         try {
-            const res = await fetch('/api/send-email', {
+            const res = await fetch('https://inkto.jointaccount.org/api/send-email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: value, recipientEmail: email, sessionId, formats }),
@@ -560,7 +569,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
             const userEmail = email || (typeof window !== 'undefined' ? localStorage.getItem('inkto_user_email') : '');
             const headers = { 'Content-Type': 'application/json' };
             if (token) headers['Authorization'] = `Bearer ${token}`;
-            const res = await fetch('/api/save-history', {
+            const res = await fetch('https://inkto.jointaccount.org/api/save-history', {
                 method: 'POST',
                 headers,
                 credentials: 'include',
@@ -958,7 +967,13 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
 
     /* ── Mobile layout ── */
     return (
-        <div style={{ animation: 'fadeIn 0.4s ease', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ animation: 'fadeIn 0.4s ease', display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: -4 }}>
+                <button onClick={onReset} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#1D4ED8', fontWeight: 600, fontSize: 14, cursor: 'pointer', padding: '8px 0' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    Back
+                </button>
+            </div>
             {tabToggle}
             {reviewBanner}
 

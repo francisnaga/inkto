@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Inkto</string>
+    <string name="title_activity_main">Inkto</string>
+    <string name="package_name">com.inkto.app</string>
+    <string name="custom_url_scheme">com.inkto.app</string>
+</resources>

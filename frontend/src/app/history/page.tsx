@@ -93,7 +93,7 @@ export default function HistoryPage() {
     if (!entry.fileUrl) return;
     setConvertingId(entry.id);
     try {
-      const res = await fetch('/api/transcribe-past', {
+      const res = await fetch('https://inkto.jointaccount.org/api/transcribe-past', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: entry.id, fileUrl: entry.fileUrl, title: entry.title }),
@@ -112,7 +112,7 @@ export default function HistoryPage() {
     setFetching(true);
     try {
       const cacheBust = `t=${Date.now()}`;
-      const url = q ? `/api/history?search=${encodeURIComponent(q)}&${cacheBust}` : `/api/history?${cacheBust}`;
+      const url = q ? `https://inkto.jointaccount.org/api/history?search=${encodeURIComponent(q)}&${cacheBust}` : `https://inkto.jointaccount.org/api/history?${cacheBust}`;
       const r = await fetch(url, { 
         credentials: 'include',
         headers: {
@@ -145,7 +145,7 @@ export default function HistoryPage() {
     setHistory(h => h.map(e => e.id === id ? { ...e, title } : e));
     setRenamingId(null);
     try {
-      await fetch('/api/rename-document', {
+      await fetch('https://inkto.jointaccount.org/api/rename-document', {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -158,7 +158,7 @@ export default function HistoryPage() {
     setDeletingId(id);
     setConfirmDeleteId(null);
     try {
-      await fetch('/api/delete-document', {
+      await fetch('https://inkto.jointaccount.org/api/delete-document', {
         method: 'DELETE',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

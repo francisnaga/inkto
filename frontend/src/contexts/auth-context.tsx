@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const headers: Record<string, string> = { 'Authorization': `Bearer ${token}` };
-      const res = await fetch(`/api/user-status?t=${Date.now()}`, { credentials: 'include', headers });
+      const res = await fetch(`https://inkto.jointaccount.org/api/user-status?t=${Date.now()}`, { credentials: 'include', headers });
 
       if (res.ok) {
         const data = await res.json();
@@ -97,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Attempt refresh!
         const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('inkto_refresh_token') : null;
         if (refreshToken) {
-          const refreshRes = await fetch('/api/refresh-session', {
+          const refreshRes = await fetch('https://inkto.jointaccount.org/api/refresh-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refreshToken })
@@ -169,7 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const type = searchParams.get('type') || undefined;
 
           if (code || token_hash) {
-            const exRes = await fetch('/api/exchange-code', {
+            const exRes = await fetch('https://inkto.jointaccount.org/api/exchange-code', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ code, token_hash, type })
@@ -206,7 +206,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
-      await fetch('/api/logout', { method: 'POST', credentials: 'include', headers });
+      await fetch('https://inkto.jointaccount.org/api/logout', { method: 'POST', credentials: 'include', headers });
     } catch {}
     if (typeof window !== 'undefined') {
       localStorage.removeItem('inkto_session');

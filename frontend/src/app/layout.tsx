@@ -18,10 +18,13 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+import { FetchInterceptor } from "@/components/fetch-interceptor";
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body style={{ background: "#FBFAF7", margin: 0, padding: 0 }}>
+        <FetchInterceptor />
         <AuthProvider>
           {/*
             Phone-width shell.

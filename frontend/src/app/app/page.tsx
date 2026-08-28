@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useTranscribe } from '@/hooks/useTranscribe';
 import { useAuth } from '@/contexts/auth-context';
+import { Capacitor } from '@capacitor/core';
+import { DocumentScanner } from '@capacitor-mlkit/document-scanner';
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -107,7 +109,7 @@ function AppPageContent() {
 
   useEffect(() => {
     if (resumeId) {
-      fetch(`/api/session?id=${resumeId}`)
+      fetch(`https://inkto.jointaccount.org/api/session?id=${resumeId}`)
         .then(res => res.json())
         .then(data => {
           if (data.success && data.session && data.session.audioUrl) {
@@ -121,7 +123,7 @@ function AppPageContent() {
   useEffect(() => {
     const loadRecents = async () => {
       try {
-        const res = await fetch(`/api/history?t=${Date.now()}`, {
+        const res = await fetch(`https://inkto.jointaccount.org/api/history?t=${Date.now()}`, {
           headers: {
             'Cache-Control': 'no-cache',
             'Pragma': 'no-cache'
@@ -150,7 +152,7 @@ function AppPageContent() {
         const { getOfflineRecordings, deleteOfflineRecording } = await import('@/lib/indexeddb');
         for (const item of await getOfflineRecordings()) {
           const fd = new FormData(); fd.append('files', item.blob, 'offline-dictation.wav');
-          if ((await fetch('/api/transcribe', { method: 'POST', credentials: 'include', body: fd })).ok) await deleteOfflineRecording(item.id);
+          if ((await fetch('https://inkto.jointaccount.org/api/transcribe', { method: 'POST', credentials: 'include', body: fd })).ok) await deleteOfflineRecording(item.id);
         }
       } catch {}
     };
@@ -198,11 +200,32 @@ function AppPageContent() {
     const a = document.createElement('a'); a.href = url; a.download = name; a.click();
     try { 
       const fd = new FormData(); fd.append('file', pdfBlob, name); fd.append('title', name); 
-      await fetch('/api/save-scan', { method: 'POST', credentials: 'include', body: fd }); 
+      await fetch('https://inkto.jointaccount.org/api/save-scan', { method: 'POST', credentials: 'include', body: fd }); 
     } catch {}
   }, [savedPdf]);
 
   const handleConvertToText = useCallback((pages: File[]) => { setShowScanner(false); addFiles(pages); }, [addFiles]);
+  const startNativeScanner = async () => {
+    try {
+      const { scannedImages } = await DocumentScanner.scanDocument({
+        pageLimit: 20,
+        galleryImportAllowed: true,
+        resultFormats: 'JPEG'
+      });
+      if (scannedImages && scannedImages.length > 0) {
+        const newFiles = await Promise.all(scannedImages.map(async (pageUrl: string, i: number) => {
+           const webPath = Capacitor.convertFileSrc(pageUrl);
+           const res = await fetch(webPath);
+           const blob = await res.blob();
+           return new File([blob], `scan-${Date.now()}-${i}.jpeg`, { type: 'image/jpeg' });
+        }));
+        addFiles(newFiles);
+      }
+    } catch (e: any) {
+      if (e.message !== 'canceled' && e.message !== 'Canceled') alert('Scanner error: ' + e.message);
+    }
+  };
+
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => { if (!e.target.files?.length) return; addFiles(Array.from(e.target.files)); if (e.target) e.target.value = ''; };
 
   /* ── Loading session ─────────────────────────────── */
@@ -416,7 +439,7 @@ function AppPageContent() {
             >
               + Add more pages
             </label>
-            <input id="add-more" type="file" style={{ display: 'none' }} multiple accept="image/*,application/pdf,audio/*,.mp3,.wav,.m4a,.aac,.webm,.ogg,.mp4" onChange={handleInput} />
+            <input id="add-more" type="file" style={{ display: 'none' }} multiple accept="image/*,application/pdf" onChange={handleInput} />
           </div>
         </>
 
@@ -667,7 +690,7 @@ function AppPageContent() {
           type="file"
           style={{ display: 'none' }}
           multiple
-          accept="image/*,application/pdf,audio/*,.mp3,.wav,.m4a,.aac,.webm,.ogg,.mp4"
+          accept="image/*,application/pdf"
           onChange={handleInput}
         />
 

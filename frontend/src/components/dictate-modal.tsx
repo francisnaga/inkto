@@ -119,8 +119,10 @@ export default function DictateModal({ onClose, onTranscribeComplete, draftId, i
       };
 
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        await handleAudioStopped(audioBlob);
+        const mimeType = mediaRecorderRef.current?.mimeType || 'audio/webm';
+        const ext = mimeType.includes('mp4') ? 'mp4' : mimeType.includes('ogg') ? 'ogg' : 'webm';
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        await handleAudioStopped(audioBlob, ext);
       };
 
       mediaRecorder.start();
@@ -161,7 +163,7 @@ export default function DictateModal({ onClose, onTranscribeComplete, draftId, i
     }
   };
 
-  const handleAudioStopped = async (blob: Blob) => {
+  const handleAudioStopped = async (blob: Blob | File, customExt?: string) => {
     setStatus('transcribing');
     setProgressStep(1);
 
@@ -198,7 +200,11 @@ export default function DictateModal({ onClose, onTranscribeComplete, draftId, i
 
     // Online path: send to transcribe API
     const formData = new FormData();
-    formData.append('files', finalBlob, 'dictation.wav');
+    let ext = customExt || 'webm';
+    if (blob instanceof File) {
+       ext = blob.name.split('.').pop() || 'webm';
+    }
+    formData.append('files', finalBlob, `dictation.${ext}`);
     
     if (saveActionRef.current === 'save_draft') {
       formData.append('action', 'save_raw_audio');
@@ -211,7 +217,7 @@ export default function DictateModal({ onClose, onTranscribeComplete, draftId, i
     formData.append('sessionId', sessionId);
 
     try {
-      const res = await fetch('/api/transcribe', {
+      const res = await fetch('https://inkto.jointaccount.org/api/transcribe', {
         method: 'POST',
         credentials: 'include',
         body: formData,
@@ -335,7 +341,7 @@ export default function DictateModal({ onClose, onTranscribeComplete, draftId, i
               <input
                 id="audio-file-upload"
                 type="file"
-                accept="audio/*,.mp3,.wav,.m4a,.aac,.webm,.ogg,.mp4"
+                accept="audio/*,.mp3,.wav,.m4a,.aac,.webm,.ogg"
                 style={{ display: 'none' }}
                 onChange={async (e) => {
                   if (e.target.files && e.target.files[0]) {

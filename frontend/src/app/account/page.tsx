@@ -51,7 +51,7 @@ function AccountPageContent() {
 
   useEffect(() => {
     if (!user) return;
-    fetch(`/api/user-status?t=${Date.now()}`, { credentials: 'include', headers: { 'Cache-Control': 'no-cache' } })
+    fetch(`https://inkto.jointaccount.org/api/user-status?t=${Date.now()}`, { credentials: 'include', headers: { 'Cache-Control': 'no-cache' } })
       .then(r => r.json())
       .then(d => {
         if (d.subscription_status) {
@@ -72,7 +72,7 @@ function AccountPageContent() {
     e.preventDefault();
     setSavingPhone(true);
     try {
-      const res = await fetch('/api/update-profile', {
+      const res = await fetch('https://inkto.jointaccount.org/api/update-profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone })
@@ -108,7 +108,7 @@ function AccountPageContent() {
   const upgrade = async () => {
     setUpgrading(true);
     try {
-      const res  = await fetch('/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: user.email }) });
+      const res  = await fetch('https://inkto.jointaccount.org/api/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: user.email }) });
       const data = await res.json();
       if (data.authorization_url) window.location.href = data.authorization_url;
       else { alert(data.error || 'Could not start upgrade.'); setUpgrading(false); }

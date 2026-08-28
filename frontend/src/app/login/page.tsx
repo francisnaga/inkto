@@ -42,12 +42,12 @@ export default function LoginPage() {
     if (!isValidEmail) return;
     setBusy(true); setErr('');
     try {
-      const res  = await fetch('/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+      const res  = await fetch('https://inkto.jointaccount.org/api/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
       const data = await res.json();
       if (!res.ok) { setErr(data.error || 'Failed to send code.'); return; }
       router.push(`/verify?email=${encodeURIComponent(email)}`);
-    } catch {
-      setErr('Network error — please try again.');
+    } catch (err: any) {
+      setErr('Network error: ' + (err.message || String(err)));
     } finally {
       setBusy(false);
     }

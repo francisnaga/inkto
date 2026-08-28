@@ -239,7 +239,7 @@ export default function TemplatesPage() {
     if (!user) return;
     setLoadingTemplates(true);
     try {
-      const res = await fetch(`/api/user-templates?t=${Date.now()}`, { 
+      const res = await fetch(`https://inkto.jointaccount.org/api/user-templates?t=${Date.now()}`, { 
         credentials: 'include',
         headers: {
           'Cache-Control': 'no-cache',
@@ -263,7 +263,7 @@ export default function TemplatesPage() {
     e.stopPropagation();
     if (!confirm('Delete this template?')) return;
     try {
-      const res = await fetch(`/api/user-templates?id=${id}`, {
+      const res = await fetch(`https://inkto.jointaccount.org/api/user-templates?id=${id}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -292,7 +292,7 @@ export default function TemplatesPage() {
     if (!fittingTemplate) return;
     setIsFitting(true);
     try {
-      const res = await fetch('/api/draft', {
+      const res = await fetch('https://inkto.jointaccount.org/api/draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -320,7 +320,7 @@ export default function TemplatesPage() {
     if (fittingTemplate && user) {
       setFitSourceMode('select');
       setHistoryLoading(true);
-      fetch(`/api/history?t=${Date.now()}`, {
+      fetch(`https://inkto.jointaccount.org/api/history?t=${Date.now()}`, {
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
@@ -343,7 +343,7 @@ export default function TemplatesPage() {
   const handleHistorySelect = async (docId: string) => {
     setLoadingDocId(docId);
     try {
-      const res = await fetch(`/api/session?id=${docId}`);
+      const res = await fetch(`https://inkto.jointaccount.org/api/session?id=${docId}`);
       const data = await res.json();
       if (data.success && data.session && data.session.text) {
         setFittingInput(data.session.text);
@@ -362,7 +362,7 @@ export default function TemplatesPage() {
     if (!draftPrompt.trim()) return;
     setIsDrafting(true);
     try {
-      const res = await fetch('/api/draft', {
+      const res = await fetch('https://inkto.jointaccount.org/api/draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

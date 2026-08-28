@@ -22,6 +22,11 @@ export function useTranscribe() {
         let processedFiles = [];
         const hasPdf = newFiles.some(f => f.type === 'application/pdf' || f.name?.toLowerCase().endsWith('.pdf'));
         
+        const totalSize = newFiles.reduce((acc, f) => acc + f.size, 0);
+        if (totalSize > 40 * 1024 * 1024 && typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform?.()) {
+            alert('Warning: Processing extremely large files (40MB+) on a mobile phone may cause the app to run out of memory and crash. If it crashes, please use a computer for this specific file.');
+        }
+
         if (hasPdf) {
             setState('preparing_pdf');
         }
@@ -62,7 +67,7 @@ export function useTranscribe() {
         setState('fetching_session');
         setError(null);
         try {
-            const response = await fetch(`/api/session?id=${id}`);
+            const response = await fetch(`https://inkto.jointaccount.org/api/session?id=${id}`);
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Failed to load session');
             setTranscribedText(data.session.text);
@@ -126,7 +131,7 @@ export function useTranscribe() {
                 formData.append('isFinalBatch', 'false');
                 formData.append('totalFilesCount', String(totalPages));
 
-                const response = await fetch('/api/transcribe', {
+                const response = await fetch('https://inkto.jointaccount.org/api/transcribe', {
                     method: 'POST',
                     body: formData,
                 });
@@ -176,7 +181,7 @@ export function useTranscribe() {
 
             const fullTranscript = pageBlocks.join('\n\n');
 
-            const saveResponse = await fetch('/api/transcribe', {
+            const saveResponse = await fetch('https://inkto.jointaccount.org/api/transcribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

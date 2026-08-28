@@ -268,7 +268,7 @@ export function ScannerContainer({
       const fd = new FormData(); 
       fd.append('file', pdfBlob, name); 
       fd.append('title', name);
-      fetch('/api/save-scan', { method: 'POST', credentials: 'include', body: fd }).catch(e => console.error('Background PDF save failed:', e));
+      fetch('https://inkto.jointaccount.org/api/save-scan', { method: 'POST', credentials: 'include', body: fd }).catch(e => console.error('Background PDF save failed:', e));
 
       // 2. Convert pages to JPEGs for the OCR pipeline
       const filePromises = pages.map((p, idx) => 

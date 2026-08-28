@@ -2,15 +2,15 @@ apply plugin: 'com.android.application'
 
 android {
     namespace = "com.inkto.app"
-    compileSdkVersion 34
-    compileSdk 34
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a'
         }
         applicationId "com.inkto.app"
         minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion 34
+        targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

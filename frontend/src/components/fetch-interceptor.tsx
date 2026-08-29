@@ -10,6 +10,7 @@ export function FetchInterceptor() {
         if (typeof resource === 'string' && resource.includes('inkto.jointaccount.org/api/')) {
           config = config || {};
           config.headers = config.headers || {};
+          config.credentials = 'include';
           const token = localStorage.getItem('inkto_session');
           if (token) {
             if (config.headers instanceof Headers) {

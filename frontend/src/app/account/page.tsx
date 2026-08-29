@@ -32,12 +32,15 @@ const SETTINGS = [
 ];
 
 function AccountPageContent() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, setDisplayName } = useAuth();
   const router = useRouter();
   const [plan, setPlan]           = useState<{ status: string; expiresAt: string | null; isPro: boolean }>({ status: 'free', expiresAt: null, isPro: false });
   const [phone, setPhone]         = useState('');
+  const [name, setName]           = useState('');
   const [savingPhone, setSavingPhone] = useState(false);
   const [phoneSaved, setPhoneSaved]   = useState(false);
+  const [savingName, setSavingName]   = useState(false);
+  const [nameSaved, setNameSaved]     = useState(false);
   const [upgrading, setUpgrading] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const searchParams = useSearchParams();
@@ -51,6 +54,7 @@ function AccountPageContent() {
 
   useEffect(() => {
     if (!user) return;
+    if (user.displayName) setName(user.displayName);
     fetch(`https://inkto.jointaccount.org/api/user-status?t=${Date.now()}`, { credentials: 'include', headers: { 'Cache-Control': 'no-cache' } })
       .then(r => r.json())
       .then(d => {
@@ -61,9 +65,8 @@ function AccountPageContent() {
             isPro: d.is_pro === true || d.subscription_status === 'active'
           });
         }
-        if (d.phone) {
-          setPhone(d.phone);
-        }
+        if (d.phone) setPhone(d.phone);
+        if (d.name && !user.displayName) setName(d.name);
       })
       .catch(() => {});
   }, [user]);
@@ -90,6 +93,29 @@ function AccountPageContent() {
     }
   };
 
+  const handleSaveName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingName(true);
+    try {
+      const res = await fetch('https://inkto.jointaccount.org/api/update-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      if (res.ok) {
+        setDisplayName(name);
+        setNameSaved(true);
+        setTimeout(() => setNameSaved(false), 3000);
+      } else {
+        alert('Could not update display name.');
+      }
+    } catch {
+      alert('Network error — please try again.');
+    } finally {
+      setSavingName(false);
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80, fontFamily: UI }}>
@@ -103,7 +129,7 @@ function AccountPageContent() {
   }
 
   const isPro = plan.isPro || plan.status === 'active';
-  const displayName = user.email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const displayGreeting = user.displayName || user.email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
   const upgrade = async () => {
     setUpgrading(true);
@@ -131,7 +157,7 @@ function AccountPageContent() {
 
       {/* Identity */}
       <h1 style={{ fontFamily: DISPLAY, fontSize: 26, fontWeight: 700, color: C.ink, margin: '0 0 4px', letterSpacing: '-0.02em' }}>
-        {displayName}
+        {displayGreeting}
       </h1>
       <p style={{ fontSize: 13, color: C.inkMute, margin: '0 0 2px', fontFamily: 'ui-monospace, "SF Mono", Consolas, monospace' }}>
         {user.email}
@@ -142,8 +168,68 @@ function AccountPageContent() {
         </p>
       )}
 
-      {/* Profile: Optional Phone Number */}
-      <div style={{ marginTop: 20, padding: '16px', background: '#FFFFFF', border: `1px solid ${C.border}`, borderRadius: 8 }}>
+      {/* Profile: Display Name */}
+      <div style={{ marginTop: 24, padding: '16px', background: '#FFFFFF', border: `1px solid ${C.border}`, borderRadius: 8 }}>
+        <p style={{ fontSize: 11, fontWeight: 700, color: C.warmMid, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          Display Name
+        </p>
+        <form onSubmit={handleSaveName} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="e.g. John Doe"
+              style={{
+                width: '100%',
+                height: 40,
+                paddingLeft: 12,
+                paddingRight: 12,
+                background: C.paper,
+                border: `1px solid ${C.border}`,
+                borderRadius: 6,
+                fontSize: 13,
+                color: C.ink,
+                outline: 'none',
+                fontFamily: UI,
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+          <motion.button
+            type="submit"
+            disabled={savingName}
+            whileTap={!savingName ? { scale: 0.96 } : undefined}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            style={{
+              height: 40,
+              padding: '0 16px',
+              background: nameSaved ? '#2E7D32' : C.blue,
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: savingName ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            {savingName ? (
+              <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />
+            ) : nameSaved ? (
+              <>
+                <Check size={14} /> Saved
+              </>
+            ) : (
+              'Save'
+            )}
+          </motion.button>
+        </form>
+
+        <hr style={{ border: 'none', borderTop: `1px solid ${C.border}`, margin: '16px 0' }} />
+
         <p style={{ fontSize: 11, fontWeight: 700, color: C.warmMid, margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
           Contact Phone (Optional)
         </p>

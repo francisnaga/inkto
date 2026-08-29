@@ -44,6 +44,7 @@ if (typeof window !== 'undefined' && !(window as any).__fetch_intercepted__) {
 
 interface AuthUser {
   email: string;
+  displayName?: string;
 }
 
 interface AuthContextType {
@@ -51,6 +52,7 @@ interface AuthContextType {
   loading: boolean;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  setDisplayName: (name: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -58,6 +60,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   logout: async () => {},
   refreshUser: async () => {},
+  setDisplayName: () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -65,8 +68,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('inkto_session');
       const email = localStorage.getItem('inkto_user_email');
+      const displayName = localStorage.getItem('inkto_display_name') || undefined;
       if (token && email) {
-        return { email };
+        return { email, displayName };
       }
     }
     return null;
@@ -89,8 +93,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (data.email) {
           if (typeof window !== 'undefined') {
             localStorage.setItem('inkto_user_email', data.email);
+            if (data.name) localStorage.setItem('inkto_display_name', data.name);
           }
-          setUser({ email: data.email });
+          setUser(prev => ({ email: data.email, displayName: data.name || prev?.displayName }));
           return;
         }
       } else if (res.status === 401) {
@@ -118,7 +123,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const retryData = await retryRes.json();
                 if (retryData.email) {
                   localStorage.setItem('inkto_user_email', retryData.email);
-                  setUser({ email: retryData.email });
+                  if (retryData.name) localStorage.setItem('inkto_display_name', retryData.name);
+                  setUser(prev => ({ email: retryData.email, displayName: retryData.name || prev?.displayName }));
                   return;
                 }
               }
@@ -185,6 +191,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               if (exData.email) {
                 localStorage.setItem('inkto_user_email', exData.email);
               }
+              if (exData.name) {
+                localStorage.setItem('inkto_display_name', exData.name);
+              }
               window.history.replaceState(null, '', window.location.pathname);
             }
           }
@@ -212,12 +221,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('inkto_session');
       localStorage.removeItem('inkto_refresh_token');
       localStorage.removeItem('inkto_user_email');
+      localStorage.removeItem('inkto_display_name');
     }
     setUser(null);
   };
 
+  const setDisplayName = (name: string) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('inkto_display_name', name);
+    }
+    setUser((prev) => (prev ? { ...prev, displayName: name } : null));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, logout, refreshUser, setDisplayName }}>
       {children}
     </AuthContext.Provider>
   );

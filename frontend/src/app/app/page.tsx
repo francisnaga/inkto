@@ -65,9 +65,11 @@ function AppPageContent() {
     fetchRecent();
   }, [state, postScanProcessing]); // Refetch when processing changes
 
-  const firstName = user?.email
-    ? user.email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-    : 'User';
+  const firstName = user?.displayName
+    ? user.displayName.split(' ')[0]
+    : user?.email
+      ? user.email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+      : 'User';
 
   const startNativeScanner = async () => {
     if (Capacitor.isNativePlatform()) {

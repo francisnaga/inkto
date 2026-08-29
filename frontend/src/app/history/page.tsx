@@ -138,7 +138,7 @@ export default function HistoryPage() {
 
   const filtered = history.filter(item => {
     const matchesFilter = filter === 'all' || item.type === filter || (filter === 'scan' && item.type === 'transcription');
-    const matchesSearch = !searchQuery || item.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = !searchQuery || (item.title || '').toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 

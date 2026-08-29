@@ -44,7 +44,19 @@ function AppPageContent() {
   const [postScanProcessing, setPostScanProcessing] = useState(false);
 
   const docId = searchParams.get('doc');
+  const scanParam = searchParams.get('scan');
+  
   useEffect(() => { if (docId) fetchSession(docId); }, [docId, fetchSession]);
+
+  useEffect(() => {
+    if (scanParam === 'true') {
+      startNativeScanner();
+      // Remove query param without reloading
+      const url = new URL(window.location.href);
+      url.searchParams.delete('scan');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [scanParam]);
 
   useEffect(() => {
     // Listen for custom event from BottomNav FAB
@@ -72,11 +84,16 @@ function AppPageContent() {
       : 'User';
 
   const startNativeScanner = async () => {
-    if (Capacitor.isNativePlatform()) {
-      const res = await ScannerService.scanNative();
-      if (res && res.pages.length > 0) setPostScanData(res);
-    } else {
-      setShowScanner(true);
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const res = await ScannerService.scanNative();
+        if (res && res.pages.length > 0) setPostScanData(res);
+      } else {
+        setShowScanner(true);
+      }
+    } catch (e: any) {
+      console.error('Scanner error:', e);
+      alert(`Scanner error: ${e.message}`);
     }
   };
 
@@ -178,29 +195,29 @@ function AppPageContent() {
           </button>
 
           <button onClick={() => setShowDictate(true)} className="bg-white p-5 rounded-2xl border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow flex flex-col items-center justify-center gap-3 active:scale-95">
-            <div className="w-12 h-12 rounded-full bg-[#EDE9FE] text-[#5A45FF] flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-[#FFF7ED] text-[#F97316] flex items-center justify-center">
               <Mic size={24} />
             </div>
             <span className="font-semibold text-sm text-[#0F172A]">Record Audio</span>
           </button>
 
-          <button onClick={() => fileInputRef.current?.click()} className="bg-white p-5 rounded-2xl border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow flex flex-col items-center justify-center gap-3 active:scale-95">
-            <div className="w-12 h-12 rounded-full bg-[#EDE9FE] text-[#5A45FF] flex items-center justify-center">
+          {/* Hidden file inputs */}
+          <input type="file" id="file-upload" className="hidden" multiple accept="image/*,application/pdf,audio/*" onChange={handleInput} />
+          <input type="file" id="camera-upload" className="hidden" accept="image/*" capture="environment" onChange={handleInput} />
+
+          <label htmlFor="file-upload" className="bg-white p-5 rounded-2xl border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow flex flex-col items-center justify-center gap-3 active:scale-95 cursor-pointer m-0">
+            <div className="w-12 h-12 rounded-full bg-[#F1F5F9] text-[#64748B] flex items-center justify-center">
               <Upload size={24} />
             </div>
             <span className="font-semibold text-sm text-[#0F172A]">Upload File</span>
-          </button>
+          </label>
 
-          {/* Hidden file inputs */}
-          <input type="file" ref={fileInputRef} className="hidden" multiple accept="image/*,application/pdf,audio/*" onChange={handleInput} />
-          <input type="file" ref={cameraInputRef} className="hidden" accept="image/*" capture="environment" onChange={handleInput} />
-
-          <button onClick={() => cameraInputRef.current?.click()} className="bg-white p-5 rounded-2xl border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow flex flex-col items-center justify-center gap-3 active:scale-95">
+          <label htmlFor="camera-upload" className="bg-white p-5 rounded-2xl border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow flex flex-col items-center justify-center gap-3 active:scale-95 cursor-pointer m-0">
             <div className="w-12 h-12 rounded-full bg-[#EDE9FE] text-[#5A45FF] flex items-center justify-center">
               <PenTool size={24} />
             </div>
             <span className="font-semibold text-sm text-[#0F172A]">Handwriting</span>
-          </button>
+          </label>
         </div>
 
         <section>

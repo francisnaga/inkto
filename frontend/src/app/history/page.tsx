@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { FileText, FileAudio, Clock, Trash2, Search, MoreVertical, Check, X, Folder, PenTool } from 'lucide-react';
+import { apiGet, apiPost } from '@/lib/api';
 
 interface HistoryEntry {
   id: string;
@@ -71,13 +72,10 @@ export default function HistoryPage() {
     if (!user) return;
     const fetchHistory = async () => {
       try {
-        const res = await fetch('https://inkto.jointaccount.org/api/history?limit=100');
-        if (res.ok) {
-          const data = await res.json();
-          setHistory(data.documents || []);
-        }
+        const data = await apiGet<{ documents: HistoryEntry[] }>('/history', { limit: '100' });
+        setHistory(data.documents || []);
       } catch (err) {
-        console.error(err);
+        console.error('Failed to fetch history:', err);
       } finally {
         setFetching(false);
       }
@@ -95,12 +93,7 @@ export default function HistoryPage() {
 
     setHistory(prev => prev.map(h => (h.id === id ? { ...h, title: newTitle } : h)));
     try {
-      const res = await fetch('https://inkto.jointaccount.org/api/rename-document', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, newTitle }),
-      });
-      if (!res.ok) throw new Error('Rename failed');
+      await apiPost('/rename-document', { id, newTitle });
     } catch {
       setHistory(prev => prev.map(h => (h.id === id ? { ...h, title: oldTitle! } : h)));
       alert('Failed to rename — try again.');
@@ -111,12 +104,7 @@ export default function HistoryPage() {
     if (!confirm('Delete this document forever?')) return;
     setDeletingId(id);
     try {
-      const res = await fetch('https://inkto.jointaccount.org/api/delete-document', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      });
-      if (!res.ok) throw new Error('Delete failed');
+      await apiPost('/delete-document', { id });
       setHistory(prev => prev.filter(h => h.id !== id));
     } catch {
       alert('Failed to delete — try again.');
@@ -124,6 +112,7 @@ export default function HistoryPage() {
       setDeletingId(null);
     }
   };
+
 
   if (loading) {
     return (

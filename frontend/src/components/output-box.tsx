@@ -5,8 +5,9 @@ import dynamic from 'next/dynamic';
 const RichEditor = dynamic(() => import('./rich-editor'), { ssr: false });
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Copy, Check, RotateCcw, FileText, FileDown, ChevronUp, Mail, Pen, X, File, Image as ImageIcon, Bookmark, Mic, Loader2 } from 'lucide-react';
+import { apiPost } from '@/lib/api';
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Inline SVGs Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* ─── Inline SVGs ─── */
 const IconPaystack = ({ size = 16 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><path d="M4 17h6v4H4v-4zM14 17h6v4h-6v-4zM4 10h6v4H4v-4zM14 10h6v4h-6v-4zM4 3h6v4H4V3z" /></svg>
 );
@@ -17,7 +18,7 @@ const IconPayPal = ({ size = 16 }) => (
     </svg>
 );
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Source document filmstrip viewer Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Source document filmstrip viewer ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 const FilmstripViewer = ({ images }) => {
     return (
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', background: '#F8FAFC' }}>
@@ -185,7 +186,7 @@ function InboxModal({ onClose, onSend }) {
     );
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Download helper (works on mobile too) Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Download helper (works on mobile too) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
@@ -237,7 +238,7 @@ async function downloadFile(endpoint, text, filename, fallbackMsg) {
     }
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Main component Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Main component ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
 export default function OutputBox({ text, sessionId, images = [], audioUrl = null, onReset }) {
     const [value, setValue] = useState(text);
     const [copied, setCopied] = useState(false);
@@ -284,13 +285,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         const t3 = setTimeout(() => setVoiceProgressStep(4), 3800);
 
         try {
-            const res = await fetch('https://inkto.jointaccount.org/api/transcribe-past', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: sessionId, fileUrl: audioUrl, title: 'Voice Dictation' })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Conversion failed');
+            const data = await apiPost('/transcribe-past', { id: sessionId, fileUrl: audioUrl, title: 'Voice Dictation' });
             
             clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
             setVoiceProgressStep(4);
@@ -310,13 +305,13 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
             return (
                 <div style={{ padding: '40px', background: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', margin: '20px 0', textAlign: 'left' }}>
                     <p style={{ fontWeight: '700', fontSize: '15px', color: '#0F172A', textAlign: 'center', marginBottom: '20px' }}>
-                        Transcribing voice recordingâ€¦
+                        Transcribing voice recordingÃ¢â‚¬Â¦
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '320px', margin: '0 auto' }}>
                         {/* Step 1 */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
                             {voiceProgressStep > 1 ? (
-                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>âœ“</div>
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>Ã¢Å“â€œ</div>
                             ) : (
                                 <Loader2 size={16} className="animate-spin text-primary shrink-0" />
                             )}
@@ -327,7 +322,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                         {/* Step 2 */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
                             {voiceProgressStep > 2 ? (
-                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>âœ“</div>
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>Ã¢Å“â€œ</div>
                             ) : voiceProgressStep === 2 ? (
                                 <Loader2 size={16} className="animate-spin text-primary shrink-0" />
                             ) : (
@@ -340,7 +335,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                         {/* Step 3 */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
                             {voiceProgressStep > 3 ? (
-                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>âœ“</div>
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>Ã¢Å“â€œ</div>
                             ) : voiceProgressStep === 3 ? (
                                 <Loader2 size={16} className="animate-spin text-primary shrink-0" />
                             ) : (
@@ -413,20 +408,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         const title = prompt('Enter a title for this custom template:');
         if (!title || !title.trim()) return;
         try {
-            const token = localStorage.getItem('inkto_session');
-            const headers = { 'Content-Type': 'application/json' };
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-                headers['X-Inkto-Auth'] = token;
-            }
-            const res = await fetch('https://inkto.jointaccount.org/api/user-templates', {
-                method: 'POST',
-                headers,
-                credentials: 'include',
-                body: JSON.stringify({ title, content: value })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Save template failed');
+            await apiPost('/user-templates', { title, content: value });
             alert('Saved to "My Templates" in the Templates tab!');
         } catch (e) {
             alert(e.message || 'Failed to save template. Please try again.');
@@ -492,15 +474,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         setEmailStatus(null);
         localStorage.setItem('inkto_last_email', email);
         try {
-            const res = await fetch('https://inkto.jointaccount.org/api/send-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: value, recipientEmail: email, sessionId, formats }),
-            });
-            // Always try to parse JSON; if not JSON, extract text
-            const ct = res.headers.get('content-type') || '';
-            const data = ct.includes('json') ? await res.json() : { error: await res.text() };
-            if (!res.ok) throw new Error(data.error || 'Failed to send.');
+            await apiPost('/send-email', { text: value, recipientEmail: email, sessionId, formats });
             setEmailStatus({ type: 'success', msg: 'Sent! Check your inbox.' });
         } catch (err) {
             setEmailStatus({ type: 'error', msg: err.message });
@@ -510,20 +484,9 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     const handleSaveHistory = async () => {
         setSendingEmail(true);
         setEmailStatus(null);
+        const userEmail = email || (typeof window !== 'undefined' ? localStorage.getItem('inkto_user_email') : '');
         try {
-            const token = localStorage.getItem('inkto_session');
-            const userEmail = email || (typeof window !== 'undefined' ? localStorage.getItem('inkto_user_email') : '');
-            const headers = { 'Content-Type': 'application/json' };
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-            const res = await fetch('https://inkto.jointaccount.org/api/save-history', {
-                method: 'POST',
-                headers,
-                credentials: 'include',
-                body: JSON.stringify({ email: userEmail, sessionId }),
-            });
-            const ct = res.headers.get('content-type') || '';
-            const data = ct.includes('json') ? await res.json() : { error: await res.text() };
-            if (!res.ok) throw new Error(data.error || 'Failed to save.');
+            await apiPost('/save-history', { email: userEmail, sessionId });
             setEmailStatus({ type: 'success', msg: 'Saved to history!' });
         } catch (err) {
             setEmailStatus({ type: 'error', msg: err.message });
@@ -532,7 +495,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
 
     const scrollToTop = () => textareaRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
 
-    /* Ã¢â€â‚¬Ã¢â€â‚¬ Email row Ã¢â€â‚¬Ã¢â€â‚¬ */
+    /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Email row ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
     const emailRow = (
         <div style={{
             background: '#fff', border: '1px solid #E2E8F0',
@@ -615,7 +578,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 
-    /* Ã¢â€â‚¬Ã¢â€â‚¬ Toolbar Ã¢â€â‚¬Ã¢â€â‚¬ */
+    /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Toolbar ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
     const toolbar = (
         <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -708,10 +671,10 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 
-    /* â”€â”€ Tip banner â”€â”€ */
+    /* Ã¢â€â‚¬Ã¢â€â‚¬ Tip banner Ã¢â€â‚¬Ã¢â€â‚¬ */
     const tipBanner = null;
 
-    /* Ã¢â€â‚¬Ã¢â€â‚¬ Shared textarea styles Ã¢â€â‚¬Ã¢â€â‚¬ */
+    /* ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Shared textarea styles ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ */
     const textareaStyleMobile = {
         display: 'block', width: '100%', height: isNoText ? 'auto' : '380px',
         minHeight: isNoText ? '80px' : undefined,
@@ -752,7 +715,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 
-    /* â”€â”€ Tab toggle â”€â”€ */
+    /* Ã¢â€â‚¬Ã¢â€â‚¬ Tab toggle Ã¢â€â‚¬Ã¢â€â‚¬ */
         const persistentAudioPlayer = audioUrl && !value.startsWith('[Raw voice dictation') ? (
         <div style={{ padding: '12px', background: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', marginBottom: '16px' }}>
             <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748B', display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Original Audio</span>
@@ -800,7 +763,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 
-    /* â”€â”€ AI Review Gate banner â”€â”€ */
+    /* Ã¢â€â‚¬Ã¢â€â‚¬ AI Review Gate banner Ã¢â€â‚¬Ã¢â€â‚¬ */
     const reviewBanner = !hasReviewed && !value.startsWith('[Raw voice dictation') && (
         <div style={{
             border: '1.5px solid #DC2626',
@@ -817,7 +780,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 13, color: '#991B1B', fontWeight: 700 }}>
-                    âš ï¸ AI-generated â€” review carefully before use
+                    Ã¢Å¡Â Ã¯Â¸Â AI-generated Ã¢â‚¬â€ review carefully before use
                 </span>
             </div>
             <button
@@ -843,7 +806,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 
-    /* â”€â”€ Desktop layout â”€â”€ */
+    /* Ã¢â€â‚¬Ã¢â€â‚¬ Desktop layout Ã¢â€â‚¬Ã¢â€â‚¬ */
     if (isDesktop) {
         return (
             <div style={{ display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.4s ease', gap: 16 }}>
@@ -922,7 +885,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         );
     }
 
-    /* â”€â”€ Mobile layout â”€â”€ */
+    /* Ã¢â€â‚¬Ã¢â€â‚¬ Mobile layout Ã¢â€â‚¬Ã¢â€â‚¬ */
     return (
         <div className="font-sans" style={{ animation: 'fadeIn 0.4s ease', display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: -4 }}>

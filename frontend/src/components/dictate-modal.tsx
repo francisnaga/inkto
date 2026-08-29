@@ -6,6 +6,7 @@ import { X, Mic, Square, Pause, Play, Save, RefreshCw, Loader2, CloudLightning, 
 import { Button } from '@/components/ui/button';
 import { saveOfflineRecording } from '@/lib/indexeddb';
 import { nanoid } from 'nanoid';
+import { apiPostForm } from '@/lib/api';
 
 interface DictateModalProps {
   onClose: () => void;
@@ -217,13 +218,7 @@ export default function DictateModal({ onClose, onTranscribeComplete, draftId, i
     formData.append('sessionId', sessionId);
 
     try {
-      const res = await fetch('https://inkto.jointaccount.org/api/transcribe', {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'ASR Transcription failed');
+      const data = await apiPostForm<any>('/transcribe', formData);
 
       // Clear layout timeouts
       clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);

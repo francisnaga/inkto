@@ -4,6 +4,7 @@
 import { useState, useCallback } from 'react';
 import { nanoid } from 'nanoid';
 import { startBackgroundTranscription } from '../lib/background-transcriber';
+import { apiGet } from '../lib/api';
 
 export function useTranscribe() {
     const [state, setState] = useState('idle');
@@ -64,9 +65,7 @@ export function useTranscribe() {
         setState('fetching_session');
         setError(null);
         try {
-            const response = await fetch('https://inkto.jointaccount.org/api/session?id=' + id);
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Failed to load session');
+            const data = await apiGet('/session', { id });
             setTranscribedText(data.session.text);
             setSessionId(data.session.id);
             setSessionImages(data.session.images || []);

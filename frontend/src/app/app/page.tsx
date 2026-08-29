@@ -11,6 +11,7 @@ import { ScannerService } from '@/lib/ScannerService';
 import { startBackgroundTranscription } from '@/lib/background-transcriber';
 import { PostScanResult } from '@/components/scanner/PostScanResult';
 import { useTranscribe } from '@/hooks/useTranscribe';
+import { apiGet, apiPostForm } from '@/lib/api';
 
 const ScannerModal = dynamic(() => import('@/components/scanner-modal'), { ssr: false });
 const DictateModal = dynamic(() => import('@/components/dictate-modal'), { ssr: false });
@@ -55,11 +56,8 @@ function AppPageContent() {
   useEffect(() => {
     const fetchRecent = async () => {
       try {
-        const res = await fetch('https://inkto.jointaccount.org/api/history?limit=4'); 
-        if (res.ok) {
-          const data = await res.json();
-          setRecentFiles(data.documents || []);
-        }
+        const data = await apiGet<{ documents: RecentFile[] }>('/history', { limit: '4' });
+        setRecentFiles(data.documents || []);
       } catch (e) {
         console.error('Failed to fetch recent files', e);
       }
@@ -87,11 +85,10 @@ function AppPageContent() {
 
   const uploadPdfToStorage = async (blob: Blob, pagesCount: number): Promise<{url: string, id: string}> => {
     const name = `scan-${new Date().toISOString().slice(0, 10)}-${pagesCount}p.pdf`;
-    const fd = new FormData(); 
-    fd.append('file', blob, name); 
-    fd.append('title', name); 
-    const res = await fetch('https://inkto.jointaccount.org/api/save-scan', { method: 'POST', credentials: 'include', body: fd });
-    const data = await res.json();
+    const fd = new FormData();
+    fd.append('file', blob, name);
+    fd.append('title', name);
+    const data = await apiPostForm<{ id: string }>('/save-scan', fd);
     return { url: '', id: data.id };
   };
 
@@ -126,10 +123,10 @@ function AppPageContent() {
     } finally { setPostScanProcessing(false); }
   };
 
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => { 
-      if (!e.target.files?.length) return; 
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (!e.target.files?.length) return;
       startBackgroundTranscription(Array.from(e.target.files));
-      if (e.target) e.target.value = ''; 
+      if (e.target) e.target.value = '';
       router.push('/history');
   };
 
@@ -191,7 +188,8 @@ function AppPageContent() {
             </div>
             <span className="font-semibold text-sm text-[#0F172A]">Upload File</span>
           </button>
-          
+
+          {/* Hidden file inputs */}
           <input type="file" ref={fileInputRef} className="hidden" multiple accept="image/*,application/pdf,audio/*" onChange={handleInput} />
           <input type="file" ref={cameraInputRef} className="hidden" accept="image/*" capture="environment" onChange={handleInput} />
 

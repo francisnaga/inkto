@@ -5,20 +5,23 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Brand palette (Deep Purple System) */
+  /* Brand palette — Deep Purple System */
   --ink-black:      #0F172A;
   --paper-white:    #F8FAFC;
-  --ink-blue:       #4F46E5;
+  --ink-blue:       #5A45FF;
   --seal-brass:     #A6822C;
   --warm-gray:      #E2E8F0;
   --correction-red: #EF4444;
 
   /* Derived surface tones */
-  --ink-blue-subtle:  #E0E7FF;
-  --ink-blue-mid:     #4338CA;
+  --ink-blue-subtle:  #EDE9FE;
+  --ink-blue-mid:     #4A38E8;
   --brass-subtle:     #F8F2E6;
   --warm-gray-mid:    #94A3B8;
   --paper-deep:       #F1F5F9;
+  --dark-bg:          #0D0E14;
+  --dark-card:        #161722;
+  --text-mid:         #475569;
 
   /* Typography stacks */
   --font-display: "Poppins", sans-serif;
@@ -26,47 +29,47 @@
   --font-mono:    ui-monospace, "SF Mono", Consolas, monospace;
 
   /* Shadcn / Tailwind semantic aliases */
-  --background:          var(--paper-white);
-  --foreground:          var(--ink-black);
-  --card:                #FFFFFF;
-  --card-foreground:     var(--ink-black);
-  --popover:             #FFFFFF;
-  --popover-foreground:  var(--ink-black);
-  --primary:             var(--ink-blue);
-  --primary-foreground:  #FFFFFF;
-  --secondary:           var(--paper-deep);
-  --secondary-foreground:var(--ink-black);
-  --muted:               var(--paper-deep);
-  --muted-foreground:    var(--warm-gray-mid);
-  --accent:              var(--ink-blue-subtle);
-  --accent-foreground:   var(--ink-blue);
-  --destructive:         var(--correction-red);
-  --border:              var(--warm-gray);
-  --input:               var(--warm-gray);
-  --ring:                var(--ink-blue);
+  --background:           var(--paper-white);
+  --foreground:           var(--ink-black);
+  --card:                 #FFFFFF;
+  --card-foreground:      var(--ink-black);
+  --popover:              #FFFFFF;
+  --popover-foreground:   var(--ink-black);
+  --primary:              var(--ink-blue);
+  --primary-foreground:   #FFFFFF;
+  --secondary:            var(--paper-deep);
+  --secondary-foreground: var(--ink-black);
+  --muted:                var(--paper-deep);
+  --muted-foreground:     var(--warm-gray-mid);
+  --accent:               var(--ink-blue-subtle);
+  --accent-foreground:    var(--ink-blue);
+  --destructive:          var(--correction-red);
+  --border:               var(--warm-gray);
+  --input:                var(--warm-gray);
+  --ring:                 var(--ink-blue);
 
-  --radius: 0.5rem;
+  --radius: 0.625rem;
 }
 
 @theme inline {
-  --color-background:              var(--background);
-  --color-foreground:              var(--foreground);
-  --font-sans:                     var(--font-ui);
-  --font-mono:                     var(--font-mono);
-  --font-heading:                  var(--font-display);
-  --color-primary-foreground:      var(--primary-foreground);
-  --color-primary:                 var(--primary);
-  --color-muted-foreground:        var(--muted-foreground);
-  --color-muted:                   var(--muted);
-  --color-secondary-foreground:    var(--secondary-foreground);
-  --color-secondary:               var(--secondary);
-  --color-border:                  var(--border);
-  --color-input:                   var(--input);
-  --color-ring:                    var(--ring);
+  --color-background:           var(--background);
+  --color-foreground:           var(--foreground);
+  --font-sans:                  var(--font-ui);
+  --font-mono:                  var(--font-mono);
+  --font-heading:               var(--font-display);
+  --color-primary-foreground:   var(--primary-foreground);
+  --color-primary:              var(--primary);
+  --color-muted-foreground:     var(--muted-foreground);
+  --color-muted:                var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary:            var(--secondary);
+  --color-border:               var(--border);
+  --color-input:                var(--input);
+  --color-ring:                 var(--ring);
   --radius-sm:  calc(var(--radius) * 0.6);
   --radius-md:  calc(var(--radius) * 0.8);
   --radius-lg:  var(--radius);
-  --radius-xl:  calc(var(--radius) * 1.4);
+  --radius-xl:  calc(var(--radius) * 1.5);
 }
 
 @layer base {
@@ -79,13 +82,15 @@
     background: var(--paper-white);
     color: var(--ink-black);
     font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
   }
-  h1, h2 {
+  h1, h2, h3 {
     font-family: var(--font-display);
+    letter-spacing: -0.02em;
   }
 }
 
-button, a, input, select {
+button, a, input, select, textarea {
   transition-duration: 150ms;
   transition-timing-function: ease;
 }
@@ -104,3 +109,23 @@ body.dictate-active #bottom-nav-spacer {
   0%, 100% { transform: scale(1); opacity: 1; }
   50%       { transform: scale(1.08); opacity: 0.8; }
 }
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes pulse-ring {
+  0%   { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(90,69,255,0.5); }
+  70%  { transform: scale(1);   box-shadow: 0 0 0 14px rgba(90,69,255,0); }
+  100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(90,69,255,0); }
+}
+@keyframes waveform {
+  0%, 100% { transform: scaleY(0.3); }
+  50%      { transform: scaleY(1); }
+}
+.animate-fade-up    { animation: fade-up 0.4s ease forwards; }
+.animate-fade-in    { animation: fade-in 0.3s ease forwards; }
+.animate-pulse-ring { animation: pulse-ring 1.5s ease-in-out infinite; }

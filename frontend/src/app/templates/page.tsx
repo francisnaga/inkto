@@ -154,7 +154,7 @@ export default function TemplatesPage() {
   if (loading || !user) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 border-2 border-[#4F46E5] border-t-transparent rounded-full animate-spin" />
+        <Loader2 className="w-6 h-6 border-2 border-[#5A45FF] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -179,7 +179,7 @@ export default function TemplatesPage() {
         <textarea
           value={editorContent}
           onChange={e => setEditorContent(e.target.value)}
-          className="flex-1 w-full p-5 text-sm font-mono border border-[#E2E8F0] rounded-2xl resize-none bg-white focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] shadow-sm mb-4"
+          className="flex-1 w-full p-5 text-sm font-mono border border-[#E2E8F0] rounded-2xl resize-none bg-white focus:outline-none focus:border-[#5A45FF] focus:ring-1 focus:ring-[#5A45FF] shadow-sm mb-4"
           placeholder="Template content will appear here..."
         />
 
@@ -187,7 +187,7 @@ export default function TemplatesPage() {
           <button onClick={handleDownloadPdf} className="flex items-center justify-center gap-2 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] hover:bg-[#F1F5F9] font-semibold py-3.5 rounded-xl transition-colors">
             <FileDown size={18} /> Save PDF
           </button>
-          <button onClick={handleDownloadDocx} className="flex items-center justify-center gap-2 bg-[#4F46E5] text-white hover:bg-[#4338CA] font-semibold py-3.5 rounded-xl transition-colors shadow-sm shadow-[#4F46E5]/20">
+          <button onClick={handleDownloadDocx} className="flex items-center justify-center gap-2 bg-[#5A45FF] text-white hover:bg-[#4A38E8] font-semibold py-3.5 rounded-xl transition-colors shadow-sm shadow-[#5A45FF]/20">
             <File size={18} /> Save Word
           </button>
         </div>
@@ -208,7 +208,7 @@ export default function TemplatesPage() {
 
         <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-sm flex flex-col gap-5 flex-1">
           <div className="flex items-center gap-3 mb-2 border-b border-[#E2E8F0] pb-4">
-             <div className="w-10 h-10 rounded-xl bg-[#E0E7FF] flex items-center justify-center text-[#4F46E5]">
+             <div className="w-10 h-10 rounded-xl bg-[#EDE9FE] flex items-center justify-center text-[#5A45FF]">
                <Sparkles size={20} />
              </div>
              <div>
@@ -228,7 +228,7 @@ export default function TemplatesPage() {
               placeholder="e.g. Landlord is John Doe, Tenant is Jane Smith, Rent is  per month..."
               value={fittingInput}
               onChange={e => setFittingInput(e.target.value)}
-              className="flex-1 w-full border border-[#E2E8F0] rounded-xl p-4 text-sm bg-white focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] resize-none"
+              className="flex-1 w-full border border-[#E2E8F0] rounded-xl p-4 text-sm bg-white focus:outline-none focus:border-[#5A45FF] focus:ring-1 focus:ring-[#5A45FF] resize-none"
             />
           ) : (
             <div className="flex-1 overflow-y-auto border border-[#E2E8F0] rounded-xl bg-[#F8FAFC] divide-y divide-[#E2E8F0]">
@@ -245,7 +245,7 @@ export default function TemplatesPage() {
             </div>
           )}
 
-          <button onClick={handleAiFit} disabled={isFitting || !fittingInput.trim()} className="w-full bg-[#4F46E5] hover:bg-[#4338CA] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl flex items-center justify-center gap-2 mt-auto transition-colors shadow-sm shadow-[#4F46E5]/20">
+          <button onClick={handleAiFit} disabled={isFitting || !fittingInput.trim()} className="w-full bg-[#5A45FF] hover:bg-[#4A38E8] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl flex items-center justify-center gap-2 mt-auto transition-colors shadow-sm shadow-[#5A45FF]/20">
             {isFitting ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
             {isFitting ? 'Generating Draft...' : 'Generate Draft'}
           </button>
@@ -272,13 +272,13 @@ export default function TemplatesPage() {
             <div key={template.id} className="p-5 rounded-2xl border border-[#E2E8F0] bg-white shadow-sm flex flex-col h-full">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center shrink-0">
-                   <FileText className="w-5 h-5 text-[#4F46E5]" />
+                   <FileText className="w-5 h-5 text-[#5A45FF]" />
                 </div>
                 <p className="font-semibold text-[#0F172A]">{template.name}</p>
               </div>
               
               <div className="mt-auto grid grid-cols-2 gap-2 pt-2 border-t border-[#E2E8F0]">
-                <button onClick={() => { setFittingTemplate(template); setView('ai-draft'); }} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-[#E0E7FF] text-[#4F46E5] font-semibold text-xs hover:bg-[#C7D2FE] transition-colors">
+                <button onClick={() => { setFittingTemplate(template); setView('ai-draft'); }} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-[#EDE9FE] text-[#5A45FF] font-semibold text-xs hover:bg-[#C7D2FE] transition-colors">
                   <Sparkles size={14} /> AI Fill
                 </button>
                 <button onClick={() => handleSelectTemplate(template)} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-[#F1F5F9] text-[#64748B] font-semibold text-xs hover:bg-[#E2E8F0] hover:text-[#0F172A] transition-colors">
@@ -310,7 +310,7 @@ export default function TemplatesPage() {
           placeholder="Search templates..."
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          className="w-full h-12 pl-11 pr-4 bg-white border border-[#E2E8F0] rounded-2xl text-sm font-medium text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] shadow-sm transition-all"
+          className="w-full h-12 pl-11 pr-4 bg-white border border-[#E2E8F0] rounded-2xl text-sm font-medium text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#5A45FF] focus:ring-1 focus:ring-[#5A45FF] shadow-sm transition-all"
         />
         {searchQuery && (
           <button onClick={() => setSearchQuery('')} className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#94A3B8] hover:text-[#0F172A]">
@@ -328,7 +328,7 @@ export default function TemplatesPage() {
               <div key={template.id} className="p-5 rounded-2xl border border-[#E2E8F0] bg-white shadow-sm flex flex-col h-full">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center shrink-0">
-                     <FileText className="w-5 h-5 text-[#4F46E5]" />
+                     <FileText className="w-5 h-5 text-[#5A45FF]" />
                   </div>
                   <div>
                      <p className="font-semibold text-[#0F172A] text-sm">{template.name}</p>
@@ -336,7 +336,7 @@ export default function TemplatesPage() {
                   </div>
                 </div>
                 <div className="mt-auto grid grid-cols-2 gap-2 pt-2 border-t border-[#E2E8F0]">
-                  <button onClick={() => { setFittingTemplate(template); setView('ai-draft'); }} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-[#E0E7FF] text-[#4F46E5] font-semibold text-xs hover:bg-[#C7D2FE] transition-colors">
+                  <button onClick={() => { setFittingTemplate(template); setView('ai-draft'); }} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-[#EDE9FE] text-[#5A45FF] font-semibold text-xs hover:bg-[#C7D2FE] transition-colors">
                     <Sparkles size={14} /> AI Fill
                   </button>
                   <button onClick={() => handleSelectTemplate(template)} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-[#F1F5F9] text-[#64748B] font-semibold text-xs hover:bg-[#E2E8F0] hover:text-[#0F172A] transition-colors">
@@ -356,7 +356,7 @@ export default function TemplatesPage() {
               className="flex items-center justify-between p-5 rounded-2xl border border-[#E2E8F0] bg-white hover:bg-[#F8FAFC] transition-all shadow-sm active:scale-95 group text-left"
             >
               <div className="flex items-center gap-4">
-                <div className="text-2xl w-12 h-12 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center shrink-0 group-hover:bg-[#E0E7FF] transition-colors">
+                <div className="text-2xl w-12 h-12 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center shrink-0 group-hover:bg-[#EDE9FE] transition-colors">
                   {category.icon}
                 </div>
                 <div>
@@ -364,7 +364,7 @@ export default function TemplatesPage() {
                   <p className="text-sm text-[#64748B] mt-0.5">{category.templates.length} templates</p>
                 </div>
               </div>
-              <ChevronRight className="w-5 h-5 text-[#CBD5E1] group-hover:text-[#4F46E5] transition-colors" />
+              <ChevronRight className="w-5 h-5 text-[#CBD5E1] group-hover:text-[#5A45FF] transition-colors" />
             </button>
           ))}
         </div>

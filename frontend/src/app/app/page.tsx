@@ -136,7 +136,7 @@ function AppPageContent() {
   if (state === 'fetching_session') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-        <Loader2 className="w-6 h-6 text-[#4F46E5] animate-spin" />
+        <Loader2 className="w-6 h-6 text-[#5A45FF] animate-spin" />
         <span className="text-sm text-[#64748B]">Loading document...</span>
       </div>
     );
@@ -171,21 +171,21 @@ function AppPageContent() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
           <button onClick={startNativeScanner} className="bg-white p-5 rounded-2xl border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow flex flex-col items-center justify-center gap-3 active:scale-95">
-            <div className="w-12 h-12 rounded-full bg-[#E0E7FF] text-[#4F46E5] flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-[#EDE9FE] text-[#5A45FF] flex items-center justify-center">
               <Camera size={24} />
             </div>
             <span className="font-semibold text-sm text-[#0F172A]">Scan Document</span>
           </button>
 
           <button onClick={() => setShowDictate(true)} className="bg-white p-5 rounded-2xl border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow flex flex-col items-center justify-center gap-3 active:scale-95">
-            <div className="w-12 h-12 rounded-full bg-[#E0E7FF] text-[#4F46E5] flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-[#EDE9FE] text-[#5A45FF] flex items-center justify-center">
               <Mic size={24} />
             </div>
             <span className="font-semibold text-sm text-[#0F172A]">Record Audio</span>
           </button>
 
           <button onClick={() => fileInputRef.current?.click()} className="bg-white p-5 rounded-2xl border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow flex flex-col items-center justify-center gap-3 active:scale-95">
-            <div className="w-12 h-12 rounded-full bg-[#E0E7FF] text-[#4F46E5] flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-[#EDE9FE] text-[#5A45FF] flex items-center justify-center">
               <Upload size={24} />
             </div>
             <span className="font-semibold text-sm text-[#0F172A]">Upload File</span>
@@ -196,7 +196,7 @@ function AppPageContent() {
           <input type="file" ref={cameraInputRef} className="hidden" accept="image/*" capture="environment" onChange={handleInput} />
 
           <button onClick={() => cameraInputRef.current?.click()} className="bg-white p-5 rounded-2xl border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow flex flex-col items-center justify-center gap-3 active:scale-95">
-            <div className="w-12 h-12 rounded-full bg-[#E0E7FF] text-[#4F46E5] flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-[#EDE9FE] text-[#5A45FF] flex items-center justify-center">
               <PenTool size={24} />
             </div>
             <span className="font-semibold text-sm text-[#0F172A]">Handwriting</span>
@@ -206,7 +206,7 @@ function AppPageContent() {
         <section>
           <div className="flex justify-between items-end mb-4">
             <h2 className="text-lg font-bold font-display text-[#0F172A]">Recent Files</h2>
-            <Link href="/history" className="text-sm font-semibold text-[#4F46E5] hover:underline">
+            <Link href="/history" className="text-sm font-semibold text-[#5A45FF] hover:underline">
               View All
             </Link>
           </div>

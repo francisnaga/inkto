@@ -3,8 +3,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
-import { FileText, FileAudio, Clock, Trash2, Search, MoreVertical, Check, X, Folder, PenTool } from 'lucide-react';
+import {
+  FileText, FileAudio, Clock, Trash2, Search, MoreVertical,
+  Check, X, PenTool, Loader2, FileX,
+} from 'lucide-react';
 import { apiGet, apiPost } from '@/lib/api';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface HistoryEntry {
   id: string;
@@ -17,36 +21,51 @@ interface HistoryEntry {
   hasText: boolean;
 }
 
-const TYPE_ICONS: Record<string, React.ElementType> = {
-  scan: FileText,
-  transcription: FileText,
-  voice: FileAudio,
-  draft: PenTool,
+const P = '#5A45FF';
+const Ps = '#EDE9FE';
+const BORDER = '#E2E8F0';
+const TEXT = '#0F172A';
+const MUTED = '#64748B';
+const UI = '"Inter", -apple-system, sans-serif';
+
+const TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string; label: string }> = {
+  scan:          { icon: FileText,  color: '#5A45FF', bg: '#EDE9FE', label: 'Document' },
+  transcription: { icon: FileText,  color: '#5A45FF', bg: '#EDE9FE', label: 'Document' },
+  voice:         { icon: FileAudio, color: '#F97316', bg: '#FFF7ED', label: 'Audio' },
+  draft:         { icon: PenTool,   color: '#0EA5E9', bg: '#E0F2FE', label: 'Draft' },
 };
 
-function RenameInput({
-  initial,
-  onSave,
-  onCancel,
-}: { initial: string; onSave: (t: string) => void; onCancel: () => void }) {
+function RenameInput({ initial, onSave, onCancel }: { initial: string; onSave: (t: string) => void; onCancel: () => void }) {
   const [val, setVal] = useState(initial);
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => { ref.current?.focus(); ref.current?.select(); }, []);
   return (
-    <div className="flex items-center gap-2 mt-1 w-full">
+    <div className="flex items-center gap-2 flex-1 min-w-0">
       <input
         ref={ref}
         value={val}
         onChange={e => setVal(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') onSave(val); if (e.key === 'Escape') onCancel(); }}
-        className="flex-1 text-sm font-medium border border-[#E2E8F0] rounded-lg px-2 py-1 bg-white focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5]"
+        style={{
+          flex: 1, height: 36, fontSize: 13, fontWeight: 500,
+          border: `1.5px solid ${P}`, borderRadius: 8,
+          padding: '0 10px', outline: 'none',
+          background: 'white', color: TEXT, fontFamily: UI,
+          boxShadow: `0 0 0 3px ${Ps}`,
+        }}
         maxLength={200}
       />
-      <button onClick={() => onSave(val)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#4F46E5] text-white">
-        <Check className="w-4 h-4" />
+      <button
+        onClick={() => onSave(val)}
+        style={{ width: 32, height: 32, borderRadius: 8, background: P, border: 'none', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+      >
+        <Check size={14} />
       </button>
-      <button onClick={onCancel} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#F1F5F9] text-[#64748B]">
-        <X className="w-4 h-4" />
+      <button
+        onClick={onCancel}
+        style={{ width: 32, height: 32, borderRadius: 8, background: '#F1F5F9', border: 'none', color: MUTED, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+      >
+        <X size={14} />
       </button>
     </div>
   );
@@ -56,13 +75,13 @@ export default function HistoryPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [fetching, setFetching] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'scan' | 'voice' | 'draft'>('all');
+  const [history, setHistory]     = useState<HistoryEntry[]>([]);
+  const [fetching, setFetching]   = useState(true);
+  const [filter, setFilter]       = useState<'all' | 'scan' | 'voice' | 'draft'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId]   = useState<string | null>(null);
+  const [renamingId, setRenamingId]   = useState<string | null>(null);
+  const [menuOpenId, setMenuOpenId]   = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) router.replace('/login');
@@ -83,14 +102,11 @@ export default function HistoryPage() {
     fetchHistory();
   }, [user]);
 
-  const handleSearch = (q: string) => setSearchQuery(q);
-
   const handleRename = async (id: string, newTitle: string) => {
     setRenamingId(null);
     if (!newTitle.trim()) return;
     const oldTitle = history.find(h => h.id === id)?.title;
     if (oldTitle === newTitle) return;
-
     setHistory(prev => prev.map(h => (h.id === id ? { ...h, title: newTitle } : h)));
     try {
       await apiPost('/rename-document', { id, newTitle });
@@ -102,7 +118,7 @@ export default function HistoryPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this document forever?')) return;
-    setDeletingId(id);
+    setDeletingId(id); setMenuOpenId(null);
     try {
       await apiPost('/delete-document', { id });
       setHistory(prev => prev.filter(h => h.id !== id));
@@ -113,134 +129,218 @@ export default function HistoryPage() {
     }
   };
 
+  const FILTER_TABS = [
+    { key: 'all',   label: 'All' },
+    { key: 'voice', label: 'Audio' },
+    { key: 'scan',  label: 'Documents' },
+    { key: 'draft', label: 'Drafts' },
+  ] as const;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-6 h-6 border-2 border-[#4F46E5] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!user) return null;
-
-  const filtered = history.filter(h => {
-    const matchesFilter = filter === 'all' ? true : h.type === filter;
-    const matchesSearch = h.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          (h.preview && h.preview.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filtered = history.filter(item => {
+    const matchesFilter = filter === 'all' || item.type === filter || (filter === 'scan' && item.type === 'transcription');
+    const matchesSearch = !searchQuery || item.title.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
+  const formatDate = (d: string) => {
+    try {
+      return new Date(d).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch { return d; }
+  };
+
   return (
-    <div className="flex flex-col h-full p-6 md:p-8 max-w-5xl mx-auto">
-      <header className="mb-6 mt-2 md:mt-0">
-        <h1 className="text-2xl font-bold font-display tracking-tight text-[#0F172A] mb-1">My Files</h1>
-        <p className="text-[#64748B] text-sm">Access, organize, and manage all your files.</p>
-      </header>
+    <div style={{ minHeight: '100svh', background: '#F8FAFC', fontFamily: UI }}>
+      <div style={{ maxWidth: 640, margin: '0 auto', padding: '0 16px' }}>
 
-      {/* Search Bar */}
-      <div className="relative mb-6">
-        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-          <Search className="h-5 w-5 text-[#94A3B8]" />
+        {/* Header */}
+        <div style={{ paddingTop: 24, paddingBottom: 16 }}>
+          <h1 style={{ fontFamily: '"Poppins", sans-serif', fontSize: 22, fontWeight: 700, color: TEXT, margin: 0 }}>
+            My Files
+          </h1>
+          <p style={{ fontSize: 13, color: MUTED, margin: '4px 0 0' }}>
+            {history.length} {history.length === 1 ? 'document' : 'documents'}
+          </p>
         </div>
-        <input
-          type="search"
-          placeholder="Search files..."
-          value={searchQuery}
-          onChange={e => handleSearch(e.target.value)}
-          className="w-full h-12 pl-11 pr-4 bg-white border border-[#E2E8F0] rounded-2xl text-sm font-medium text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] shadow-sm transition-all"
-        />
-        {searchQuery && (
-          <button onClick={() => setSearchQuery('')} className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#94A3B8] hover:text-[#0F172A]">
-             <X className="h-4 w-4" />
-          </button>
-        )}
-      </div>
 
-      {/* Filter Pills */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
-        {(['all', 'scan', 'voice', 'draft'] as const).map(f => {
-          const filterLabels: Record<string, string> = {
-            all: 'All', scan: 'Scan', voice: 'Audio', draft: 'Handwritten'
-          };
-          const isActive = filter === f;
-          return (
+        {/* Search */}
+        <div style={{ position: 'relative', marginBottom: 16 }}>
+          <Search size={16} color={MUTED} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+          <input
+            type="text"
+            placeholder="Search files…"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%', height: 48,
+              paddingLeft: 42, paddingRight: 16,
+              background: 'white',
+              border: `1.5px solid ${BORDER}`,
+              borderRadius: 14, fontSize: 14, color: TEXT,
+              outline: 'none', fontFamily: UI, boxSizing: 'border-box',
+            }}
+            onFocus={e => { e.target.style.borderColor = P; e.target.style.boxShadow = `0 0 0 3px ${Ps}`; }}
+            onBlur={e => { e.target.style.borderColor = BORDER; e.target.style.boxShadow = 'none'; }}
+          />
+        </div>
+
+        {/* Filter tabs */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20, overflowX: 'auto', paddingBottom: 4 }}>
+          {FILTER_TABS.map(tab => (
             <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors border ${isActive ? 'bg-[#0F172A] text-white border-transparent' : 'bg-white text-[#64748B] border-[#E2E8F0] hover:bg-[#F8FAFC] hover:text-[#0F172A]'}`}
+              key={tab.key}
+              onClick={() => setFilter(tab.key as any)}
+              style={{
+                padding: '6px 14px', borderRadius: 20, border: 'none',
+                fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+                background: filter === tab.key ? P : 'white',
+                color: filter === tab.key ? '#fff' : MUTED,
+                boxShadow: filter === tab.key ? `0 2px 8px rgba(90,69,255,0.3)` : `0 0 0 1px ${BORDER}`,
+                transition: 'all 150ms',
+              }}
             >
-              {filterLabels[f]}
+              {tab.label}
             </button>
-          );
-        })}
-      </div>
+          ))}
+        </div>
 
-      {/* File List */}
-      <div className="flex-1 overflow-y-auto">
+        {/* Content */}
         {fetching ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-[#4F46E5] border-t-transparent rounded-full animate-spin" />
+          <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 60 }}>
+            <Loader2 size={24} color={P} style={{ animation: 'spin 0.8s linear infinite' }} />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-20">
-            <Folder className="w-12 h-12 mx-auto text-[#CBD5E1] mb-3" />
-            <h3 className="text-[#0F172A] font-semibold">No files found</h3>
-            <p className="text-[#94A3B8] text-sm mt-1">Try adjusting your search or filters.</p>
+          <div style={{ textAlign: 'center', paddingTop: 64 }}>
+            <div style={{ width: 64, height: 64, borderRadius: 16, background: Ps, margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <FileX size={28} color={P} />
+            </div>
+            <h3 style={{ fontFamily: '"Poppins", sans-serif', fontSize: 16, fontWeight: 600, color: TEXT, margin: '0 0 8px' }}>
+              {searchQuery ? 'No results found' : 'No files yet'}
+            </h3>
+            <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>
+              {searchQuery ? 'Try a different search term' : 'Scan a document or record audio to get started'}
+            </p>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm divide-y divide-[#E2E8F0] overflow-hidden">
-            {filtered.map(entry => {
-              const Icon = TYPE_ICONS[entry.type] ?? FileText;
-              const isDeleting = deletingId === entry.id;
-              const isRenaming = renamingId === entry.id;
-              const isAudio = entry.type === 'voice';
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <AnimatePresence>
+              {filtered.map((item, i) => {
+                const cfg = TYPE_CONFIG[item.type] || TYPE_CONFIG.scan;
+                const Icon = cfg.icon;
+                const isDeleting = deletingId === item.id;
+                const isRenaming = renamingId === item.id;
+                const isMenuOpen = menuOpenId === item.id;
 
-              return (
-                <div key={entry.id} className="flex items-start p-4 transition-colors">
-                  <div className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center mr-4 ">
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0 pr-4 mt-1">
-                    {isRenaming ? (
-                      <RenameInput
-                        initial={entry.title}
-                        onSave={t => handleRename(entry.id, t)}
-                        onCancel={() => setRenamingId(null)}
-                      />
-                    ) : (
-                      <div 
-                        className="cursor-pointer group"
-                        onClick={() => {
-                          if (!isRenaming) router.push(entry.type === 'draft' ? `/draft?id=${entry.id}` : `/app?doc=${entry.id}`);
-                        }}
-                      >
-                        <h3 className="text-[15px] font-semibold text-[#0F172A] truncate group-hover:text-[#4F46E5] transition-colors">{entry.title}</h3>
-                        <div className="flex items-center gap-3 mt-1 text-[#94A3B8] text-xs font-medium">
-                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(entry.createdAt).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                          {entry.hasText && <span className="bg-[#F1F5F9] px-2 py-0.5 rounded text-[#64748B]">Transcribed</span>}
+                return (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ delay: i * 0.03 }}
+                    style={{
+                      background: 'white',
+                      border: `1px solid ${BORDER}`,
+                      borderRadius: 16,
+                      padding: '12px 14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      cursor: isRenaming ? 'default' : 'pointer',
+                      position: 'relative',
+                      opacity: isDeleting ? 0.5 : 1,
+                      transition: 'opacity 200ms',
+                    }}
+                    onClick={() => {
+                      if (isRenaming || isMenuOpen) return;
+                      router.push(`/app?doc=${item.id}`);
+                    }}
+                  >
+                    {/* Icon */}
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+                      background: cfg.bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Icon size={20} color={cfg.color} />
+                    </div>
+
+                    {/* Content */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {isRenaming ? (
+                        <div onClick={e => e.stopPropagation()}>
+                          <RenameInput
+                            initial={item.title}
+                            onSave={t => handleRename(item.id, t)}
+                            onCancel={() => setRenamingId(null)}
+                          />
                         </div>
-                        {entry.preview && (
-                          <p className="text-sm text-[#64748B] mt-2 line-clamp-1 overflow-hidden text-ellipsis">{entry.preview}</p>
-                        )}
+                      ) : (
+                        <>
+                          <p style={{ fontSize: 14, fontWeight: 600, color: TEXT, margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {item.title || 'Untitled Document'}
+                          </p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 11, color: MUTED }}>{formatDate(item.createdAt)}</span>
+                            <span style={{
+                              fontSize: 10, fontWeight: 700, padding: '1px 7px',
+                              borderRadius: 20, color: cfg.color, background: cfg.bg,
+                            }}>
+                              {cfg.label}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Context menu */}
+                    {!isRenaming && (
+                      <div style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                        <button
+                          onClick={() => setMenuOpenId(isMenuOpen ? null : item.id)}
+                          style={{ width: 32, height: 32, borderRadius: 8, background: isMenuOpen ? Ps : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED }}
+                        >
+                          {isDeleting
+                            ? <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />
+                            : <MoreVertical size={16} />
+                          }
+                        </button>
+
+                        <AnimatePresence>
+                          {isMenuOpen && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.9, y: -4 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.9, y: -4 }}
+                              transition={{ duration: 0.12 }}
+                              style={{
+                                position: 'absolute', right: 0, top: 36, zIndex: 20,
+                                background: 'white', border: `1px solid ${BORDER}`,
+                                borderRadius: 12, overflow: 'hidden',
+                                boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+                                minWidth: 140,
+                              }}
+                            >
+                              <button
+                                onClick={() => { setMenuOpenId(null); setRenamingId(item.id); }}
+                                style={{ width: '100%', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: TEXT, textAlign: 'left', display: 'block' }}
+                              >
+                                ✏️ Rename
+                              </button>
+                              <div style={{ height: 1, background: BORDER }} />
+                              <button
+                                onClick={() => handleDelete(item.id)}
+                                style={{ width: '100%', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: '#EF4444', textAlign: 'left', display: 'block' }}
+                              >
+                                🗑️ Delete
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     )}
-                  </div>
-
-                  {!isRenaming && (
-                    <div className="shrink-0 flex items-center gap-2 mt-2">
-                       <button onClick={() => setRenamingId(entry.id)} className="w-8 h-8 flex items-center justify-center text-[#94A3B8] hover:text-[#4F46E5] hover:bg-[#E0E7FF] rounded-lg transition-colors">
-                         <PenTool size={16} />
-                       </button>
-                       <button onClick={() => handleDelete(entry.id)} className="w-8 h-8 flex items-center justify-center text-[#94A3B8] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                         <Trash2 size={16} />
-                       </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </div>
         )}
       </div>

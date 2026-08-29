@@ -122,7 +122,7 @@ function InboxModal({ onClose, onSend }) {
                 {/* Options */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
                     {[
-                        { key: 'docx', label: 'Word Document', sub: 'Editable .docx file', color: '#4F46E5', bg: '#E0E7FF' },
+                        { key: 'docx', label: 'Word Document', sub: 'Editable .docx file', color: '#5A45FF', bg: '#EDE9FE' },
                         { key: 'pdf', label: 'PDF Document', sub: 'Print-ready .pdf file', color: '#DC2626', bg: '#FEF2F2' },
                     ].map(({ key, label, sub, color, bg }) => {
                         const active = selected[key];
@@ -386,7 +386,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                 <button
                     onClick={handleConvertVoice}
                     style={{
-                        padding: '12px 24px', background: '#4F46E5', color: '#fff',
+                        padding: '12px 24px', background: '#5A45FF', color: '#fff',
                         border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
                         cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
                         boxShadow: '0 4px 12px rgba(37,99,235,0.18)', transition: 'all 0.2s',
@@ -506,7 +506,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <div style={{
                     flex: '1 1 180px', minWidth: 0,
-                    border: `1.5px solid ${emailFocused ? '#4338CA' : '#E2E8F0'}`,
+                    border: `1.5px solid ${emailFocused ? '#4A38E8' : '#E2E8F0'}`,
                     borderRadius: '8px', background: '#F8FAFC',
                     transition: 'border-color 0.2s',
                     boxShadow: emailFocused ? '0 0 0 3px rgba(29,78,216,0.08)' : 'none',
@@ -543,7 +543,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                         disabled={sendingEmail || !hasReviewed}
                         style={{
                             padding: '9px 14px',
-                            background: '#4F46E5', color: '#fff',
+                            background: '#5A45FF', color: '#fff',
                             border: 'none', borderRadius: '8px',
                             fontSize: '13px', fontWeight: '700',
                             cursor: (sendingEmail || !hasReviewed) ? 'not-allowed' : 'pointer',
@@ -615,13 +615,13 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                 {/* DOCX */}
                 <button onClick={handleDownloadDocx} disabled={!hasReviewed} title="Download Word document" style={{
                     display: 'flex', alignItems: 'center', gap: '5px',
-                    padding: '6px 10px', background: '#E0E7FF', border: 'none', borderRadius: '7px',
-                    fontSize: '12px', fontWeight: '600', color: '#4338CA',
+                    padding: '6px 10px', background: '#EDE9FE', border: 'none', borderRadius: '7px',
+                    fontSize: '12px', fontWeight: '600', color: '#4A38E8',
                     cursor: hasReviewed ? 'pointer' : 'not-allowed',
                     opacity: hasReviewed ? 1 : 0.4,
                     whiteSpace: 'nowrap', flexShrink: 0, fontFamily: 'inherit',
                 }}>
-                    <FileDown size={12} color="#4338CA" />
+                    <FileDown size={12} color="#4A38E8" />
                     {isDesktop ? 'Word' : '.doc'}
                 </button>
 
@@ -889,7 +889,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     return (
         <div className="font-sans" style={{ animation: 'fadeIn 0.4s ease', display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: -4 }}>
-                <button onClick={onReset} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#4338CA', fontWeight: 600, fontSize: 14, cursor: 'pointer', padding: '8px 0' }}>
+                <button onClick={onReset} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#4A38E8', fontWeight: 600, fontSize: 14, cursor: 'pointer', padding: '8px 0' }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                     Back
                 </button>

@@ -11,7 +11,7 @@ interface Props {
   color?: string;
 }
 
-export function InktoLogo({ size = 26, animate = false, color = '#24467A' }: Props) {
+export function InktoLogo({ size = 26, animate = false, color = '#5A45FF' }: Props) {
   return (
     <svg
       width={size}
@@ -40,16 +40,16 @@ export function InktoWordmark({ size = 26, animate = false }: { size?: number; a
       <InktoLogo size={size} animate={animate} />
       <span
         style={{
-          fontWeight: 800,
-          fontSize: Math.round(size * 0.68),
-          letterSpacing: '-0.4px',
-          color: '#0B0D12',
+          fontWeight: 700,
+          fontSize: Math.round(size * 0.7),
+          letterSpacing: '-0.5px',
+          color: '#0F172A',
           lineHeight: 1,
           userSelect: 'none',
-          fontFamily: '-apple-system, "Segoe UI", Roboto, sans-serif',
+          fontFamily: '"Poppins", -apple-system, sans-serif',
         }}
       >
-        Inkto
+        inkto
       </span>
     </div>
   );

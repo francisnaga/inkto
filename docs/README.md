@@ -1,129 +1,128 @@
 <div align="center">
 
-<svg width="72" height="72" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M16 50 L36 28 L54 38 L54 62 L36 72 Z" fill="#2563EB"/>
-  <circle cx="30" cy="50" r="3.5" fill="white"/>
-  <line x1="16" y1="50" x2="36" y2="50" stroke="white" stroke-width="3" stroke-linecap="round"/>
-  <line x1="36" y1="28" x2="36" y2="72" stroke="white" stroke-width="2" stroke-linecap="round"/>
-  <rect x="57" y="30" width="28" height="7" rx="3.5" fill="#2563EB"/>
-  <rect x="57" y="46.5" width="26" height="7" rx="3.5" fill="#2563EB"/>
-  <rect x="57" y="63" width="20" height="7" rx="3.5" fill="#2563EB"/>
-</svg>
-
 # Inkto
 
-**AI-powered handwriting transcription — upload a photo, get clean text or a `.docx` back.**  
-Built specifically for Nigerian legal documents: affidavits, court filings, case notes.
+**Turn handwritten documents, scans, and voice dictation into clean, editable Word documents.**
 
-<br/>
-
-[![Live App](https://img.shields.io/badge/Live%20App-Inkto-2563EB?style=for-the-badge&logo=vercel&logoColor=white)](https://efobifrancis.vercel.app)
-[![Built with React](https://img.shields.io/badge/React-Vite%20PWA-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://vitejs.dev)
-[![Claude Vision](https://img.shields.io/badge/AI-Claude%20Vision-2563EB?style=for-the-badge&logo=anthropic&logoColor=white)](https://anthropic.com)
-[![Accuracy](https://img.shields.io/badge/Accuracy-96%25-22c55e?style=for-the-badge)](#)
+Built for Nigerian legal practitioners.
 
 </div>
 
 -----
 
-## The Problem
+## Overview
 
-A lawyer’s handwritten notes travel a slow road — scrawled on paper, photographed on a phone, WhatsApp’d to someone who types it up manually, then sent back. If the secretary is unavailable, the document waits.
-
-**Inkto cuts that loop entirely.**
-
-Upload a photo. Get back clean, formatted text — or a ready-to-edit `.docx` — in seconds.
-
------
-
-## How It Works
-
-```
-📷 Upload photo / PDF          →   Client-side compression (Canvas API)
-📄 PDF pages                   →   Converted to images via pdfjs-dist
-🧠 Claude Vision (primary)     →   Transcription with legal document tuning
-🤖 Gemini (fallback)           →   Redundancy layer if primary fails
-✉️  Send to email               →   Delivered as plain text or .docx
-```
-
-**Legal-specific tuning:**
-
-- Omits crossed-out text automatically
-- Includes caret-inserted (`^`) additions
-- Flags illegible words as `[?]` for human review
-- Structured around Nigerian court document formatting
-
------
+Inkto helps lawyers turn the work they already handwrite, scan, and
+dictate into usable digital documents. Point a phone at a document or
+record your voice, and Inkto returns a properly formatted, editable
+Word file — with a template library and searchable document history
+built around how Nigerian legal practice actually works.
 
 ## Features
 
-|Feature              |Detail                           |
-|---------------------|---------------------------------|
-|📸 Photo or PDF upload|Drag-and-drop or camera capture  |
-|🧠 AI transcription   |Claude Vision + Gemini fallback  |
-|📄 Export formats     |Plain text or formatted `.docx`  |
-|✉️ Email delivery     |Sent directly to your inbox      |
-|🕓 Document history   |Tied to email — no login required|
-|📱 PWA                |Installable, works offline       |
-|⚡ No account needed  |Open link, upload, done          |
-
------
+- **Scan** — Document capture powered by Google ML Kit’s Document
+  Scanner: automatic edge detection, perspective correction, and
+  multi-page support.
+- **Transcribe** — Convert handwritten or typed documents into
+  structured, editable Word documents. Every result includes a
+  side-by-side comparison against the original for verification.
+- **Dictate** — Record or upload audio and get a formatted transcript.
+  Automatic punctuation and paragraph detection are tuned for Nigerian
+  legal dictation conventions — numbered affidavit paragraphs, motions,
+  pleadings, and correspondence.
+- **Templates** — A shared library of standard legal document
+  templates. Use any template blank at no cost, or auto-fill it from
+  your own content with AI.
+- **Document Library** — Every scan, transcript, and recording is
+  saved to a searchable, filterable history.
 
 ## Tech Stack
 
-```
-Frontend     React + Vite (PWA)
-Backend      Node.js serverless functions on Vercel
-AI Primary   Claude Vision API (Anthropic)
-AI Fallback  Gemini
-PDF Parsing  pdfjs-dist
-Compression  Canvas API (client-side, before upload)
-Export       docx generation (server-side)
-```
+|Layer             |Technology                                                |
+|------------------|----------------------------------------------------------|
+|Frontend          |Next.js                                                   |
+|Mobile            |Capacitor (Android), with Google ML Kit as a native plugin|
+|Backend / Database|Supabase (Postgres + Supabase Auth)                       |
+|Hosting           |Vercel                                                    |
+|Email             |Resend                                                    |
+|AI                |Google Gemini (vision + audio)                            |
+|Payments          |Paystack                                                  |
 
------
+## Getting Started
 
-## Why No Login?
-
-Inkto was built for a specific user: a lawyer who needed to upload a document and get the text back — no friction, no account, no app to install. Open a link. Upload. Done.
-
-History is scoped to an email address (via magic link) — documents only appear in history if an email was captured during the session. Anonymous one-off sessions stay anonymous.
-
------
-
-## Accuracy
-
-**96%** on handwritten Nigerian legal documents tested across affidavits, court forms, and case notes. Illegible sections are flagged `[?]` rather than guessed.
-
------
-
-## Local Development
+> The values below are placeholders reflecting the stack above — replace
+> with the project’s actual setup commands and environment variables.
 
 ```bash
-git clone https://github.com/francisnaga/inkto
+git clone <repo-url>
 cd inkto
 npm install
+```
+
+Create a `.env.local`:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+GEMINI_API_KEY=
+RESEND_API_KEY=
+PAYSTACK_SECRET_KEY=
+```
+
+```bash
 npm run dev
 ```
 
-Add your environment variables:
+### Android build (Capacitor)
 
-```env
-ANTHROPIC_API_KEY=your_key_here
-GEMINI_API_KEY=your_key_here
+```bash
+npx cap sync android
+npx cap open android
 ```
 
------
+## Project Status
 
-## Built By
+Actively in development.
 
-<div align="center">
+- [x] Authentication (Supabase Auth, email OTP)
+- [x] Document scanning (Google ML Kit)
+- [x] Handwriting and typed-document transcription
+- [x] Voice dictation
+- [x] Document templates (blank + AI-fit)
+- [ ] AI document drafting
+- [ ] Matter/case-based organization
+- [ ] Verified legal research
 
-Full-stack developer · Marine Engineering student · Nigerian Maritime University
+## Roadmap
 
-[![GitHub](https://img.shields.io/badge/GitHub-francisnaga-181717?style=flat-square&logo=github)](https://github.com/francisnaga)
-[![Portfolio](https://img.shields.io/badge/Portfolio-efobifrancis.vercel.app-2563EB?style=flat-square&logo=vercel)](https://efobifrancis.vercel.app)
+**Phase 1 (current)** — Scanning, transcription, templates, document
+library, authentication, subscription tiers.
 
-*Solves a real problem.*
+**Phase 1.5** — Voice-to-text refinement, AI document drafting.
 
-</div>
+**Phase 2+** — Matter/case-based organization, verified legal research.
+Legal research is deferred intentionally: general-purpose AI models are
+prone to fabricating case citations, and this will only ship once it’s
+backed by a verified legal corpus or search-grounded sourcing.
+
+## Working on This Project
+
+- This application processes privileged legal content — data handling,
+  retention, and storage decisions are governed by the project’s
+  compliance documentation, not left to individual judgment.
+- AI-generated or AI-restructured content (drafting, template-fit) must
+  always pass through the mandatory human-review step before export —
+  never bypass this gate.
+- Scope changes should be checked against the project’s specification
+  documents before implementation.
+
+## License
+
+Proprietary. All rights reserved.
+
+## Contact
+
+Built for Nigerian legal practitioners. Feedback from lawyers actually
+using the app shapes the roadmap more than anything else — reach out
+with what’s working and what isn’t.

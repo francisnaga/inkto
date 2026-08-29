@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -9,7 +9,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || '';
   const isAuthRoute = pathname === '/' || pathname === '/login' || pathname === '/verify' || pathname === '/privacy' || pathname === '/terms';
 
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
 
   if (isAuthRoute) {
@@ -41,8 +41,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             const isActive = pathname === item.href;
             return (
               <Link key={item.name} href={item.href}
-                className={lex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium text-sm
-                   + (isActive ? 'bg-[#E0E7FF] text-[#4F46E5]' : 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]')}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors font-medium text-sm ${isActive ? "bg-[#E0E7FF] text-[#4F46E5]" : "text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]"}`}
               >
                 <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
                 {item.name}
@@ -51,7 +50,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
         <div className="p-4 border-t border-[#E2E8F0]">
-          <button onClick={() => { signOut(); router.push('/login'); }} className="flex w-full items-center gap-3 px-4 py-3 text-[#64748B] hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors font-medium text-sm">
+          <button onClick={async () => { await logout(); router.push('/login'); }} className="flex w-full items-center gap-3 px-4 py-3 text-[#64748B] hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors font-medium text-sm">
             <LogOut size={18} />
             Log Out
           </button>
@@ -70,11 +69,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex justify-around items-center h-14 relative">
           <Link href="/app" className="flex flex-col items-center gap-1 w-16">
             <LayoutDashboard size={20} className={pathname === '/app' ? 'text-[#4F46E5]' : 'text-[#94A3B8]'} />
-            <span className={	ext-[10px] font-medium  + (pathname === '/app' ? 'text-[#4F46E5]' : 'text-[#94A3B8]')}>Home</span>
+            <span className={`text-[10px] font-medium ${pathname === "/app" ? "text-[#4F46E5]" : "text-[#94A3B8]"}`}>Home</span>
           </Link>
           <Link href="/history" className="flex flex-col items-center gap-1 w-16">
             <Folder size={20} className={pathname === '/history' ? 'text-[#4F46E5]' : 'text-[#94A3B8]'} />
-            <span className={	ext-[10px] font-medium  + (pathname === '/history' ? 'text-[#4F46E5]' : 'text-[#94A3B8]')}>Files</span>
+            <span className={`text-[10px] font-medium ${pathname === "/history" ? "text-[#4F46E5]" : "text-[#94A3B8]"}`}>Files</span>
           </Link>
 
           {/* Center Scan FAB */}
@@ -92,11 +91,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
           <Link href="/templates" className="flex flex-col items-center gap-1 w-16">
             <FileText size={20} className={pathname === '/templates' ? 'text-[#4F46E5]' : 'text-[#94A3B8]'} />
-            <span className={	ext-[10px] font-medium  + (pathname === '/templates' ? 'text-[#4F46E5]' : 'text-[#94A3B8]')}>Templates</span>
+            <span className={`text-[10px] font-medium ${pathname === "/templates" ? "text-[#4F46E5]" : "text-[#94A3B8]"}`}>Templates</span>
           </Link>
           <Link href="/account" className="flex flex-col items-center gap-1 w-16">
             <User size={20} className={pathname === '/account' ? 'text-[#4F46E5]' : 'text-[#94A3B8]'} />
-            <span className={	ext-[10px] font-medium  + (pathname === '/account' ? 'text-[#4F46E5]' : 'text-[#94A3B8]')}>Profile</span>
+            <span className={`text-[10px] font-medium ${pathname === "/account" ? "text-[#4F46E5]" : "text-[#94A3B8]"}`}>Profile</span>
           </Link>
         </div>
       </nav>

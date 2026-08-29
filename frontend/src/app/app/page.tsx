@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Suspense, useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -85,7 +85,7 @@ function AppPageContent() {
   };
 
   const uploadPdfToStorage = async (blob: Blob, pagesCount: number): Promise<{url: string, id: string}> => {
-    const name = scan- + new Date().toISOString().slice(0, 10) + - + pagesCount + p.pdf;
+    const name = `scan-`+ new Date().toISOString().slice(0, 10) + - + pagesCount + `p.pdf`;
     const fd = new FormData(); 
     fd.append('file', blob, name); 
     fd.append('title', name); 
@@ -218,8 +218,8 @@ function AppPageContent() {
               recentFiles.map((file) => {
                   const isAudio = file.type === 'voice';
                   return (
-                    <Link href={/app?doc= + file.id} key={file.id} className="flex items-center p-4 hover:bg-[#F8FAFC] transition-colors active:bg-[#F1F5F9]">
-                      <div className={w-10 h-10 rounded-xl flex items-center justify-center mr-4  + (isAudio ? 'bg-orange-50 text-orange-500' : 'bg-red-50 text-red-500')}>
+                    <Link href={`/app?doc=` + file.id} key={file.id} className="flex items-center p-4 hover:bg-[#F8FAFC] transition-colors active:bg-[#F1F5F9]">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center mr-4 ${isAudio ? 'bg-orange-50 text-orange-500' : 'bg-red-50 text-red-500'}`}>
                         {isAudio ? <FileAudio size={20} /> : <FileText size={20} />}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -259,6 +259,9 @@ function AppPageContent() {
           onTranscribe={handlePostScanTranscribe}
           onSaveAndTranscribe={handlePostScanSaveAndTranscribe}
           onCancel={() => setPostScanData(null)}
+          onAddPage={() => {}}
+          onRetake={() => {}}
+          onSaveAsPdf={async () => {}}
         />
       )}
     </>

@@ -1,4 +1,4 @@
-﻿import { Capacitor } from '@capacitor/core';
+import { Capacitor } from '@capacitor/core';
 import { DocumentScanner } from '@capacitor-mlkit/document-scanner';
 
 export interface ScanResult {

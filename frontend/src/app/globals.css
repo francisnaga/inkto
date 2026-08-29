@@ -1,62 +1,13 @@
-﻿@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@custom-variant dark (&:is(.dark *));
-
-/* 
-  Inkto Design System 
-  Based on ChatGPT Prompt & Uploaded Mockups
-*/
 :root {
-  /* Brand Palette */
-  --primary: #4F46E5; /* Deep Purple / Indigo Accent */
-  --primary-hover: #4338CA;
-  --secondary: #E0E7FF; /* Light purple for subtle backgrounds */
-  
-  /* Backgrounds */
-  --bg-main: #F8FAFC; /* Light Gray background */
-  --bg-card: #FFFFFF; /* White for cards/panels */
-  
-  /* Text */
-  --text-main: #0F172A; /* Dark Navy / Charcoal */
-  --text-muted: #64748B; /* Slate gray for secondary text */
-  --text-light: #94A3B8;
-  
-  /* Borders & Dividers */
-  --border: #E2E8F0;
-  
-  /* Fonts */
   --font-sans: 'Inter', sans-serif;
-  --font-display: 'Poppins', 'Inter', sans-serif;
+  --font-display: 'Poppins', sans-serif;
 }
 
 body {
-  background-color: var(--bg-main);
-  color: var(--text-main);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-}
-
-/* Custom Scrollbar for Desktop Sidebar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
-}
-
-/* Hide scrollbar for mobile */
-@media (max-width: 768px) {
-  ::-webkit-scrollbar {
-    display: none;
-  }
+  background-color: #F8FAFC;
+  color: #0F172A;
 }

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -34,26 +34,26 @@ const TEMPLATE_CATEGORIES = [
   {
     id: 'affidavits', name: 'Affidavits', icon: '📜',
     templates: [
-      { id: 'general-affidavit', name: 'General Affidavit', content: IN THE HIGH COURT OF [STATE] STATE\nIN THE [JUDICIAL DIVISION] JUDICIAL DIVISION\nHOLDEN AT [CITY]\n\nAFFIDAVIT OF [PURPOSE]\n\nI, [Name of Deponent], [Religion], [Nationality], [Occupation], residing at [Address], do hereby make oath and state as follows:\n\n1. That I am the Deponent herein.\n2. That [Fact 1].\n3. That [Fact 2].\n4. That I swear to this Affidavit in good faith.\n\n_______________________\nDEPONENT\n\nSworn to at the Registry of the High Court\nThis ______ day of ______________ 20____\n\nBEFORE ME\n\n_______________________\nCOMMISSIONER FOR OATHS }
+      { id: 'general-affidavit', name: 'General Affidavit', content: `IN THE HIGH COURT OF [STATE] STATE\nIN THE [JUDICIAL DIVISION] JUDICIAL DIVISION\nHOLDEN AT [CITY]\n\nAFFIDAVIT OF [PURPOSE]\n\nI, [Name of Deponent], [Religion], [Nationality], [Occupation], residing at [Address], do hereby make oath and state as follows:\n\n1. That I am the Deponent herein.\n2. That [Fact 1].\n3. That [Fact 2].\n4. That I swear to this Affidavit in good faith.\n\n_______________________\nDEPONENT\n\nSworn to at the Registry of the High Court\nThis ______ day of ______________ 20____\n\nBEFORE ME\n\n_______________________\nCOMMISSIONER FOR OATHS` }
     ]
   },
   {
     id: 'agreements', name: 'Agreements & Contracts', icon: '🤝',
     templates: [
-      { id: 'nda', name: 'Non-Disclosure Agreement', content: NON-DISCLOSURE AGREEMENT\n\nThis Agreement is made on this [Day] day of [Month], [Year] by and between:\n\n1. [Disclosing Party Name], of [Address] (the "Disclosing Party"); and\n2. [Receiving Party Name], of [Address] (the "Receiving Party").\n\nThe Parties agree as follows:\n\n1. Confidential Information: All non-public information disclosed by the Disclosing Party.\n2. Obligations: The Receiving Party shall not disclose the information to third parties.\n\nSignatures:\n\n_______________________          _______________________\nDisclosing Party                 Receiving Party },
-      { id: 'lease-agreement', name: 'Lease Agreement', content: LEASE AGREEMENT\n\nThis Lease Agreement is entered into on [Date] by:\n\nLANDLORD: [Landlord Name]\nTENANT: [Tenant Name]\n\nPROPERTY: [Address of Property]\n\nTERMS:\n1. Rent: [Amount] per [Month/Year]\n2. Duration: [Months/Years]\n\nSignatures:\n\n_______________________          _______________________\nLandlord                         Tenant }
+      { id: 'nda', name: 'Non-Disclosure Agreement', content: `NON-DISCLOSURE AGREEMENT\n\nThis Agreement is made on this [Day] day of [Month], [Year] by and between:\n\n1. [Disclosing Party Name], of [Address] (the "Disclosing Party"); and\n2. [Receiving Party Name], of [Address] (the "Receiving Party").\n\nThe Parties agree as follows:\n\n1. Confidential Information: All non-public information disclosed by the Disclosing Party.\n2. Obligations: The Receiving Party shall not disclose the information to third parties.\n\nSignatures:\n\n_______________________          _______________________\nDisclosing Party                 Receiving Party` },
+      { id: 'lease-agreement', name: 'Lease Agreement', content: `LEASE AGREEMENT\n\nThis Lease Agreement is entered into on [Date] by:\n\nLANDLORD: [Landlord Name]\nTENANT: [Tenant Name]\n\nPROPERTY: [Address of Property]\n\nTERMS:\n1. Rent: [Amount] per [Month/Year]\n2. Duration: [Months/Years]\n\nSignatures:\n\n_______________________          _______________________\nLandlord                         Tenant` }
     ]
   },
   {
     id: 'corporate', name: 'Corporate & Business', icon: '🏢',
     templates: [
-      { id: 'board-resolution', name: 'Board Resolution', content: BOARD RESOLUTION OF [COMPANY NAME]\n\nDate: [Date]\n\nIT WAS RESOLVED THAT:\n\n1. [Resolution 1]\n2. [Resolution 2]\n\n_______________________\nDIRECTOR / SECRETARY }
+      { id: 'board-resolution', name: 'Board Resolution', content: `BOARD RESOLUTION OF [COMPANY NAME]\n\nDate: [Date]\n\nIT WAS RESOLVED THAT:\n\n1. [Resolution 1]\n2. [Resolution 2]\n\n_______________________\nDIRECTOR / SECRETARY` }
     ]
   },
   {
     id: 'letters', name: 'Letters & Notices', icon: '✉️',
     templates: [
-      { id: 'demand-notice', name: 'Demand Notice', content: [Your Letterhead]\n[Date]\n\n[Recipient Name]\n[Recipient Address]\n\nDear [Name],\n\nDEMAND NOTICE FOR [SUBJECT]\n\nWe act as Solicitors to [Client Name] on whose instructions we write.\n\nTake notice that you are required to [Demand Action] within [Number] days.\n\nYours faithfully,\n\n_______________________\n[Lawyer/Firm Name] }
+      { id: 'demand-notice', name: 'Demand Notice', content: `[Your Letterhead]\n[Date]\n\n[Recipient Name]\n[Recipient Address]\n\nDear [Name],\n\nDEMAND NOTICE FOR [SUBJECT]\n\nWe act as Solicitors to [Client Name] on whose instructions we write.\n\nTake notice that you are required to [Demand Action] within [Number] days.\n\nYours faithfully,\n\n_______________________\n[Lawyer/Firm Name]` }
     ]
   }
 ];
@@ -128,7 +128,7 @@ export default function TemplatesPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: Fill this template with the provided details. Output ONLY the filled template text.\n\nTEMPLATE:\n\n\nDETAILS:\n,
+          prompt: `Fill this template with the provided details. Output ONLY the filled template text.\n\nTEMPLATE:\n${fittingTemplate.content}\n\nDETAILS:\n${fittingInput}`,
           format: 'text',
         }),
       });
@@ -219,8 +219,8 @@ export default function TemplatesPage() {
 
           {/* Toggle Modes */}
           <div className="flex gap-2 p-1 bg-[#F1F5F9] rounded-xl self-start">
-            <button onClick={() => setFitSourceMode('paste')} className={px-4 py-2 text-sm font-semibold rounded-lg transition-colors }>Type / Paste</button>
-            <button onClick={() => { setFitSourceMode('history'); fetchHistory(); }} className={px-4 py-2 text-sm font-semibold rounded-lg transition-colors }>From History</button>
+            <button onClick={() => setFitSourceMode('paste')} className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${fitSourceMode === 'paste' ? 'bg-white text-[#0F172A] shadow-sm' : 'text-[#64748B] hover:text-[#0F172A]'}`}>Type / Paste</button>
+            <button onClick={() => { setFitSourceMode('history'); fetchHistory(); }} className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${fitSourceMode === 'history' ? 'bg-white text-[#0F172A] shadow-sm' : 'text-[#64748B] hover:text-[#0F172A]'}`}>From History</button>
           </div>
 
           {fitSourceMode === 'paste' ? (
@@ -236,7 +236,7 @@ export default function TemplatesPage() {
                 <div className="p-8 text-center text-[#64748B] text-sm">No text history available to extract details from.</div>
               ) : (
                 historyItems.map(h => (
-                  <button key={h.id} onClick={() => setFittingInput(Extract details from this document transcript: \n\n)} className={w-full text-left p-4 hover:bg-white transition-colors }>
+                  <button key={h.id} onClick={() => setFittingInput(`Extract details from this document transcript: \n\n${h.text}`)} className="w-full text-left p-4 hover:bg-white transition-colors ">
                     <h4 className="font-semibold text-sm text-[#0F172A] mb-1">{h.title}</h4>
                     <p className="text-xs text-[#94A3B8] line-clamp-2">{h.preview}</p>
                   </button>
@@ -372,3 +372,4 @@ export default function TemplatesPage() {
     </div>
   );
 }
+

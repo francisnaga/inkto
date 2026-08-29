@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useEffect } from 'react';
 import { App } from '@capacitor/app';
 import { useRouter } from 'next/navigation';

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -179,7 +179,7 @@ export default function HistoryPage() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors border }
+              className={`px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors border ${isActive ? 'bg-[#0F172A] text-white border-transparent' : 'bg-white text-[#64748B] border-[#E2E8F0] hover:bg-[#F8FAFC] hover:text-[#0F172A]'}`}
             >
               {filterLabels[f]}
             </button>
@@ -208,8 +208,8 @@ export default function HistoryPage() {
               const isAudio = entry.type === 'voice';
 
               return (
-                <div key={entry.id} className={lex items-start p-4 transition-colors }>
-                  <div className={shrink-0 w-12 h-12 rounded-xl flex items-center justify-center mr-4 }>
+                <div key={entry.id} className="flex items-start p-4 transition-colors">
+                  <div className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center mr-4 ">
                     <Icon className="w-6 h-6" />
                   </div>
                   
@@ -224,7 +224,7 @@ export default function HistoryPage() {
                       <div 
                         className="cursor-pointer group"
                         onClick={() => {
-                          if (!isRenaming) router.push(entry.type === 'draft' ? /draft?id= : /app?doc=);
+                          if (!isRenaming) router.push(entry.type === 'draft' ? `/draft?id=${entry.id}` : `/app?doc=${entry.id}`);
                         }}
                       >
                         <h3 className="text-[15px] font-semibold text-[#0F172A] truncate group-hover:text-[#4F46E5] transition-colors">{entry.title}</h3>

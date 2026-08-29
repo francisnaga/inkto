@@ -1,4 +1,4 @@
-﻿import { App } from '@capacitor/app';
+import { App } from '@capacitor/app';
 import { compressImage } from './imageCompressor';
 import { nanoid } from 'nanoid';
 import { LocalQueue } from './local-queue';

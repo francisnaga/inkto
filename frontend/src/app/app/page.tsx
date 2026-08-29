@@ -54,7 +54,7 @@ function AppPageContent() {
   useEffect(() => {
     const fetchRecent = async () => {
       try {
-        const res = await fetch(`https://inkto.jointaccount.org/api/history?limit=4'); 
+        const res = await fetch('https://inkto.jointaccount.org/api/history?limit=4'); 
         if (res.ok) {
           const data = await res.json();
           setRecentFiles(data.documents || []);
@@ -85,7 +85,7 @@ function AppPageContent() {
   };
 
   const uploadPdfToStorage = async (blob: Blob, pagesCount: number): Promise<{url: string, id: string}> => {
-    const name = `scan-`+ new Date().toISOString().slice(0, 10) + - + pagesCount + `p.pdf`;
+    const name = `scan-${new Date().toISOString().slice(0, 10)}-${pagesCount}p.pdf`;
     const fd = new FormData(); 
     fd.append('file', blob, name); 
     fd.append('title', name); 

@@ -85,7 +85,7 @@ export default function TemplatesPage() {
   const fetchHistory = async () => {
     if (historyItems.length > 0) return;
     try {
-      const res = await fetch(`https://inkto.jointaccount.org/api/history?limit=15');
+      const res = await fetch('https://inkto.jointaccount.org/api/history?limit=15');
       if (res.ok) {
         const data = await res.json();
         setHistoryItems(data.documents || []);
@@ -124,7 +124,7 @@ export default function TemplatesPage() {
     if (!fittingInput.trim() || !fittingTemplate) return;
     setIsFitting(true);
     try {
-      const res = await fetch(`https://inkto.jointaccount.org/api/draft', {
+      const res = await fetch('https://inkto.jointaccount.org/api/draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,11 +1,11 @@
-'use client';
+﻿'use client';
 
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import Link from 'next/link';
 import { Loader2, LogOut, ChevronRight, Crown, MessageSquare, FileText, Lock, Shield, Phone, Check } from 'lucide-react';
-import { BottomNav } from '@/components/bottom-nav';
+
 import { motion } from 'framer-motion';
 
 const C = {
@@ -329,7 +329,7 @@ function AccountPageContent() {
           : <LogOut size={15} />}
         {loggingOut ? 'Signing out…' : 'Sign out'}
       </motion.button>
-      <BottomNav />
+      
     </motion.div>
   );
 }
@@ -341,3 +341,4 @@ export default function AccountPage() {
     </Suspense>
   );
 }
+

@@ -1,14 +1,10 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
-import { ChevronRight, FileText, Search, FileDown, File, Loader2, Trash2, Bookmark } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { BottomNav } from '@/components/bottom-nav';
-import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronRight, FileText, Search, FileDown, File, Loader2, PenTool, Sparkles, X, History, ClipboardPaste } from 'lucide-react';
 
 async function downloadFile(endpoint: string, text: string, filename: string, fallbackMsg: string) {
   try {
@@ -36,182 +32,42 @@ async function downloadFile(endpoint: string, text: string, filename: string, fa
 // ── Template data ──────────────────────────────────────────────────────────
 const TEMPLATE_CATEGORIES = [
   {
-    id: 'affidavits',
-    name: 'Affidavits',
-    icon: '📜',
+    id: 'affidavits', name: 'Affidavits', icon: '📜',
     templates: [
-      { 
-        id: 'general-affidavit', 
-        name: 'General Affidavit',
-        content: `IN THE HIGH COURT OF [STATE] STATE
-IN THE [JUDICIAL DIVISION] JUDICIAL DIVISION
-HOLDEN AT [CITY]
-
-AFFIDAVIT OF [PURPOSE]
-
-I, [FULL NAME], [Adult/Citizen], [Occupation], of [Address], [Religion] do hereby make oath and state as follows:
-
-1. That I am the Deponent herein.
-2. That I am a citizen of Nigeria.
-3. [Insert facts here...]
-4. That I make this solemn declaration conscientiously believing same to be true and in accordance with the Oaths Act.
-
-_______________________
-DEPONENT
-
-SWORN to at the Registry of the High Court of [State], this [Day] day of [Month], [Year].
-
-BEFORE ME,
-
-_______________________
-COMMISSIONER FOR OATHS`
-      },
-      { 
-        id: 'affidavit-of-loss', 
-        name: 'Affidavit of Loss',
-        content: `IN THE HIGH COURT OF [STATE] STATE
-IN THE [JUDICIAL DIVISION] JUDICIAL DIVISION
-HOLDEN AT [CITY]
-
-AFFIDAVIT OF LOSS OF [ITEM]
-
-I, [FULL NAME], [Adult/Citizen], [Occupation], of [Address], [Religion] do hereby make oath and state as follows:
-
-1. That I am the Deponent herein.
-2. That I am the lawful owner of [describe item, e.g., SIM card, ID card, document] with [serial number/identification details].
-3. That on the [Date], I discovered that the said [Item] was missing/lost.
-4. That despite all diligent search and efforts, I have been unable to find it.
-5. That this Affidavit is required for [state purpose, e.g., record purposes, replacement].
-6. That I make this solemn declaration conscientiously believing same to be true and in accordance with the Oaths Act.
-
-_______________________
-DEPONENT
-
-SWORN to at the Registry of the High Court of [State], this [Day] day of [Month], [Year].
-
-BEFORE ME,
-
-_______________________
-COMMISSIONER FOR OATHS`
-      },
-    ],
+      { id: 'general-affidavit', name: 'General Affidavit', content: IN THE HIGH COURT OF [STATE] STATE\nIN THE [JUDICIAL DIVISION] JUDICIAL DIVISION\nHOLDEN AT [CITY]\n\nAFFIDAVIT OF [PURPOSE]\n\nI, [Name of Deponent], [Religion], [Nationality], [Occupation], residing at [Address], do hereby make oath and state as follows:\n\n1. That I am the Deponent herein.\n2. That [Fact 1].\n3. That [Fact 2].\n4. That I swear to this Affidavit in good faith.\n\n_______________________\nDEPONENT\n\nSworn to at the Registry of the High Court\nThis ______ day of ______________ 20____\n\nBEFORE ME\n\n_______________________\nCOMMISSIONER FOR OATHS }
+    ]
   },
   {
-    id: 'agreements',
-    name: 'Agreements',
-    icon: '🤝',
+    id: 'agreements', name: 'Agreements & Contracts', icon: '🤝',
     templates: [
-      { 
-        id: 'tenancy-agreement', 
-        name: 'Tenancy Agreement',
-        content: `TENANCY AGREEMENT
-
-THIS AGREEMENT is made this [Day] day of [Month], [Year] 
-BETWEEN [LANDLORD'S NAME] of [Address] (hereinafter called the "Landlord") of the one part 
-AND [TENANT'S NAME] of [Address] (hereinafter called the "Tenant") of the other part.
-
-WHEREBY IT IS AGREED as follows:
-1. The Landlord lets and the Tenant takes the property situated at [Property Address] for a term of [Term, e.g., 1 year] commencing on the [Start Date] at the rent of N[Amount] per annum payable in advance.
-2. The Tenant covenants with the Landlord:
-   a. To pay the rent at the times and in the manner aforesaid.
-   b. To keep the premises in good and tenantable repair.
-   c. Not to assign or sublet the premises without the Landlord's written consent.
-3. The Landlord covenants with the Tenant for quiet enjoyment of the premises.
-
-IN WITNESS WHEREOF the parties have hereunto set their hands and seals the day and year first above written.
-
-SIGNED, SEALED AND DELIVERED by the Landlord
-_______________________
-
-SIGNED, SEALED AND DELIVERED by the Tenant
-_______________________`
-      },
-    ],
+      { id: 'nda', name: 'Non-Disclosure Agreement', content: NON-DISCLOSURE AGREEMENT\n\nThis Agreement is made on this [Day] day of [Month], [Year] by and between:\n\n1. [Disclosing Party Name], of [Address] (the "Disclosing Party"); and\n2. [Receiving Party Name], of [Address] (the "Receiving Party").\n\nThe Parties agree as follows:\n\n1. Confidential Information: All non-public information disclosed by the Disclosing Party.\n2. Obligations: The Receiving Party shall not disclose the information to third parties.\n\nSignatures:\n\n_______________________          _______________________\nDisclosing Party                 Receiving Party },
+      { id: 'lease-agreement', name: 'Lease Agreement', content: LEASE AGREEMENT\n\nThis Lease Agreement is entered into on [Date] by:\n\nLANDLORD: [Landlord Name]\nTENANT: [Tenant Name]\n\nPROPERTY: [Address of Property]\n\nTERMS:\n1. Rent: [Amount] per [Month/Year]\n2. Duration: [Months/Years]\n\nSignatures:\n\n_______________________          _______________________\nLandlord                         Tenant }
+    ]
   },
   {
-    id: 'letters',
-    name: 'Legal Letters',
-    icon: '✉️',
+    id: 'corporate', name: 'Corporate & Business', icon: '🏢',
     templates: [
-      { 
-        id: 'letter-of-demand', 
-        name: 'Letter of Demand',
-        content: `[LAW FIRM LETTERHEAD]
-[Date]
-
-[Recipient Name]
-[Recipient Address]
-
-Dear Sir/Madam,
-
-RE: LETTER OF DEMAND FOR [SUBJECT MATTER/AMOUNT]
-
-We act as Solicitors to [Client Name] (hereinafter referred to as "our Client") on whose instructions we write you.
-
-Our Client informs us that [state the facts of the debt or obligation]. 
-
-TAKE NOTICE that we hereby demand the payment of the sum of N[Amount] within [Number] days of the receipt of this letter.
-
-IF YOU FAIL, REFUSE OR NEGLECT to comply with this demand, we have our Client's instructions to commence legal proceedings against you without further recourse to you.
-
-Yours faithfully,
-
-_______________________
-[Lawyer's Name]
-[Law Firm Name]`
-      },
-    ],
+      { id: 'board-resolution', name: 'Board Resolution', content: BOARD RESOLUTION OF [COMPANY NAME]\n\nDate: [Date]\n\nIT WAS RESOLVED THAT:\n\n1. [Resolution 1]\n2. [Resolution 2]\n\n_______________________\nDIRECTOR / SECRETARY }
+    ]
   },
   {
-    id: 'pleadings',
-    name: 'Pleadings',
-    icon: '⚖️',
+    id: 'letters', name: 'Letters & Notices', icon: '✉️',
     templates: [
-      {
-        id: 'general-pleading',
-        name: 'General Court Pleading',
-        content: `IN THE [COURT NAME] COURT OF NIGERIA
-IN THE [JUDICIAL DIVISION] JUDICIAL DIVISION
-HOLDEN AT [CITY]
-
-SUIT NO: [SUIT NUMBER]
-
-BETWEEN:
-[PLAINTIFF/CLAIMANT NAME] ....................................... CLAIMANT
-
-AND
-
-[DEFENDANT NAME] ............................................. DEFENDANT
-
-[Pleading template placeholder — content will be added by developer]`
-      }
+      { id: 'demand-notice', name: 'Demand Notice', content: [Your Letterhead]\n[Date]\n\n[Recipient Name]\n[Recipient Address]\n\nDear [Name],\n\nDEMAND NOTICE FOR [SUBJECT]\n\nWe act as Solicitors to [Client Name] on whose instructions we write.\n\nTake notice that you are required to [Demand Action] within [Number] days.\n\nYours faithfully,\n\n_______________________\n[Lawyer/Firm Name] }
     ]
   }
 ];
 
-type View = 'categories' | 'list' | 'editor';
-
-interface Template {
-  id: string;
-  name: string;
-  content?: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  icon: string;
-  templates: Template[];
-}
+type View = 'categories' | 'list' | 'editor' | 'ai-draft';
+type Category = typeof TEMPLATE_CATEGORIES[0];
+type Template = typeof TEMPLATE_CATEGORIES[0]['templates'][0];
 
 export default function TemplatesPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/login');
-    }
+    if (!loading && !user) router.replace('/login');
   }, [loading, user, router]);
 
   const [view, setView] = useState<View>('categories');
@@ -225,264 +81,174 @@ export default function TemplatesPage() {
   const [isFitting, setIsFitting] = useState(false);
   const [fitSourceMode, setFitSourceMode] = useState<'select' | 'paste' | 'history'>('select');
   const [historyItems, setHistoryItems] = useState<any[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [loadingDocId, setLoadingDocId] = useState<string | null>(null);
 
-  const [showDraftModal, setShowDraftModal] = useState(false);
-  const [draftPrompt, setDraftPrompt] = useState('');
-  const [isDrafting, setIsDrafting] = useState(false);
-
-  const [userTemplates, setUserTemplates] = useState<any[]>([]);
-  const [loadingTemplates, setLoadingTemplates] = useState(false);
-
-  const fetchUserTemplates = async () => {
-    if (!user) return;
-    setLoadingTemplates(true);
+  const fetchHistory = async () => {
+    if (historyItems.length > 0) return;
     try {
-      const res = await fetch(`https://inkto.jointaccount.org/api/user-templates?t=${Date.now()}`, { 
-        credentials: 'include',
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-      const data = await res.json();
-      if (data.templates) setUserTemplates(data.templates);
+      const res = await fetch('/api/history?limit=15');
+      if (res.ok) {
+        const data = await res.json();
+        setHistoryItems(data.documents || []);
+      }
     } catch (e) {
       console.error(e);
-    } finally {
-      setLoadingTemplates(false);
     }
   };
 
-  useEffect(() => {
-    fetchUserTemplates();
-  }, [user]);
-
-  const handleDeleteUserTemplate = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm('Delete this template?')) return;
-    try {
-      const res = await fetch(`https://inkto.jointaccount.org/api/user-templates?id=${id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-      if (res.ok) {
-        setUserTemplates(prev => prev.filter(t => t.id !== id));
-      } else {
-        throw new Error();
-      }
-    } catch {
-      alert('Failed to delete template.');
-    }
-  };
-
-  const handleCategorySelect = (cat: Category) => {
-    setActiveCategory(cat);
+  const handleSelectCategory = (c: Category) => {
+    setActiveCategory(c);
     setView('list');
   };
 
-  const handleUseBlank = (template: Template) => {
-    setActiveTemplate(template);
-    setEditorContent(template.content || `[Content for ${template.name}]`);
+  const handleSelectTemplate = (t: Template) => {
+    setActiveTemplate(t);
+    setEditorContent(t.content);
     setView('editor');
   };
 
-  const handleRunAiFit = async () => {
-    if (!fittingTemplate) return;
+  const handleBack = () => {
+    if (view === 'editor') {
+      setView(activeCategory ? 'list' : 'categories');
+      setActiveTemplate(null);
+    } else if (view === 'list') {
+      setView('categories');
+      setActiveCategory(null);
+    } else if (view === 'ai-draft') {
+      setView(activeCategory ? 'list' : 'categories');
+      setFittingTemplate(null);
+      setFittingInput('');
+    }
+  };
+
+  const handleAiFit = async () => {
+    if (!fittingInput.trim() || !fittingTemplate) return;
     setIsFitting(true);
     try {
-      const res = await fetch('https://inkto.jointaccount.org/api/draft', {
+      const res = await fetch('/api/draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mode: 'fit',
-          userContent: fittingInput,
-          templateContent: fittingTemplate.content || ''
-        })
+          prompt: Fill this template with the provided details. Output ONLY the filled template text.\n\nTEMPLATE:\n\n\nDETAILS:\n,
+          format: 'text',
+        }),
       });
+      if (!res.ok) throw new Error('AI generation failed');
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'AI-Fit failed');
-      
+      setEditorContent(data.draft);
       setActiveTemplate(fittingTemplate);
-      setEditorContent(data.text);
       setView('editor');
-      setFittingTemplate(null);
-      setFittingInput('');
-    } catch (e: any) {
-      alert(e.message || 'Fitting failed. Please try again.');
+    } catch (err) {
+      alert('Failed to customize template with AI.');
     } finally {
       setIsFitting(false);
     }
   };
 
-  useEffect(() => {
-    if (fittingTemplate && user) {
-      setFitSourceMode('select');
-      setHistoryLoading(true);
-      fetch(`https://inkto.jointaccount.org/api/history?t=${Date.now()}`, {
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.history) {
-            setHistoryItems(data.history.filter((h: any) => h.hasText && h.type !== 'draft'));
-          }
-        })
-        .catch(e => console.error('Failed to load history for template fitting:', e))
-        .finally(() => setHistoryLoading(false));
-    } else {
-      setFitSourceMode('select');
-      setHistoryItems([]);
-    }
-  }, [fittingTemplate, user]);
+  const handleDownloadPdf = () => downloadFile('/api/download-pdf', editorContent, 'Template.pdf', 'Failed to generate PDF');
+  const handleDownloadDocx = () => downloadFile('/api/download-docx', editorContent, 'Template.docx', 'Failed to generate DOCX');
 
-  const handleHistorySelect = async (docId: string) => {
-    setLoadingDocId(docId);
-    try {
-      const res = await fetch(`https://inkto.jointaccount.org/api/session?id=${docId}`);
-      const data = await res.json();
-      if (data.success && data.session && data.session.text) {
-        setFittingInput(data.session.text);
-        setFitSourceMode('paste');
-      } else {
-        alert('Could not retrieve document text.');
-      }
-    } catch {
-      alert('Retrieval failed.');
-    } finally {
-      setLoadingDocId(null);
-    }
-  };
-
-  const handleRunDraft = async () => {
-    if (!draftPrompt.trim()) return;
-    setIsDrafting(true);
-    try {
-      const res = await fetch('https://inkto.jointaccount.org/api/draft', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: 'draft',
-          prompt: draftPrompt
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Drafting failed');
-
-      // Seed a virtual active template for display
-      setActiveTemplate({ id: 'ai-draft', name: 'Generated Draft' });
-      setEditorContent(data.text);
-      setView('editor');
-      setShowDraftModal(false);
-      setDraftPrompt('');
-    } catch (e: any) {
-      alert(e.message || 'Drafting failed. Please try again.');
-    } finally {
-      setIsDrafting(false);
-    }
-  };
-
-  const handleBack = () => {
-    if (view === 'editor') { setView('list'); setActiveTemplate(null); setEditorContent(''); }
-    else if (view === 'list') { setView('categories'); setActiveCategory(null); }
-  };
-
-  // Search across all templates
-  const searchResults = searchQuery.trim().length > 1
-    ? TEMPLATE_CATEGORIES.flatMap(cat =>
-        cat.templates
-          .filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()))
-          .map(t => ({ ...t, categoryName: cat.name, category: cat }))
-      )
+  const allTemplates = searchQuery
+    ? TEMPLATE_CATEGORIES.flatMap(cat => cat.templates.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase())).map(t => ({ ...t, categoryName: cat.name, category: cat })))
     : [];
 
-  if (loading) {
+  if (loading || !user) {
     return (
-      <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Loader2 className="w-6 h-6 animate-spin text-[#24467A]" />
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-6 h-6 border-2 border-[#4F46E5] border-t-transparent rounded-full animate-spin" />
       </div>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   // ── Editor view ──
   if (view === 'editor' && activeTemplate) {
     return (
-      <div className="flex flex-col h-full pt-8 pb-4">
-        <header className="mb-5 flex items-center gap-3">
-          <button onClick={handleBack} className="text-sm font-medium text-muted-foreground hover:text-foreground">
+      <div className="flex flex-col h-full p-6 md:p-8 max-w-4xl mx-auto">
+        <header className="mb-6 flex items-center gap-3 mt-2 md:mt-0">
+          <button onClick={handleBack} className="text-[#64748B] hover:text-[#0F172A] p-2 -ml-2 rounded-lg hover:bg-[#F1F5F9] transition-colors">
             ← Back
           </button>
-          <span className="text-muted-foreground">/</span>
-          <h1 className="text-base font-semibold truncate">{activeTemplate.name}</h1>
+          <span className="text-[#E2E8F0]">/</span>
+          <h1 className="text-lg font-semibold text-[#0F172A] truncate">{activeTemplate.name}</h1>
         </header>
 
-        {/* Disclaimer per spec Rule 4 and compliance addendum Section 2 */}
-        <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800 font-medium">
-          ⚠ Review all content before use. Inkto is a document tool, not a law firm, and does not provide legal advice.
+        <div className="mb-4 p-3 rounded-xl bg-orange-50 border border-orange-200 text-xs text-orange-800 font-medium flex items-start gap-2">
+          <span>⚠️</span>
+          <span>Review all content before use. Inkto is a document tool, not a law firm, and does not provide legal advice.</span>
         </div>
 
         <textarea
           value={editorContent}
           onChange={e => setEditorContent(e.target.value)}
-          className="flex-1 w-full p-4 text-sm font-mono border rounded-xl resize-none bg-card focus:outline-none focus:ring-2 focus:ring-ring"
+          className="flex-1 w-full p-5 text-sm font-mono border border-[#E2E8F0] rounded-2xl resize-none bg-white focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] shadow-sm mb-4"
           placeholder="Template content will appear here..."
         />
 
-        <div className="mt-4 space-y-2">
-          <div className="flex gap-2">
-            <Button
-              className="flex-1 h-11 text-xs font-semibold gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => {
-                const date = new Date().toISOString().slice(0, 10);
-                downloadFile('/api/download-docx', editorContent, `${activeTemplate.name}-${date}.docx`, 'Could not generate Word document.');
-              }}
-            >
-              <FileDown className="w-3.5 h-3.5" /> Word (.docx)
-            </Button>
-            <Button
-              className="flex-1 h-11 text-xs font-semibold gap-1.5 bg-red-600 hover:bg-red-700 text-white"
-              onClick={() => {
-                const date = new Date().toISOString().slice(0, 10);
-                downloadFile('/api/download-pdf', editorContent, `${activeTemplate.name}-${date}.pdf`, 'Could not generate PDF.');
-              }}
-            >
-              <File className="w-3.5 h-3.5" /> PDF
-            </Button>
+        <div className="grid grid-cols-2 gap-3 pb-8">
+          <button onClick={handleDownloadPdf} className="flex items-center justify-center gap-2 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] hover:bg-[#F1F5F9] font-semibold py-3.5 rounded-xl transition-colors">
+            <FileDown size={18} /> Save PDF
+          </button>
+          <button onClick={handleDownloadDocx} className="flex items-center justify-center gap-2 bg-[#4F46E5] text-white hover:bg-[#4338CA] font-semibold py-3.5 rounded-xl transition-colors shadow-sm shadow-[#4F46E5]/20">
+            <File size={18} /> Save Word
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── AI Draft view ──
+  if (view === 'ai-draft' && fittingTemplate) {
+    return (
+      <div className="flex flex-col h-full p-6 md:p-8 max-w-4xl mx-auto">
+        <header className="mb-6 flex items-center gap-3 mt-2 md:mt-0">
+          <button onClick={handleBack} className="text-[#64748B] hover:text-[#0F172A] p-2 -ml-2 rounded-lg hover:bg-[#F1F5F9] transition-colors">
+            ← Back
+          </button>
+          <h1 className="text-xl font-bold text-[#0F172A] truncate">Customize with AI</h1>
+        </header>
+
+        <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 shadow-sm flex flex-col gap-5 flex-1">
+          <div className="flex items-center gap-3 mb-2 border-b border-[#E2E8F0] pb-4">
+             <div className="w-10 h-10 rounded-xl bg-[#E0E7FF] flex items-center justify-center text-[#4F46E5]">
+               <Sparkles size={20} />
+             </div>
+             <div>
+               <h3 className="font-semibold text-[#0F172A]">{fittingTemplate.name}</h3>
+               <p className="text-sm text-[#64748B]">Provide details to fill in the template</p>
+             </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              className="flex-1 h-11 text-xs font-semibold gap-1.5"
-              onClick={() => {
-                const blob = new Blob([editorContent], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${activeTemplate.name}.txt`;
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
-            >
-              Plain Text
-            </Button>
-            <Button
-              variant="outline"
-              className="flex-1 h-11 text-xs font-semibold"
-              onClick={() => {
-                navigator.clipboard.writeText(editorContent).catch(() => {});
-              }}
-            >
-              Copy Content
-            </Button>
+
+          {/* Toggle Modes */}
+          <div className="flex gap-2 p-1 bg-[#F1F5F9] rounded-xl self-start">
+            <button onClick={() => setFitSourceMode('paste')} className={px-4 py-2 text-sm font-semibold rounded-lg transition-colors }>Type / Paste</button>
+            <button onClick={() => { setFitSourceMode('history'); fetchHistory(); }} className={px-4 py-2 text-sm font-semibold rounded-lg transition-colors }>From History</button>
           </div>
+
+          {fitSourceMode === 'paste' ? (
+            <textarea
+              placeholder="e.g. Landlord is John Doe, Tenant is Jane Smith, Rent is  per month..."
+              value={fittingInput}
+              onChange={e => setFittingInput(e.target.value)}
+              className="flex-1 w-full border border-[#E2E8F0] rounded-xl p-4 text-sm bg-white focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] resize-none"
+            />
+          ) : (
+            <div className="flex-1 overflow-y-auto border border-[#E2E8F0] rounded-xl bg-[#F8FAFC] divide-y divide-[#E2E8F0]">
+              {historyItems.length === 0 ? (
+                <div className="p-8 text-center text-[#64748B] text-sm">No text history available to extract details from.</div>
+              ) : (
+                historyItems.map(h => (
+                  <button key={h.id} onClick={() => setFittingInput(Extract details from this document transcript: \n\n)} className={w-full text-left p-4 hover:bg-white transition-colors }>
+                    <h4 className="font-semibold text-sm text-[#0F172A] mb-1">{h.title}</h4>
+                    <p className="text-xs text-[#94A3B8] line-clamp-2">{h.preview}</p>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+
+          <button onClick={handleAiFit} disabled={isFitting || !fittingInput.trim()} className="w-full bg-[#4F46E5] hover:bg-[#4338CA] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-xl flex items-center justify-center gap-2 mt-auto transition-colors shadow-sm shadow-[#4F46E5]/20">
+            {isFitting ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
+            {isFitting ? 'Generating Draft...' : 'Generate Draft'}
+          </button>
         </div>
       </div>
     );
@@ -491,43 +257,33 @@ export default function TemplatesPage() {
   // ── Template list view ──
   if (view === 'list' && activeCategory) {
     return (
-      <div className="flex flex-col h-full pt-8 pb-4">
-        <header className="mb-6">
-          <button onClick={handleBack} className="text-sm font-medium text-muted-foreground hover:text-foreground">
+      <div className="flex flex-col h-full p-6 md:p-8 max-w-4xl mx-auto">
+        <header className="mb-6 flex items-center gap-3 mt-2 md:mt-0">
+          <button onClick={handleBack} className="text-[#64748B] hover:text-[#0F172A] p-2 -ml-2 rounded-lg hover:bg-[#F1F5F9] transition-colors">
             ← Templates
           </button>
-          <h1 className="text-2xl font-bold tracking-tight mt-3">
+          <h1 className="text-xl font-bold text-[#0F172A] truncate">
             {activeCategory.icon} {activeCategory.name}
           </h1>
         </header>
 
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {activeCategory.templates.map(template => (
-            <div
-              key={template.id}
-              className="p-4 rounded-xl border bg-card"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-                <p className="text-sm font-semibold">{template.name}</p>
+            <div key={template.id} className="p-5 rounded-2xl border border-[#E2E8F0] bg-white shadow-sm flex flex-col h-full">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center shrink-0">
+                   <FileText className="w-5 h-5 text-[#4F46E5]" />
+                </div>
+                <p className="font-semibold text-[#0F172A]">{template.name}</p>
               </div>
-              {/* Per spec: both actions always visible and equally prominent */}
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => handleUseBlank(template)}
-                >
-                  Use Blank
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setFittingTemplate(template)}
-                >
-                  AI-Fit
-                </Button>
+              
+              <div className="mt-auto grid grid-cols-2 gap-2 pt-2 border-t border-[#E2E8F0]">
+                <button onClick={() => { setFittingTemplate(template); setView('ai-draft'); }} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-[#E0E7FF] text-[#4F46E5] font-semibold text-xs hover:bg-[#C7D2FE] transition-colors">
+                  <Sparkles size={14} /> AI Fill
+                </button>
+                <button onClick={() => handleSelectTemplate(template)} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-[#F1F5F9] text-[#64748B] font-semibold text-xs hover:bg-[#E2E8F0] hover:text-[#0F172A] transition-colors">
+                  <PenTool size={14} /> Blank
+                </button>
               </div>
             </div>
           ))}
@@ -538,229 +294,81 @@ export default function TemplatesPage() {
 
   // ── Category list / search view ──
   return (
-    <div className="flex flex-col h-full pt-8 pb-4">
-      <header className="mb-5">
-        <h1 className="text-2xl font-bold tracking-tight">Templates</h1>
-        <p className="text-muted-foreground mt-1 text-sm">Standard legal document templates.</p>
+    <div className="flex flex-col h-full p-6 md:p-8 max-w-4xl mx-auto">
+      <header className="mb-6 mt-2 md:mt-0">
+        <h1 className="text-2xl font-bold font-display tracking-tight text-[#0F172A] mb-1">Templates</h1>
+        <p className="text-[#64748B] text-sm">Standard legal document templates.</p>
       </header>
 
-      <Link href="/draft" className="w-full mb-5">
-        <Button className="w-full h-11 bg-stone-900 hover:bg-stone-800 text-white font-semibold rounded-xl gap-2">
-          ✍ Draft Document from Scratch
-        </Button>
-      </Link>
-
       {/* Search */}
-      <div className="relative mb-5">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
+      <div className="relative mb-8">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+          <Search className="h-5 w-5 text-[#94A3B8]" />
+        </div>
+        <input
           type="search"
-          placeholder="Search templates…"
+          placeholder="Search templates..."
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          className="pl-9 h-10"
+          className="w-full h-12 pl-11 pr-4 bg-white border border-[#E2E8F0] rounded-2xl text-sm font-medium text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] shadow-sm transition-all"
         />
+        {searchQuery && (
+          <button onClick={() => setSearchQuery('')} className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#94A3B8] hover:text-[#0F172A]">
+             <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
-      {/* Search results */}
-      {searchQuery.trim().length > 1 ? (
-        <div className="space-y-3">
-          {searchResults.length === 0 ? (
-            <p className="text-muted-foreground text-sm text-center py-8">No templates match "{searchQuery}".</p>
+      {searchQuery ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-20">
+          {allTemplates.length === 0 ? (
+            <p className="text-[#64748B] text-sm col-span-2 text-center py-10">No templates found.</p>
           ) : (
-            searchResults.map(t => (
-              <div key={t.id} className="p-4 rounded-xl border bg-card">
-                <p className="text-xs text-muted-foreground mb-1">{t.categoryName}</p>
-                <p className="text-sm font-semibold mb-3">{t.name}</p>
-                <div className="flex gap-2">
-                  <Button size="sm" className="flex-1" onClick={() => { setActiveCategory(t.category); handleUseBlank(t); }}>Use Blank</Button>
-                  <Button size="sm" variant="outline" className="flex-1" onClick={() => setFittingTemplate(t)}>AI-Fit</Button>
+            allTemplates.map(template => (
+              <div key={template.id} className="p-5 rounded-2xl border border-[#E2E8F0] bg-white shadow-sm flex flex-col h-full">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center shrink-0">
+                     <FileText className="w-5 h-5 text-[#4F46E5]" />
+                  </div>
+                  <div>
+                     <p className="font-semibold text-[#0F172A] text-sm">{template.name}</p>
+                     <p className="text-xs text-[#64748B]">{template.categoryName}</p>
+                  </div>
+                </div>
+                <div className="mt-auto grid grid-cols-2 gap-2 pt-2 border-t border-[#E2E8F0]">
+                  <button onClick={() => { setFittingTemplate(template); setView('ai-draft'); }} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-[#E0E7FF] text-[#4F46E5] font-semibold text-xs hover:bg-[#C7D2FE] transition-colors">
+                    <Sparkles size={14} /> AI Fill
+                  </button>
+                  <button onClick={() => handleSelectTemplate(template)} className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-[#F1F5F9] text-[#64748B] font-semibold text-xs hover:bg-[#E2E8F0] hover:text-[#0F172A] transition-colors">
+                    <PenTool size={14} /> Blank
+                  </button>
                 </div>
               </div>
             ))
           )}
         </div>
       ) : (
-        <div className="space-y-6">
-          {/* Category grid */}
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Categories</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {TEMPLATE_CATEGORIES.map(cat => (
-                <motion.button
-                  key={cat.id}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                  onClick={() => handleCategorySelect(cat)}
-                  className="p-4 rounded-xl border bg-card text-left hover:bg-muted/40 transition-colors"
-                >
-                  <div className="text-2xl mb-2">{cat.icon}</div>
-                  <p className="text-sm font-semibold leading-tight">{cat.name}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {cat.templates.length} templates
-                  </p>
-                </motion.button>
-              ))}
-            </div>
-          </div>
-
-          {/* Private Templates section */}
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">My Templates</h3>
-            {!user ? (
-              <div className="p-4 rounded-xl border border-dashed text-center bg-card">
-                <p className="text-xs text-muted-foreground mb-2">Sign in to save and reuse your own custom legal templates.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-20">
+          {TEMPLATE_CATEGORIES.map(category => (
+            <button
+              key={category.id}
+              onClick={() => handleSelectCategory(category)}
+              className="flex items-center justify-between p-5 rounded-2xl border border-[#E2E8F0] bg-white hover:bg-[#F8FAFC] transition-all shadow-sm active:scale-95 group text-left"
+            >
+              <div className="flex items-center gap-4">
+                <div className="text-2xl w-12 h-12 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-center shrink-0 group-hover:bg-[#E0E7FF] transition-colors">
+                  {category.icon}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-[#0F172A]">{category.name}</h3>
+                  <p className="text-sm text-[#64748B] mt-0.5">{category.templates.length} templates</p>
+                </div>
               </div>
-            ) : loadingTemplates ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="w-5 h-5 animate-spin text-primary" />
-              </div>
-            ) : userTemplates.length === 0 ? (
-              <div className="p-6 rounded-xl border border-dashed text-center bg-card">
-                <p className="text-xs text-muted-foreground">You haven't saved any custom templates yet.</p>
-                <p className="text-[10px] text-muted-foreground/80 mt-1">Tap "Save Template" in the Editor screen to save one.</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {userTemplates.map(t => (
-                  <motion.div
-                    key={t.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-4 rounded-xl border bg-card flex items-center justify-between gap-3"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground truncate">{t.title}</p>
-                      <p className="text-[10px] text-muted-foreground uppercase mt-0.5 font-medium">Custom Template</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" className="h-8 text-xs px-2" onClick={() => handleUseBlank({ ...t, name: t.title })}>Use</Button>
-                      <Button size="sm" variant="outline" className="h-8 text-xs px-2" onClick={() => setFittingTemplate({ ...t, name: t.title })}>Fit</Button>
-                      <motion.button whileTap={{ scale: 0.85 }} onClick={(e) => handleDeleteUserTemplate(t.id, e)} className="p-1.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors" title="Delete">
-                        <Trash2 className="w-4 h-4" />
-                      </motion.button>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </div>
+              <ChevronRight className="w-5 h-5 text-[#CBD5E1] group-hover:text-[#4F46E5] transition-colors" />
+            </button>
+          ))}
         </div>
       )}
-
-      {/* AI-Fit Input Modal */}
-      <AnimatePresence>
-        {fittingTemplate && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-          >
-            <motion.div
-              initial={{ scale: 0.94, opacity: 0, y: 16 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.94, opacity: 0, y: 16 }}
-              transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-              style={{ background: '#fff', color: '#1c1917', borderRadius: 24, width: '100%', maxWidth: 440, padding: 28, position: 'relative', display: 'flex', flexDirection: 'column', gap: 16 }}
-            >
-              <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: '-0.3px', fontFamily: 'Georgia, serif' }}>AI-Fit: {fittingTemplate.name}</h3>
-              
-              {isFitting ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 24, paddingBottom: 24, gap: 12 }}>
-                  <Loader2 size={32} className="animate-spin text-primary" />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#78716c' }}>AI is restructuring your document…</span>
-                </div>
-              ) : (
-                <>
-                  {fitSourceMode === 'select' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      <p style={{ fontSize: 13, color: '#78716c', margin: '0 0 8px 0', lineHeight: 1.5 }}>
-                        Choose how you want to provide information to align to this template.
-                      </p>
-                      <Button onClick={() => setFitSourceMode('paste')} className="w-full h-11 justify-start gap-3 rounded-xl border" variant="outline">
-                        ✍️ Paste Details Manually
-                      </Button>
-                      <Button onClick={() => setFitSourceMode('history')} className="w-full h-11 justify-start gap-3 rounded-xl border" variant="outline">
-                        📜 Choose from Saved History
-                      </Button>
-                      <Button onClick={() => setFittingTemplate(null)} className="w-full h-11 mt-4 rounded-xl" variant="ghost">
-                        Cancel
-                      </Button>
-                    </div>
-                  )}
-
-                  {fitSourceMode === 'paste' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                      <p style={{ fontSize: 13, color: '#78716c', margin: 0, lineHeight: 1.5 }}>
-                        Review or edit the source details below, then click Align to structure it.
-                      </p>
-                      <textarea
-                        value={fittingInput}
-                        onChange={e => setFittingInput(e.target.value)}
-                        style={{ width: '100%', height: 160, padding: 12, border: '1px solid #e4e2dc', borderRadius: 12, resize: 'none', background: '#fafaf9', fontSize: 14, outline: 'none' }}
-                        placeholder="E.g., Landlord is Alhaji Tunde Cole. Tenant is Dr. Emeka Obi. Rent is N1,200,000 per annum starting October 1st..."
-                      />
-                      <div style={{ display: 'flex', gap: 10 }}>
-                        <Button variant="outline" style={{ flex: 1 }} onClick={() => setFitSourceMode('select')}>
-                          Back
-                        </Button>
-                        <Button style={{ flex: 1 }} onClick={handleRunAiFit} disabled={!fittingInput.trim()}>
-                          Align to Template
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {fitSourceMode === 'history' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                      <p style={{ fontSize: 13, color: '#78716c', margin: 0, lineHeight: 1.5 }}>
-                        Select a document from your history to load its text.
-                      </p>
-                      <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid #e4e2dc', borderRadius: 12, padding: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {historyLoading ? (
-                          <div style={{ display: 'flex', justifyContent: 'center', padding: 20 }}>
-                            <Loader2 className="animate-spin text-muted-foreground w-5 h-5" />
-                          </div>
-                        ) : historyItems.length === 0 ? (
-                          <div style={{ textAlign: 'center', fontSize: 12, color: '#78716c', padding: 20 }}>
-                            No past transcriptions found.
-                          </div>
-                        ) : (
-                          historyItems.map(item => (
-                            <button
-                              key={item.id}
-                              onClick={() => handleHistorySelect(item.id)}
-                              disabled={loadingDocId !== null}
-                              style={{
-                                width: '100%', padding: '10px 12px', border: 'none', background: '#fafaf9', borderRadius: 8, textAlign: 'left',
-                                cursor: loadingDocId ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8
-                              }}
-                            >
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 12, fontWeight: 700, color: '#1c1917', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
-                                <div style={{ fontSize: 10, color: '#78716c', marginTop: 2 }}>{new Date(item.createdAt).toLocaleDateString()}</div>
-                              </div>
-                              {loadingDocId === item.id && (
-                                <Loader2 className="animate-spin text-muted-foreground w-4 h-4" />
-                              )}
-                            </button>
-                          ))
-                        )}
-                      </div>
-                      <Button variant="outline" className="w-full" onClick={() => setFitSourceMode('select')}>
-                        Back
-                      </Button>
-                    </div>
-                  )}
-                </>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <BottomNav />
     </div>
   );
 }

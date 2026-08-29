@@ -1,214 +1,62 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
-/* ── Inkto Design Tokens ─────────────────────────────────────────────────────
-   Source: Inkto Visual Design System spec.
-   Do not approximate these values.
-   ─────────────────────────────────────────────────────────────────────────── */
+/* 
+  Inkto Design System 
+  Based on ChatGPT Prompt & Uploaded Mockups
+*/
 :root {
-  /* Brand palette */
-  --ink-black:      #0B0D12;
-  --paper-white:    #FBFAF7;
-  --ink-blue:       #24467A;
-  --seal-brass:     #A6822C;
-  --warm-gray:      #E4E1D9;
-  --correction-red: #B23A34;
-
-  /* Derived surface tones */
-  --ink-blue-subtle:  #EEF2F8;   /* very light blue tint for active state BG */
-  --ink-blue-mid:     #3A5C94;   /* hover/pressed shade of Ink Blue           */
-  --brass-subtle:     #F8F2E6;   /* light brass for premium-moment surfaces   */
-  --warm-gray-mid:    #C8C4BA;   /* mid warm gray — placeholder text, icons   */
-  --paper-deep:       #F3F1EC;   /* slightly darker than paper, sidebar / row hover */
-
-  /* Typography stacks (consumed as inline font-family where needed) */
-  --font-display: Georgia, "Iowan Old Style", "Times New Roman", serif;
-  --font-ui:      -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono:    ui-monospace, "SF Mono", Consolas, monospace;
-
-  /* Shadcn / Tailwind semantic aliases → Inkto palette */
-  --background:          var(--paper-white);
-  --foreground:          var(--ink-black);
-  --card:                #FFFFFF;
-  --card-foreground:     var(--ink-black);
-  --popover:             #FFFFFF;
-  --popover-foreground:  var(--ink-black);
-  --primary:             var(--ink-blue);
-  --primary-foreground:  #FFFFFF;
-  --secondary:           var(--paper-deep);
-  --secondary-foreground:var(--ink-black);
-  --muted:               var(--paper-deep);
-  --muted-foreground:    #6B6760;
-  --accent:              var(--ink-blue-subtle);
-  --accent-foreground:   var(--ink-blue);
-  --destructive:         var(--correction-red);
-  --border:              var(--warm-gray);
-  --input:               var(--warm-gray);
-  --ring:                var(--ink-blue);
-
-  /* Radius — modest, letterhead-appropriate */
-  --radius: 0.5rem;
-
-  /* Sidebar (unused but required by shadcn) */
-  --sidebar:                    var(--paper-deep);
-  --sidebar-foreground:         var(--ink-black);
-  --sidebar-primary:            var(--ink-blue);
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent:             var(--ink-blue-subtle);
-  --sidebar-accent-foreground:  var(--ink-blue);
-  --sidebar-border:             var(--warm-gray);
-  --sidebar-ring:               var(--ink-blue);
-
-  /* Charts */
-  --chart-1: #24467A;
-  --chart-2: #A6822C;
-  --chart-3: #5B7FB3;
-  --chart-4: #C9A84C;
-  --chart-5: #B23A34;
+  /* Brand Palette */
+  --primary: #4F46E5; /* Deep Purple / Indigo Accent */
+  --primary-hover: #4338CA;
+  --secondary: #E0E7FF; /* Light purple for subtle backgrounds */
+  
+  /* Backgrounds */
+  --bg-main: #F8FAFC; /* Light Gray background */
+  --bg-card: #FFFFFF; /* White for cards/panels */
+  
+  /* Text */
+  --text-main: #0F172A; /* Dark Navy / Charcoal */
+  --text-muted: #64748B; /* Slate gray for secondary text */
+  --text-light: #94A3B8;
+  
+  /* Borders & Dividers */
+  --border: #E2E8F0;
+  
+  /* Fonts */
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Poppins', 'Inter', sans-serif;
 }
 
-@theme inline {
-  --color-background:              var(--background);
-  --color-foreground:              var(--foreground);
-  --font-sans:                     var(--font-ui);
-  --font-mono:                     var(--font-mono);
-  --font-heading:                  var(--font-display);
-  --color-sidebar-ring:            var(--sidebar-ring);
-  --color-sidebar-border:          var(--sidebar-border);
-  --color-sidebar-accent-foreground:var(--sidebar-accent-foreground);
-  --color-sidebar-accent:          var(--sidebar-accent);
-  --color-sidebar-primary-foreground:var(--sidebar-primary-foreground);
-  --color-sidebar-primary:         var(--sidebar-primary);
-  --color-sidebar-foreground:      var(--sidebar-foreground);
-  --color-sidebar:                 var(--sidebar);
-  --color-chart-5:                 var(--chart-5);
-  --color-chart-4:                 var(--chart-4);
-  --color-chart-3:                 var(--chart-3);
-  --color-chart-2:                 var(--chart-2);
-  --color-chart-1:                 var(--chart-1);
-  --color-ring:                    var(--ring);
-  --color-input:                   var(--input);
-  --color-border:                  var(--border);
-  --color-destructive:             var(--destructive);
-  --color-accent-foreground:       var(--accent-foreground);
-  --color-accent:                  var(--accent);
-  --color-muted-foreground:        var(--muted-foreground);
-  --color-muted:                   var(--muted);
-  --color-secondary-foreground:    var(--secondary-foreground);
-  --color-secondary:               var(--secondary);
-  --color-primary-foreground:      var(--primary-foreground);
-  --color-primary:                 var(--primary);
-  --color-popover-foreground:      var(--popover-foreground);
-  --color-popover:                 var(--popover);
-  --color-card-foreground:         var(--card-foreground);
-  --color-card:                    var(--card);
-  --radius-sm:  calc(var(--radius) * 0.6);
-  --radius-md:  calc(var(--radius) * 0.8);
-  --radius-lg:  var(--radius);
-  --radius-xl:  calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ── Pen-nib stroke-in animation ────────────────────────────────────────────
-   Runs once on first paint. Respects prefers-reduced-motion.
-   ─────────────────────────────────────────────────────────────────────────── */
-@keyframes nib-draw {
-  from { stroke-dashoffset: 1; }
-  to   { stroke-dashoffset: 0; }
+/* Custom Scrollbar for Desktop Sidebar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
-@keyframes nib-fade {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+::-webkit-scrollbar-track {
+  background: transparent;
 }
-
-.nib-path {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: nib-draw 0.6s ease-out forwards;
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
 }
-.nib-dot {
-  opacity: 0;
-  animation: nib-fade 0.2s ease-out 0.55s forwards;
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .nib-path { animation: none; stroke-dashoffset: 0; }
-  .nib-dot  { animation: none; opacity: 1; }
-}
-
-/* ── Global motion primitives ────────────────────────────────────────────────
-   Defined ONCE here. Never redefine inline in components.
-   ─────────────────────────────────────────────────────────────────────────── */
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-@keyframes scale-in {
-  from { opacity: 0; transform: scale(0.96); }
-  to   { opacity: 1; transform: scale(1); }
-}
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(24px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes pulse-scale {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50%       { transform: scale(1.08); opacity: 0.8; }
-}
-
-/* ── Base layer ─────────────────────────────────────────────────────────────*/
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
+/* Hide scrollbar for mobile */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    display: none;
   }
-  body {
-    background: var(--paper-white);
-    color: var(--ink-black);
-    font-family: var(--font-ui);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  h1, h2 {
-    font-family: var(--font-display);
-  }
-  code, pre, time[data-mono], .mono {
-    font-family: var(--font-mono);
-  }
-}
-
-/* ── Utility: thin horizontal rule (letterhead-style section divider) ────── */
-.rule {
-  display: block;
-  width: 100%;
-  height: 1px;
-  background: var(--warm-gray);
-  border: none;
-  margin: 0;
-}
-
-/* ── Transition baseline (functional motion only) ────────────────────────── */
-button, a, input, select {
-  transition-duration: 150ms;
-  transition-timing-function: ease;
-}
-
-/* Hide bottom navigation and its spacer when scanner or dictate modals are active */
-body.scanner-active nav,
-body.dictate-active nav,
-body.scanner-active #bottom-nav-spacer,
-body.dictate-active #bottom-nav-spacer {
-  display: none !important;
 }

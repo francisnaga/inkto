@@ -1,4 +1,4 @@
-﻿/* eslint-disable */
+/* eslint-disable */
 // @ts-nocheck
 'use client';
 import dynamic from 'next/dynamic';
@@ -6,7 +6,7 @@ const RichEditor = dynamic(() => import('./rich-editor'), { ssr: false });
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Copy, Check, RotateCcw, FileText, FileDown, ChevronUp, Mail, Pen, X, File, Image as ImageIcon, Bookmark, Mic, Loader2 } from 'lucide-react';
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Inline SVGs Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* â”€â”€ Inline SVGs â”€â”€ */
 const IconPaystack = ({ size = 16 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><path d="M4 17h6v4H4v-4zM14 17h6v4h-6v-4zM4 10h6v4H4v-4zM14 10h6v4h-6v-4zM4 3h6v4H4V3z" /></svg>
 );
@@ -17,7 +17,7 @@ const IconPayPal = ({ size = 16 }) => (
     </svg>
 );
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Source document filmstrip viewer Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* â”€â”€ Source document filmstrip viewer â”€â”€ */
 const FilmstripViewer = ({ images }) => {
     const [selected, setSelected] = useState(0);
     const [imgError, setImgError] = useState({});
@@ -28,8 +28,8 @@ const FilmstripViewer = ({ images }) => {
             {/* Thumbnail strip */}
             <div style={{
                 width: '80px', flexShrink: 0,
-                overflowY: 'auto', borderRight: '1px solid #E2E8F0',
-                background: '#F1F5F9', display: 'flex', flexDirection: 'column',
+                overflowY: 'auto', borderRight: '1px solid #E4E2DC',
+                background: '#F5F4F0', display: 'flex', flexDirection: 'column',
                 gap: '6px', padding: '10px 6px',
             }}>
                 {images.map((url, i) => (
@@ -38,7 +38,7 @@ const FilmstripViewer = ({ images }) => {
                         onClick={() => setSelected(i)}
                         style={{
                             width: '68px', height: '88px', flexShrink: 0,
-                            border: i === selected ? '2px solid #4338CA' : '2px solid transparent',
+                            border: i === selected ? '2px solid #1D4ED8' : '2px solid transparent',
                             borderRadius: '8px', overflow: 'hidden',
                             cursor: 'pointer', padding: 0, background: '#fff',
                             boxShadow: i === selected ? '0 0 0 2px rgba(29,78,216,0.15)' : '0 1px 3px rgba(0,0,0,0.08)',
@@ -47,9 +47,9 @@ const FilmstripViewer = ({ images }) => {
                         }}
                     >
                         {url.includes('.pdf') || imgError[i] ? (
-                            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', background: '#E0E7FF' }}>
-                                <FileText size={18} color="#4F46E5" />
-                                <span style={{ fontSize: '8px', fontWeight: '700', color: '#6366F1' }}>PDF</span>
+                            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', background: '#EFF6FF' }}>
+                                <FileText size={18} color="#2563EB" />
+                                <span style={{ fontSize: '8px', fontWeight: '700', color: '#3B82F6' }}>PDF</span>
                             </div>
                         ) : (
                             <img src={url} alt={`p.${i+1}`}
@@ -70,14 +70,14 @@ const FilmstripViewer = ({ images }) => {
             {/* Main preview */}
             <div style={{
                 flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column',
-                background: '#F8FAFC',
+                background: '#FAFAF9',
             }}>
                 <div style={{
-                    padding: '10px 14px', borderBottom: '1px solid #E2E8F0',
+                    padding: '10px 14px', borderBottom: '1px solid #E4E2DC',
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     background: '#fff',
                 }}>
-                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>
+                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#44403C' }}>
                         Page {selected + 1} of {images.length}
                     </span>
                     <div style={{ display: 'flex', gap: '6px' }}>
@@ -85,25 +85,25 @@ const FilmstripViewer = ({ images }) => {
                             disabled={selected === 0}
                             onClick={() => setSelected(s => Math.max(0, s - 1))}
                             style={{
-                                width: '28px', height: '28px', border: '1px solid #E2E8F0',
+                                width: '28px', height: '28px', border: '1px solid #E4E2DC',
                                 borderRadius: '6px', background: '#fff', cursor: selected === 0 ? 'not-allowed' : 'pointer',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 opacity: selected === 0 ? 0.4 : 1, transition: 'opacity 0.15s'
                             }}
                         >
-                            <svg width="10" height="10" viewBox="0 0 10 10"><path d="M7 1L3 5L7 9" stroke="#475569" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg>
+                            <svg width="10" height="10" viewBox="0 0 10 10"><path d="M7 1L3 5L7 9" stroke="#44403C" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg>
                         </button>
                         <button
                             disabled={selected === images.length - 1}
                             onClick={() => setSelected(s => Math.min(images.length - 1, s + 1))}
                             style={{
-                                width: '28px', height: '28px', border: '1px solid #E2E8F0',
+                                width: '28px', height: '28px', border: '1px solid #E4E2DC',
                                 borderRadius: '6px', background: '#fff', cursor: selected === images.length - 1 ? 'not-allowed' : 'pointer',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 opacity: selected === images.length - 1 ? 0.4 : 1, transition: 'opacity 0.15s'
                             }}
                         >
-                            <svg width="10" height="10" viewBox="0 0 10 10"><path d="M3 1L7 5L3 9" stroke="#475569" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg>
+                            <svg width="10" height="10" viewBox="0 0 10 10"><path d="M3 1L7 5L3 9" stroke="#44403C" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg>
                         </button>
                     </div>
                 </div>
@@ -119,11 +119,11 @@ const FilmstripViewer = ({ images }) => {
                             alignItems: 'center', justifyContent: 'center',
                             gap: '12px', padding: '48px', textAlign: 'center',
                             background: '#fff', borderRadius: '12px',
-                            border: '1px solid #E2E8F0', width: '100%',
+                            border: '1px solid #E4E2DC', width: '100%',
                         }}>
-                            <FileText size={40} color="#94A3B8" />
-                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#64748B' }}>PDF Document</div>
-                            <div style={{ fontSize: '12px', color: '#94A3B8' }}>Page {selected + 1}</div>
+                            <FileText size={40} color="#9CA3AF" />
+                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#4B5563' }}>PDF Document</div>
+                            <div style={{ fontSize: '12px', color: '#9CA3AF' }}>Page {selected + 1}</div>
                         </div>
                     ) : (
                         <img
@@ -144,7 +144,7 @@ const FilmstripViewer = ({ images }) => {
 };
 
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Format picker modal for Inbox Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* â”€â”€ Format picker modal for Inbox â”€â”€ */
 function InboxModal({ onClose, onSend }) {
     const [selected, setSelected] = useState({ docx: true, pdf: false });
 
@@ -180,25 +180,25 @@ function InboxModal({ onClose, onSend }) {
                 `}</style>
 
                 {/* Handle */}
-                <div style={{ width: '40px', height: '4px', background: '#E2E8F0', borderRadius: '99px', margin: '0 auto 24px' }} />
+                <div style={{ width: '40px', height: '4px', background: '#E4E2DC', borderRadius: '99px', margin: '0 auto 24px' }} />
 
                 {/* Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#0F172A', margin: 0, letterSpacing: '-0.3px' }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#1C1917', margin: 0, letterSpacing: '-0.3px' }}>
                         Choose attachment format
                     </h3>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#94A3B8' }}>
+                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#A8A29E' }}>
                         <X size={20} />
                     </button>
                 </div>
-                <p style={{ fontSize: '13px', color: '#64748B', marginBottom: '24px', lineHeight: 1.6 }}>
+                <p style={{ fontSize: '13px', color: '#78716C', marginBottom: '24px', lineHeight: 1.6 }}>
                     Select which formats to attach to the email. The secure session link is always included.
                 </p>
 
                 {/* Options */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
                     {[
-                        { key: 'docx', label: 'Word Document', sub: 'Editable .docx file', color: '#4F46E5', bg: '#E0E7FF' },
+                        { key: 'docx', label: 'Word Document', sub: 'Editable .docx file', color: '#2563EB', bg: '#EFF6FF' },
                         { key: 'pdf', label: 'PDF Document', sub: 'Print-ready .pdf file', color: '#DC2626', bg: '#FEF2F2' },
                     ].map(({ key, label, sub, color, bg }) => {
                         const active = selected[key];
@@ -209,27 +209,27 @@ function InboxModal({ onClose, onSend }) {
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: '14px',
                                     padding: '16px 18px', borderRadius: '14px', cursor: 'pointer',
-                                    border: `2px solid ${active ? color : '#E2E8F0'}`,
-                                    background: active ? bg : '#F8FAFC',
+                                    border: `2px solid ${active ? color : '#E4E2DC'}`,
+                                    background: active ? bg : '#FAFAF9',
                                     transition: 'all 0.18s ease',
                                     textAlign: 'left', width: '100%', fontFamily: 'inherit',
                                 }}
                             >
                                 <div style={{
                                     width: '40px', height: '40px', borderRadius: '10px',
-                                    background: active ? color : '#E2E8F0',
+                                    background: active ? color : '#E4E2DC',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     flexShrink: 0, transition: 'all 0.18s',
                                 }}>
                                     <File size={18} color="#fff" />
                                 </div>
                                 <div style={{ flex: 1 }}>
-                                    <div style={{ fontSize: '14px', fontWeight: '700', color: active ? color : '#475569' }}>{label}</div>
-                                    <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>{sub}</div>
+                                    <div style={{ fontSize: '14px', fontWeight: '700', color: active ? color : '#44403C' }}>{label}</div>
+                                    <div style={{ fontSize: '12px', color: '#78716C', marginTop: '2px' }}>{sub}</div>
                                 </div>
                                 <div style={{
                                     width: '22px', height: '22px', borderRadius: '50%',
-                                    border: `2px solid ${active ? color : '#CBD5E1'}`,
+                                    border: `2px solid ${active ? color : '#C4C0BB'}`,
                                     background: active ? color : 'transparent',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     flexShrink: 0, transition: 'all 0.18s',
@@ -246,8 +246,8 @@ function InboxModal({ onClose, onSend }) {
                     disabled={!canSend}
                     style={{
                         width: '100%', padding: '15px',
-                        background: canSend ? '#0F172A' : '#E2E8F0',
-                        color: canSend ? '#fff' : '#94A3B8',
+                        background: canSend ? '#1C1917' : '#E4E2DC',
+                        color: canSend ? '#fff' : '#A8A29E',
                         border: 'none', borderRadius: '12px',
                         fontSize: '15px', fontWeight: '800',
                         cursor: canSend ? 'pointer' : 'not-allowed',
@@ -262,7 +262,7 @@ function InboxModal({ onClose, onSend }) {
     );
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Download helper (works on mobile too) Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* â”€â”€ Download helper (works on mobile too) â”€â”€ */
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
@@ -314,7 +314,7 @@ async function downloadFile(endpoint, text, filename, fallbackMsg) {
     }
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Main component Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* â”€â”€ Main component â”€â”€ */
 export default function OutputBox({ text, sessionId, images = [], audioUrl = null, onReset }) {
     const [value, setValue] = useState(text);
     const [copied, setCopied] = useState(false);
@@ -385,45 +385,45 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     const renderRawAudioDashboard = () => {
         if (isConvertingVoice) {
             return (
-                <div style={{ padding: '40px', background: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', margin: '20px 0', textAlign: 'left' }}>
-                    <p style={{ fontWeight: '700', fontSize: '15px', color: '#0F172A', textAlign: 'center', marginBottom: '20px' }}>
-                        Transcribing voice recordingâ€¦
+                <div style={{ padding: '40px', background: '#FAFAF9', borderRadius: '12px', border: '1px solid #E4E2DC', margin: '20px 0', textAlign: 'left' }}>
+                    <p style={{ fontWeight: '700', fontSize: '15px', color: '#1C1917', textAlign: 'center', marginBottom: '20px' }}>
+                        Transcribing voice recording…
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '320px', margin: '0 auto' }}>
                         {/* Step 1 */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
                             {voiceProgressStep > 1 ? (
-                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>âœ“</div>
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>✓</div>
                             ) : (
                                 <Loader2 size={16} className="animate-spin text-primary shrink-0" />
                             )}
-                            <span style={{ fontWeight: voiceProgressStep >= 1 ? '600' : 'normal', color: voiceProgressStep >= 1 ? '#0F172A' : '#64748B' }}>
+                            <span style={{ fontWeight: voiceProgressStep >= 1 ? '600' : 'normal', color: voiceProgressStep >= 1 ? '#1C1917' : '#78716C' }}>
                                 Packaging audio file
                             </span>
                         </div>
                         {/* Step 2 */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
                             {voiceProgressStep > 2 ? (
-                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>âœ“</div>
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>✓</div>
                             ) : voiceProgressStep === 2 ? (
                                 <Loader2 size={16} className="animate-spin text-primary shrink-0" />
                             ) : (
-                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '1.5px solid #CBD5E1', shrink: 0 }} />
+                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '1.5px solid #D6D3D1', shrink: 0 }} />
                             )}
-                            <span style={{ fontWeight: voiceProgressStep >= 2 ? '600' : 'normal', color: voiceProgressStep >= 2 ? '#0F172A' : '#64748B' }}>
+                            <span style={{ fontWeight: voiceProgressStep >= 2 ? '600' : 'normal', color: voiceProgressStep >= 2 ? '#1C1917' : '#78716C' }}>
                                 Connecting to speech engines
                             </span>
                         </div>
                         {/* Step 3 */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
                             {voiceProgressStep > 3 ? (
-                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>âœ“</div>
+                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>✓</div>
                             ) : voiceProgressStep === 3 ? (
                                 <Loader2 size={16} className="animate-spin text-primary shrink-0" />
                             ) : (
-                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '1.5px solid #CBD5E1', shrink: 0 }} />
+                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '1.5px solid #D6D3D1', shrink: 0 }} />
                             )}
-                            <span style={{ fontWeight: voiceProgressStep >= 3 ? '600' : 'normal', color: voiceProgressStep >= 3 ? '#0F172A' : '#64748B' }}>
+                            <span style={{ fontWeight: voiceProgressStep >= 3 ? '600' : 'normal', color: voiceProgressStep >= 3 ? '#1C1917' : '#78716C' }}>
                                 Analyzing vocabulary & dialect
                             </span>
                         </div>
@@ -432,9 +432,9 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                             {voiceProgressStep === 4 ? (
                                 <Loader2 size={16} className="animate-spin text-primary shrink-0" />
                             ) : (
-                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '1.5px solid #CBD5E1', shrink: 0 }} />
+                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '1.5px solid #D6D3D1', shrink: 0 }} />
                             )}
-                            <span style={{ fontWeight: voiceProgressStep >= 4 ? '600' : 'normal', color: voiceProgressStep >= 4 ? '#0F172A' : '#64748B' }}>
+                            <span style={{ fontWeight: voiceProgressStep >= 4 ? '600' : 'normal', color: voiceProgressStep >= 4 ? '#1C1917' : '#78716C' }}>
                                 Generating legal transcription
                             </span>
                         </div>
@@ -444,13 +444,13 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         }
 
         return (
-            <div style={{ padding: '36px 24px', background: '#F8FAFC', borderRadius: '16px', border: '1px solid #E2E8F0', margin: '20px 0', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+            <div style={{ padding: '36px 24px', background: '#FAFAF9', borderRadius: '16px', border: '1px solid #E4E2DC', margin: '20px 0', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
                 <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Mic size={24} color="#D97706" />
                 </div>
                 <div>
-                    <h4 style={{ fontWeight: '700', fontSize: '16px', color: '#0F172A', margin: '0 0 6px 0' }}>Raw Voice Dictation</h4>
-                    <p style={{ fontSize: '13px', color: '#64748B', margin: 0, maxWidth: '280px', lineHeight: 1.5 }}>
+                    <h4 style={{ fontWeight: '700', fontSize: '16px', color: '#1C1917', margin: '0 0 6px 0' }}>Raw Voice Dictation</h4>
+                    <p style={{ fontSize: '13px', color: '#78716C', margin: 0, maxWidth: '280px', lineHeight: 1.5 }}>
                         You saved this voice recording. You can listen to the audio below or convert it to editable text now.
                     </p>
                 </div>
@@ -468,7 +468,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                 <button
                     onClick={handleConvertVoice}
                     style={{
-                        padding: '12px 24px', background: '#4F46E5', color: '#fff',
+                        padding: '12px 24px', background: '#2563EB', color: '#fff',
                         border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
                         cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
                         boxShadow: '0 4px 12px rgba(37,99,235,0.18)', transition: 'all 0.2s',
@@ -609,10 +609,10 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
 
     const scrollToTop = () => textareaRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
 
-    /* Ã¢â€â‚¬Ã¢â€â‚¬ Email row Ã¢â€â‚¬Ã¢â€â‚¬ */
+    /* â”€â”€ Email row â”€â”€ */
     const emailRow = (
         <div style={{
-            background: '#fff', border: '1px solid #E2E8F0',
+            background: '#fff', border: '1px solid #E4E2DC',
             borderRadius: '12px', padding: '14px 16px',
             marginBottom: '10px',
             boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
@@ -620,13 +620,13 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <div style={{
                     flex: '1 1 180px', minWidth: 0,
-                    border: `1.5px solid ${emailFocused ? '#4338CA' : '#E2E8F0'}`,
-                    borderRadius: '8px', background: '#F8FAFC',
+                    border: `1.5px solid ${emailFocused ? '#1D4ED8' : '#E4E2DC'}`,
+                    borderRadius: '8px', background: '#FAFAF9',
                     transition: 'border-color 0.2s',
                     boxShadow: emailFocused ? '0 0 0 3px rgba(29,78,216,0.08)' : 'none',
                     display: 'flex', alignItems: 'center', padding: '0 10px',
                 }}>
-                    <Mail size={14} color="#94A3B8" style={{ flexShrink: 0 }} />
+                    <Mail size={14} color="#A8A29E" style={{ flexShrink: 0 }} />
                     <input
                         /* Use type="text" to avoid browser's native pattern validation popup */
                         type="text"
@@ -641,7 +641,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                             flex: 1, padding: '9px 8px', minWidth: 0,
                             border: 'none', outline: 'none',
                             fontSize: '14px', fontFamily: 'inherit',
-                            background: 'transparent', color: '#0F172A',
+                            background: 'transparent', color: '#1C1917',
                         }}
                     />
                 </div>
@@ -657,7 +657,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                         disabled={sendingEmail || !hasReviewed}
                         style={{
                             padding: '9px 14px',
-                            background: '#4F46E5', color: '#fff',
+                            background: '#2563EB', color: '#fff',
                             border: 'none', borderRadius: '8px',
                             fontSize: '13px', fontWeight: '700',
                             cursor: (sendingEmail || !hasReviewed) ? 'not-allowed' : 'pointer',
@@ -672,7 +672,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                         disabled={sendingEmail || !hasReviewed}
                         style={{
                             padding: '9px 14px',
-                            background: '#0F172A', color: '#fff',
+                            background: '#1C1917', color: '#fff',
                             border: 'none', borderRadius: '8px',
                             fontSize: '13px', fontWeight: '700',
                             cursor: (sendingEmail || !hasReviewed) ? 'not-allowed' : 'pointer',
@@ -692,17 +692,17 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 
-    /* Ã¢â€â‚¬Ã¢â€â‚¬ Toolbar Ã¢â€â‚¬Ã¢â€â‚¬ */
+    /* â”€â”€ Toolbar â”€â”€ */
     const toolbar = (
         <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '10px 14px', borderBottom: '1px solid #F1F5F9',
-            background: '#F8FAFC', flexWrap: 'nowrap', gap: '6px',
+            padding: '10px 14px', borderBottom: '1px solid #F0EFEB',
+            background: '#FAFAF9', flexWrap: 'nowrap', gap: '6px',
             overflowX: 'auto',
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                <FileText size={13} color="#CBD5E1" />
-                <span style={{ fontSize: '12px', color: '#94A3B8', fontWeight: '600', whiteSpace: 'nowrap' }}>Transcript</span>
+                <FileText size={13} color="#C4C0BB" />
+                <span style={{ fontSize: '12px', color: '#A8A29E', fontWeight: '600', whiteSpace: 'nowrap' }}>Transcript</span>
             </div>
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
                 {/* Edit / Done */}
@@ -719,23 +719,23 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                     <button onClick={() => { setIsEditing(true); setTimeout(() => textareaRef.current?.focus(), 50); }}
                         title="Edit transcript" style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            width: '30px', height: '30px', background: '#F1F5F9',
+                            width: '30px', height: '30px', background: '#F5F4F0',
                             border: 'none', borderRadius: '7px', cursor: 'pointer', flexShrink: 0,
                         }}>
-                        <Pen size={12} color="#64748B" />
+                        <Pen size={12} color="#57534E" />
                     </button>
                 )}
 
                 {/* DOCX */}
                 <button onClick={handleDownloadDocx} disabled={!hasReviewed} title="Download Word document" style={{
                     display: 'flex', alignItems: 'center', gap: '5px',
-                    padding: '6px 10px', background: '#E0E7FF', border: 'none', borderRadius: '7px',
-                    fontSize: '12px', fontWeight: '600', color: '#4338CA',
+                    padding: '6px 10px', background: '#EFF6FF', border: 'none', borderRadius: '7px',
+                    fontSize: '12px', fontWeight: '600', color: '#1D4ED8',
                     cursor: hasReviewed ? 'pointer' : 'not-allowed',
                     opacity: hasReviewed ? 1 : 0.4,
                     whiteSpace: 'nowrap', flexShrink: 0, fontFamily: 'inherit',
                 }}>
-                    <FileDown size={12} color="#4338CA" />
+                    <FileDown size={12} color="#1D4ED8" />
                     {isDesktop ? 'Word' : '.doc'}
                 </button>
 
@@ -758,12 +758,12 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                     padding: isDesktop ? '6px 12px' : '0',
                     width: isDesktop ? 'auto' : '32px', height: '32px',
                     justifyContent: 'center', flexShrink: 0,
-                    background: '#F1F5F9',
-                    color: '#64748B',
+                    background: '#F5F4F0',
+                    color: '#57534E',
                     border: 'none', borderRadius: '7px', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit',
                     fontSize: '12px', fontWeight: '700', whiteSpace: 'nowrap',
                 }}>
-                    <Bookmark size={14} color="#64748B" />
+                    <Bookmark size={14} color="#57534E" />
                     {isDesktop && <span>Save Template</span>}
                 </button>
 
@@ -773,7 +773,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                     padding: isDesktop ? '6px 12px' : '0',
                     width: isDesktop ? 'auto' : '32px', height: '32px',
                     justifyContent: 'center', flexShrink: 0,
-                    background: copied ? '#DCFCE7' : '#0F172A',
+                    background: copied ? '#DCFCE7' : '#1C1917',
                     color: copied ? '#15803D' : '#fff',
                     border: 'none', borderRadius: '7px', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit',
                     fontSize: '12px', fontWeight: '700', whiteSpace: 'nowrap',
@@ -785,17 +785,17 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 
-    /* â”€â”€ Tip banner â”€â”€ */
+    /* ── Tip banner ── */
     const tipBanner = null;
 
-    /* Ã¢â€â‚¬Ã¢â€â‚¬ Shared textarea styles Ã¢â€â‚¬Ã¢â€â‚¬ */
+    /* â”€â”€ Shared textarea styles â”€â”€ */
     const textareaStyleMobile = {
         display: 'block', width: '100%', height: isNoText ? 'auto' : '380px',
         minHeight: isNoText ? '80px' : undefined,
         padding: '22px', border: 'none', outline: 'none',
         fontFamily: isNoText ? "'Inter', sans-serif" : "'EB Garamond', Georgia, serif",
         fontSize: isNoText ? '14px' : '16px',
-        lineHeight: '1.9', color: isNoText ? '#64748B' : '#0F172A',
+        lineHeight: '1.9', color: isNoText ? '#78716C' : '#1C1917',
         fontStyle: isNoText ? 'italic' : 'normal',
         background: '#fff', resize: 'none',
         boxSizing: 'border-box', overflowY: 'auto', WebkitOverflowScrolling: 'touch',
@@ -821,28 +821,28 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
             }}>
                 {isNoText ? '!' : <Check size={13} strokeWidth={3} />}
             </div>
-            <span style={{ fontSize: '13px', fontWeight: '700', color: '#475569' }}>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: '#44403C' }}>
                 {isNoText ? 'No text found' : 'Transcription complete'}
             </span>
-            <div style={{ flex: 1, height: '1px', background: '#E2E8F0' }} />
-            {!isNoText && <span style={{ fontSize: '11px', color: '#94A3B8', whiteSpace: 'nowrap' }}>{stats.words.toLocaleString()} words</span>}
+            <div style={{ flex: 1, height: '1px', background: '#E4E2DC' }} />
+            {!isNoText && <span style={{ fontSize: '11px', color: '#A8A29E', whiteSpace: 'nowrap' }}>{stats.words.toLocaleString()} words</span>}
         </div>
     );
 
-    /* â”€â”€ Tab toggle â”€â”€ */
+    /* ── Tab toggle ── */
     const tabToggle = images.length > 0 && (
         <div style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             padding: '12px 24px',
-            borderBottom: '1px solid #E2E8F0',
-            background: '#F8FAFC',
+            borderBottom: '1px solid #E4E2DC',
+            background: '#FAFAF9',
             borderRadius: 12,
-            border: '1px solid #E2E8F0',
+            border: '1px solid #E4E2DC',
             flexShrink: 0
         }}>
-            <div style={{ display: 'flex', background: '#F1F5F9', borderRadius: 8, padding: 3, gap: 2, border: '1px solid #E2E8F0' }}>
+            <div style={{ display: 'flex', background: '#F5F4F0', borderRadius: 8, padding: 3, gap: 2, border: '1px solid #E4E2DC' }}>
                 {(['split', 'original', 'result'] as const).map(tab => (
                     <button
                         key={tab}
@@ -852,7 +852,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                             borderRadius: 6,
                             border: 'none',
                             background: activeTab === tab ? '#FFFFFF' : 'transparent',
-                            color: activeTab === tab ? '#0F172A' : '#64748B',
+                            color: activeTab === tab ? '#0B0D12' : '#78716C',
                             fontWeight: 700,
                             fontSize: 12,
                             textTransform: 'uppercase',
@@ -870,7 +870,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 
-    /* â”€â”€ AI Review Gate banner â”€â”€ */
+    /* ── AI Review Gate banner ── */
     const reviewBanner = !hasReviewed && !value.startsWith('[Raw voice dictation') && (
         <div style={{
             border: '1.5px solid #DC2626',
@@ -887,7 +887,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 13, color: '#991B1B', fontWeight: 700 }}>
-                    âš ï¸ AI-generated â€” review carefully before use
+                    ⚠️ AI-generated — review carefully before use
                 </span>
             </div>
             <button
@@ -913,7 +913,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 
-    /* â”€â”€ Desktop layout â”€â”€ */
+    /* ── Desktop layout ── */
     if (isDesktop) {
         return (
             <div style={{ display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.4s ease', gap: 16 }}>
@@ -923,16 +923,16 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                 <div className="desktop-split" style={{ display: 'flex', height: 'calc(100vh - 180px)', overflow: 'hidden' }}>
                     {images.length > 0 && (activeTab === 'split' || activeTab === 'original') && (
                         <div className="left-pane" style={{
-                            background: '#F8FAFC',
-                            borderRight: '1px solid #E2E8F0',
+                            background: '#FAFAF9',
+                            borderRight: '1px solid #E4E2DC',
                             overflow: 'hidden',
                             padding: 0,
                             display: 'flex',
                             flexDirection: 'column',
                             width: activeTab === 'original' ? '100%' : '50%'
                         }}>
-                            <div style={{ padding: '12px 16px', borderBottom: '1px solid #E2E8F0', background: '#fff', flexShrink: 0 }}>
-                                <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748B', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Source Documents</span>
+                            <div style={{ padding: '12px 16px', borderBottom: '1px solid #E4E2DC', background: '#fff', flexShrink: 0 }}>
+                                <span style={{ fontSize: '12px', fontWeight: '700', color: '#78716C', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Source Documents</span>
                             </div>
                             <div style={{ flex: 1, overflow: 'hidden' }}>
                                 <FilmstripViewer images={images} />
@@ -950,7 +950,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                                 {statusBadge}
                                 {!isNoText && emailRow}
 
-                                <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: '10px' }}>
+                                <div style={{ background: '#fff', border: '1px solid #E4E2DC', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: '10px' }}>
                                     {toolbar}
                                     <div style={{ position: 'relative' }}>
                                         {value.startsWith('[Raw voice dictation') ? (
@@ -958,7 +958,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                                         ) : (
                                             <>
                                                 {audioUrl && !value.startsWith('[Raw voice dictation') && (
-                                                    <div style={{ padding: '12px 14px', borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
+                                                    <div style={{ padding: '12px 14px', borderBottom: '1px solid #E4E2DC', background: '#FAFAF9' }}>
                                                         <audio src={audioUrl} controls style={{ width: '100%', height: '40px' }} />
                                                     </div>
                                                 )}
@@ -980,9 +980,9 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
 
                                 {!isNoText && tipBanner}
 
-                                <button onClick={onReset} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '13px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: '#64748B', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit' }}
-                                    onMouseEnter={e => { e.currentTarget.style.background = '#F1F5F9'; e.currentTarget.style.color = '#475569'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = '#64748B'; }}>
+                                <button onClick={onReset} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '13px', background: '#FAFAF9', border: '1px solid #E4E2DC', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: '#78716C', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit' }}
+                                    onMouseEnter={e => { e.currentTarget.style.background = '#F0EFEB'; e.currentTarget.style.color = '#44403C'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.background = '#FAFAF9'; e.currentTarget.style.color = '#78716C'; }}>
                                     <RotateCcw size={13} /> New document
                                 </button>
                             </div>
@@ -995,11 +995,11 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         );
     }
 
-    /* â”€â”€ Mobile layout â”€â”€ */
+    /* ── Mobile layout ── */
     return (
-        <div className="font-sans" style={{ animation: 'fadeIn 0.4s ease', display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 10 }}>
+        <div style={{ animation: 'fadeIn 0.4s ease', display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: -4 }}>
-                <button onClick={onReset} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#4338CA', fontWeight: 600, fontSize: 14, cursor: 'pointer', padding: '8px 0' }}>
+                <button onClick={onReset} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#1D4ED8', fontWeight: 600, fontSize: 14, cursor: 'pointer', padding: '8px 0' }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                     Back
                 </button>
@@ -1010,10 +1010,10 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
             {images.length > 0 && (activeTab === 'split' || activeTab === 'original') && (
                 <div style={{
                     height: activeTab === 'original' ? 'calc(100vh - 200px)' : '260px',
-                    border: '1px solid #E2E8F0',
+                    border: '1px solid #E4E2DC',
                     borderRadius: 12,
                     overflow: 'hidden',
-                    background: '#F8FAFC'
+                    background: '#FAFAF9'
                 }}>
                     <FilmstripViewer images={images} />
                 </div>
@@ -1024,7 +1024,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                     {statusBadge}
                     {!isNoText && emailRow}
 
-                    <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: '10px' }}>
+                    <div style={{ background: '#fff', border: '1px solid #E4E2DC', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: '10px' }}>
                         {toolbar}
                         <div style={{ position: 'relative' }}>
                             {value.startsWith('[Raw voice dictation') ? (
@@ -1047,9 +1047,9 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
 
                     {!isNoText && tipBanner}
 
-                    <button onClick={onReset} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '13px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: '#64748B', cursor: 'pointer', transition: 'all 0.2s', marginBottom: '32px', fontFamily: 'inherit' }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#F1F5F9'; e.currentTarget.style.color = '#475569'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.color = '#64748B'; }}>
+                    <button onClick={onReset} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '13px', background: '#FAFAF9', border: '1px solid #E4E2DC', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: '#78716C', cursor: 'pointer', transition: 'all 0.2s', marginBottom: '32px', fontFamily: 'inherit' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#F0EFEB'; e.currentTarget.style.color = '#44403C'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = '#FAFAF9'; e.currentTarget.style.color = '#78716C'; }}>
                         <RotateCcw size={13} /> New document
                     </button>
                 </div>
@@ -1059,6 +1059,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 }
+
 
 
 

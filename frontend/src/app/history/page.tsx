@@ -1,16 +1,9 @@
-'use client';
+﻿'use client';
 
-import { useAuth } from '@/contexts/auth-context';
-import Link from 'next/link';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { BottomNav } from '@/components/bottom-nav';
-import { useEffect, useState, useCallback, useRef } from 'react';
-import {
-  Clock, FileText, ScanLine, Search, Trash2, Pencil, Check, X, ExternalLink, Loader2,
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { LocalQueue, LocalJob } from '@/lib/local-queue';
+import { useAuth } from '@/contexts/auth-context';
+import { FileText, FileAudio, Clock, Trash2, Search, MoreVertical, Check, X, Folder, PenTool } from 'lucide-react';
 
 interface HistoryEntry {
   id: string;
@@ -24,24 +17,12 @@ interface HistoryEntry {
 }
 
 const TYPE_ICONS: Record<string, React.ElementType> = {
-  scan: ScanLine,
+  scan: FileText,
   transcription: FileText,
-  voice: FileText,
-  draft: Clock,
+  voice: FileAudio,
+  draft: PenTool,
 };
 
-const TYPE_LABEL: Record<string, string> = {
-  scan: 'Scan',
-  transcription: 'Text',
-  voice: 'Voice',
-  draft: 'Draft',
-};
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-// Inline rename input row
 function RenameInput({
   initial,
   onSave,
@@ -51,20 +32,20 @@ function RenameInput({
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => { ref.current?.focus(); ref.current?.select(); }, []);
   return (
-    <div className="flex items-center gap-2 mt-1">
+    <div className="flex items-center gap-2 mt-1 w-full">
       <input
         ref={ref}
         value={val}
         onChange={e => setVal(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') onSave(val); if (e.key === 'Escape') onCancel(); }}
-        className="flex-1 text-sm font-medium border rounded-lg px-2 py-1 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+        className="flex-1 text-sm font-medium border border-[#E2E8F0] rounded-lg px-2 py-1 bg-white focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5]"
         maxLength={200}
       />
-      <button onClick={() => onSave(val)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-primary text-primary-foreground">
-        <Check className="w-3.5 h-3.5" />
+      <button onClick={() => onSave(val)} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#4F46E5] text-white">
+        <Check className="w-4 h-4" />
       </button>
-      <button onClick={onCancel} className="w-7 h-7 flex items-center justify-center rounded-lg bg-muted text-muted-foreground">
-        <X className="w-3.5 h-3.5" />
+      <button onClick={onCancel} className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#F1F5F9] text-[#64748B]">
+        <X className="w-4 h-4" />
       </button>
     </div>
   );
@@ -74,236 +55,165 @@ export default function HistoryPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/login');
-    }
-  }, [loading, user, router]);
-
   const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [fetching, setFetching] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'scan' | 'transcription' | 'voice' | 'draft'>('all');
+  const [fetching, setFetching] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'scan' | 'voice' | 'draft'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [renamingId, setRenamingId] = useState<string | null>(null);
+  
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [convertingId, setConvertingId] = useState<string | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
 
-  const handleConvertScan = async (entry: HistoryEntry) => {
-    if (!entry.fileUrl) return;
-    setConvertingId(entry.id);
-    try {
-      const res = await fetch('https://inkto.jointaccount.org/api/transcribe-past', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: entry.id, fileUrl: entry.fileUrl, title: entry.title }),
-        credentials: 'include'
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Conversion failed');
-      window.location.href = `/app?doc=${data.id}`;
-    } catch (e: any) {
-      alert(e.message || 'Could not convert scan. Please try again.');
-      setConvertingId(null);
-    }
-  };
-
-  const fetchHistory = useCallback(async (q = '') => {
-    setFetching(true);
-    try {
-      const cacheBust = `t=${Date.now()}`;
-      const url = q ? `https://inkto.jointaccount.org/api/history?search=${encodeURIComponent(q)}&${cacheBust}` : `https://inkto.jointaccount.org/api/history?${cacheBust}`;
-      const r = await fetch(url, { 
-        credentials: 'include',
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-      const data = await r.json();
-      if (data.history) {
-        // Merge Local Queue
-        const localJobs = LocalQueue.getJobs();
-        const merged = [...data.history];
-        
-        for (const job of localJobs) {
-          if (job.status === 'processing') {
-             const existingIdx = merged.findIndex((h: HistoryEntry) => h.id === job.id);
-             if (existingIdx !== -1) {
-               // Update title if it doesn't have text yet
-               if (!merged[existingIdx].hasText) {
-                 merged[existingIdx].title = 'Processing: ' + merged[existingIdx].title;
-                 merged[existingIdx].preview = 'AI is currently transcribing this document...';
-               }
-             } else {
-               // It's entirely local (hasn't been saved to Supabase yet or wait, it's just processing)
-               merged.unshift({
-                 id: job.id,
-                 title: job.title,
-                 preview: 'AI is currently transcribing this document...',
-                 createdAt: new Date(job.createdAt).toISOString(),
-                 sourceImageCount: 0,
-                 type: 'transcription',
-                 fileUrl: null,
-                 hasText: false
-               });
-             }
-          }
-        }
-        
-        // Sort
-        merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        setHistory(merged);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setFetching(false);
-    }
-  }, []);
-
+  useEffect(() => {
+    if (!loading && !user) router.replace('/login');
+  }, [loading, user, router]);
 
   useEffect(() => {
     if (!user) return;
+    const fetchHistory = async () => {
+      try {
+        const res = await fetch('/api/history?limit=100');
+        if (res.ok) {
+          const data = await res.json();
+          setHistory(data.documents || []);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setFetching(false);
+      }
+    };
     fetchHistory();
-  }, [user, fetchHistory]);
+  }, [user]);
 
-  const handleSearch = (q: string) => {
-    setSearchQuery(q);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchHistory(q), 350);
-  };
+  const handleSearch = (q: string) => setSearchQuery(q);
 
-  const handleRename = async (id: string, title: string) => {
-    if (!title.trim()) { setRenamingId(null); return; }
-    setHistory(h => h.map(e => e.id === id ? { ...e, title } : e));
+  const handleRename = async (id: string, newTitle: string) => {
     setRenamingId(null);
+    if (!newTitle.trim()) return;
+    const oldTitle = history.find(h => h.id === id)?.title;
+    if (oldTitle === newTitle) return;
+
+    setHistory(prev => prev.map(h => (h.id === id ? { ...h, title: newTitle } : h)));
     try {
-      await fetch('https://inkto.jointaccount.org/api/rename-document', {
-        method: 'PATCH',
-        credentials: 'include',
+      const res = await fetch('/api/rename-document', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, title: title.trim() }),
+        body: JSON.stringify({ id, newTitle }),
       });
-    } catch { /* silent — optimistic update already applied */ }
+      if (!res.ok) throw new Error('Rename failed');
+    } catch {
+      setHistory(prev => prev.map(h => (h.id === id ? { ...h, title: oldTitle! } : h)));
+      alert('Failed to rename — try again.');
+    }
   };
 
   const handleDelete = async (id: string) => {
+    if (!confirm('Delete this document forever?')) return;
     setDeletingId(id);
-    setConfirmDeleteId(null);
     try {
-      await fetch('https://inkto.jointaccount.org/api/delete-document', {
-        method: 'DELETE',
-        credentials: 'include',
+      const res = await fetch('/api/delete-document', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
       });
-      setHistory(h => h.filter(e => e.id !== id));
-    } catch { alert('Failed to delete — try again.'); }
-    finally { setDeletingId(null); }
+      if (!res.ok) throw new Error('Delete failed');
+      setHistory(prev => prev.filter(h => h.id !== id));
+    } catch {
+      alert('Failed to delete — try again.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-[#4F46E5] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
-  const filtered = filter === 'all' ? history : history.filter(h => h.type === filter);
+  const filtered = history.filter(h => {
+    const matchesFilter = filter === 'all' ? true : h.type === filter;
+    const matchesSearch = h.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (h.preview && h.preview.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesFilter && matchesSearch;
+  });
 
   return (
-    <div className="flex flex-col h-full pt-8 pb-4">
-      <header className="mb-5">
-        <h1 className="text-2xl font-bold tracking-tight">History</h1>
-        <p className="text-muted-foreground text-sm mt-1">{user.email}</p>
+    <div className="flex flex-col h-full p-6 md:p-8 max-w-5xl mx-auto">
+      <header className="mb-6 mt-2 md:mt-0">
+        <h1 className="text-2xl font-bold font-display tracking-tight text-[#0F172A] mb-1">My Files</h1>
+        <p className="text-[#64748B] text-sm">Access, organize, and manage all your files.</p>
       </header>
 
-      {/* Search bar */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+      {/* Search Bar */}
+      <div className="relative mb-6">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+          <Search className="h-5 w-5 text-[#94A3B8]" />
+        </div>
         <input
           type="search"
-          placeholder="Search documents…"
+          placeholder="Search files..."
           value={searchQuery}
           onChange={e => handleSearch(e.target.value)}
-          className="w-full h-10 pl-9 pr-3 text-sm border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+          className="w-full h-12 pl-11 pr-4 bg-white border border-[#E2E8F0] rounded-2xl text-sm font-medium text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] shadow-sm transition-all"
         />
+        {searchQuery && (
+          <button onClick={() => setSearchQuery('')} className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#94A3B8] hover:text-[#0F172A]">
+             <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
-      {/* Filter chips */}
-      <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
-        {(['all', 'scan', 'transcription', 'voice', 'draft'] as const).map(f => {
+      {/* Filter Pills */}
+      <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+        {(['all', 'scan', 'voice', 'draft'] as const).map(f => {
           const filterLabels: Record<string, string> = {
-            all: 'All',
-            scan: 'Scans',
-            transcription: 'Text',
-            voice: 'Voice',
-            draft: 'Drafts',
+            all: 'All', scan: 'Scan', voice: 'Audio', draft: 'Handwritten'
           };
+          const isActive = filter === f;
           return (
-            <motion.button
+            <button
               key={f}
-              whileTap={{ scale: 0.93 }}
-              transition={{ type: 'spring', stiffness: 500, damping: 28 }}
               onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
-                filter === f
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
+              className={px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-colors border }
             >
-              {filterLabels[f] ?? f}
-            </motion.button>
+              {filterLabels[f]}
+            </button>
           );
         })}
       </div>
 
-      {fetching ? (
-        <div className="flex items-center justify-center flex-1">
-          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center">
-          <FileText className="w-10 h-10 text-muted-foreground mb-3" />
-          <p className="text-muted-foreground text-sm">
-            {searchQuery ? 'No documents match your search.' : 'No documents yet.'}
-          </p>
-          {!searchQuery && (
-            <Link href="/app" className="mt-4">
-              <Button variant="outline" size="sm">Capture your first document</Button>
-            </Link>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-3 overflow-y-auto flex-1">
-          {filtered.map((entry, idx) => {
-            const Icon = TYPE_ICONS[entry.type] ?? FileText;
-            const isDeleting = deletingId === entry.id;
-            const isRenaming = renamingId === entry.id;
+      {/* File List */}
+      <div className="flex-1 overflow-y-auto">
+        {fetching ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="w-6 h-6 border-2 border-[#4F46E5] border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20">
+            <Folder className="w-12 h-12 mx-auto text-[#CBD5E1] mb-3" />
+            <h3 className="text-[#0F172A] font-semibold">No files found</h3>
+            <p className="text-[#94A3B8] text-sm mt-1">Try adjusting your search or filters.</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm divide-y divide-[#E2E8F0] overflow-hidden">
+            {filtered.map(entry => {
+              const Icon = TYPE_ICONS[entry.type] ?? FileText;
+              const isDeleting = deletingId === entry.id;
+              const isRenaming = renamingId === entry.id;
+              const isAudio = entry.type === 'voice';
 
-            return (
-              <motion.div
-                key={entry.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.04, duration: 0.2, ease: 'easeOut' }}
-                className="p-4 rounded-xl border bg-card"
-                style={{ opacity: isDeleting ? 0.5 : 1 }}
-              >
-                {/* Header row: icon + title + actions */}
-                <div className="flex items-start gap-3">
-                  <div className="shrink-0 w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center mt-0.5">
-                    <Icon className="w-4 h-4 text-primary" />
+              return (
+                <div key={entry.id} className={lex items-start p-4 transition-colors }>
+                  <div className={shrink-0 w-12 h-12 rounded-xl flex items-center justify-center mr-4 }>
+                    <Icon className="w-6 h-6" />
                   </div>
-
-                  <div className="flex-1 min-w-0">
+                  
+                  <div className="flex-1 min-w-0 pr-4 mt-1">
                     {isRenaming ? (
                       <RenameInput
                         initial={entry.title}
@@ -311,143 +221,40 @@ export default function HistoryPage() {
                         onCancel={() => setRenamingId(null)}
                       />
                     ) : (
-                      <p className="text-sm font-semibold text-foreground leading-tight">
-                        {entry.title}
-                      </p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {formatDate(entry.createdAt)}
-                      {entry.sourceImageCount > 0 && ` · ${entry.sourceImageCount} ${entry.sourceImageCount === 1 ? 'page' : 'pages'}`}
-                      {' · '}<span className="capitalize">{TYPE_LABEL[entry.type] ?? entry.type}</span>
-                    </p>
-                    {entry.preview && !isRenaming && (
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-1 italic">
-                        {entry.preview}
-                      </p>
+                      <div 
+                        className="cursor-pointer group"
+                        onClick={() => {
+                          if (!isRenaming) router.push(entry.type === 'draft' ? /draft?id= : /app?doc=);
+                        }}
+                      >
+                        <h3 className="text-[15px] font-semibold text-[#0F172A] truncate group-hover:text-[#4F46E5] transition-colors">{entry.title}</h3>
+                        <div className="flex items-center gap-3 mt-1 text-[#94A3B8] text-xs font-medium">
+                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(entry.createdAt).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                          {entry.hasText && <span className="bg-[#F1F5F9] px-2 py-0.5 rounded text-[#64748B]">Transcribed</span>}
+                        </div>
+                        {entry.preview && (
+                          <p className="text-sm text-[#64748B] mt-2 line-clamp-1 overflow-hidden text-ellipsis">{entry.preview}</p>
+                        )}
+                      </div>
                     )}
                   </div>
 
-                  {/* Action buttons */}
-                  <div className="flex items-center gap-1 shrink-0 ml-1">
-                    <motion.button
-                      whileTap={{ scale: 0.88 }}
-                      onClick={() => setRenamingId(isRenaming ? null : entry.id)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors"
-                      title="Rename"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </motion.button>
-                    <motion.button
-                      whileTap={{ scale: 0.88 }}
-                      onClick={() => setConfirmDeleteId(entry.id)}
-                      disabled={isDeleting}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </motion.button>
-                  </div>
+                  {!isRenaming && (
+                    <div className="shrink-0 flex items-center gap-2 mt-2">
+                       <button onClick={() => setRenamingId(entry.id)} className="w-8 h-8 flex items-center justify-center text-[#94A3B8] hover:text-[#4F46E5] hover:bg-[#E0E7FF] rounded-lg transition-colors">
+                         <PenTool size={16} />
+                       </button>
+                       <button onClick={() => handleDelete(entry.id)} className="w-8 h-8 flex items-center justify-center text-[#94A3B8] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                         <Trash2 size={16} />
+                       </button>
+                    </div>
+                  )}
                 </div>
-
-                {/* Open buttons */}
-                {!isRenaming && (
-                  <div className="flex gap-2 mt-3 pt-3 border-t">
-                    {entry.type === 'draft' ? (
-                      <Link href={`/app?resume=${entry.id}`} className="flex-1">
-                        <Button size="sm" variant="default" className="w-full h-8 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-medium hover:text-white border-none">
-                          <Clock className="w-3 h-3" /> Resume Recording
-                        </Button>
-                      </Link>
-                    ) : (
-                      <>
-                        {entry.hasText && (
-                          <Link href={`/app?doc=${entry.id}`} className="flex-1">
-                            <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5">
-                              <FileText className="w-3 h-3" /> Open in editor
-                            </Button>
-                          </Link>
-                        )}
-                        {entry.fileUrl && (
-                          <a href={entry.fileUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
-                            <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5">
-                              <ExternalLink className="w-3 h-3" /> {entry.type === 'voice' ? 'Listen Audio' : 'View PDF'}
-                            </Button>
-                          </a>
-                        )}
-                        {((entry.type === 'scan' || entry.type === 'voice') && !entry.hasText && entry.fileUrl) && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleConvertScan(entry)}
-                            disabled={convertingId !== null}
-                            className="flex-1 h-8 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-medium hover:text-white"
-                          >
-                            {convertingId === entry.id ? (
-                              <>
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Converting…
-                              </>
-                            ) : (
-                              <>
-                                <FileText className="w-3.5 h-3.5" /> Convert to Text
-                              </>
-                            )}
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
-
-      <AnimatePresence>
-        {confirmDeleteId && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: '0' }}
-          >
-            <motion.div
-              initial={{ y: 48, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 48, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 340, damping: 28 }}
-              style={{ background: '#FFFFFF', color: '#0B0D12', borderRadius: '20px 20px 0 0', width: '100%', maxWidth: 448, padding: '28px 24px 40px', boxShadow: '0 -8px 40px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: 16 }}
-            >
-              <div style={{ width: 36, height: 4, background: '#E4E1D9', borderRadius: 2, margin: '0 auto 4px' }} />
-              <div>
-                <h3 style={{ fontSize: 18, fontWeight: 700, fontFamily: 'Georgia, serif', margin: '0 0 8px 0' }}>Delete Document?</h3>
-                <p style={{ fontSize: 13, color: '#6B6760', margin: 0, lineHeight: 1.5 }}>
-                  Are you sure you want to delete this document? This action is permanent and cannot be undone.
-                </p>
-              </div>
-              <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => setConfirmDeleteId(null)}
-                  style={{ flex: 1, height: 44, border: '1.5px solid #E4E2DC', background: 'transparent', borderRadius: 10, fontSize: 13, fontWeight: 700, color: '#57534E', cursor: 'pointer', fontFamily: 'inherit' }}
-                >
-                  Cancel
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => handleDelete(confirmDeleteId)}
-                  style={{ flex: 1, height: 44, border: 'none', background: '#DC2626', borderRadius: 10, fontSize: 13, fontWeight: 700, color: '#FFFFFF', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 2px 8px rgba(220,38,38,0.2)' }}
-                >
-                  Delete
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
+              );
+            })}
+          </div>
         )}
-      </AnimatePresence>
-      <BottomNav />
+      </div>
     </div>
   );
 }
-
-

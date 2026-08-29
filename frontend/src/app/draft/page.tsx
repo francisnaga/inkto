@@ -25,7 +25,7 @@ export default function DraftPage() {
     setError(null);
 
     try {
-      const res = await fetch('/api/draft', {
+      const res = await fetch(`https://inkto.jointaccount.org/api/draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

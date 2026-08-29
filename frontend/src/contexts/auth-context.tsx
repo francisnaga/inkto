@@ -110,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 localStorage.setItem('inkto_refresh_token', refreshData.refreshToken);
               }
               // Retry verification
-              const retryRes = await fetch(`/api/user-status?t=${Date.now()}`, {
+              const retryRes = await fetch(`https://inkto.jointaccount.org/api/user-status?t=${Date.now()}`, {
                 credentials: 'include',
                 headers: { 'Authorization': `Bearer ${refreshData.sessionToken}` }
               });

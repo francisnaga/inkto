@@ -54,7 +54,7 @@ function AppPageContent() {
   useEffect(() => {
     const fetchRecent = async () => {
       try {
-        const res = await fetch('/api/history?limit=4'); 
+        const res = await fetch(`https://inkto.jointaccount.org/api/history?limit=4'); 
         if (res.ok) {
           const data = await res.json();
           setRecentFiles(data.documents || []);

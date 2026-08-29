@@ -71,7 +71,7 @@ export default function HistoryPage() {
     if (!user) return;
     const fetchHistory = async () => {
       try {
-        const res = await fetch('/api/history?limit=100');
+        const res = await fetch(`https://inkto.jointaccount.org/api/history?limit=100');
         if (res.ok) {
           const data = await res.json();
           setHistory(data.documents || []);
@@ -95,7 +95,7 @@ export default function HistoryPage() {
 
     setHistory(prev => prev.map(h => (h.id === id ? { ...h, title: newTitle } : h)));
     try {
-      const res = await fetch('/api/rename-document', {
+      const res = await fetch(`https://inkto.jointaccount.org/api/rename-document', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, newTitle }),
@@ -111,7 +111,7 @@ export default function HistoryPage() {
     if (!confirm('Delete this document forever?')) return;
     setDeletingId(id);
     try {
-      const res = await fetch('/api/delete-document', {
+      const res = await fetch(`https://inkto.jointaccount.org/api/delete-document', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),

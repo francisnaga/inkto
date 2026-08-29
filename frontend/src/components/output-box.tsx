@@ -19,132 +19,55 @@ const IconPayPal = ({ size = 16 }) => (
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Source document filmstrip viewer Ã¢â€â‚¬Ã¢â€â‚¬ */
 const FilmstripViewer = ({ images }) => {
-    const [selected, setSelected] = useState(0);
-    const [imgError, setImgError] = useState({});
-    const isPdf = images[selected]?.includes('.pdf') || imgError[selected];
-
     return (
-        <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
-            {/* Thumbnail strip */}
-            <div style={{
-                width: '80px', flexShrink: 0,
-                overflowY: 'auto', borderRight: '1px solid #E2E8F0',
-                background: '#F1F5F9', display: 'flex', flexDirection: 'column',
-                gap: '6px', padding: '10px 6px',
-            }}>
-                {images.map((url, i) => (
-                    <button
-                        key={i}
-                        onClick={() => setSelected(i)}
-                        style={{
-                            width: '68px', height: '88px', flexShrink: 0,
-                            border: i === selected ? '2px solid #4338CA' : '2px solid transparent',
-                            borderRadius: '8px', overflow: 'hidden',
-                            cursor: 'pointer', padding: 0, background: '#fff',
-                            boxShadow: i === selected ? '0 0 0 2px rgba(29,78,216,0.15)' : '0 1px 3px rgba(0,0,0,0.08)',
-                            transition: 'border-color 0.15s, box-shadow 0.15s',
-                            position: 'relative',
-                        }}
-                    >
-                        {url.includes('.pdf') || imgError[i] ? (
-                            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', background: '#E0E7FF' }}>
-                                <FileText size={18} color="#4F46E5" />
-                                <span style={{ fontSize: '8px', fontWeight: '700', color: '#6366F1' }}>PDF</span>
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', background: '#F8FAFC' }}>
+            {images.map((url, i) => {
+                const isPdf = url.includes('.pdf');
+                return (
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+                        {isPdf ? (
+                            <div style={{
+                                display: 'flex', flexDirection: 'column',
+                                alignItems: 'center', justifyContent: 'center',
+                                gap: '12px', padding: '48px', textAlign: 'center',
+                                background: '#fff', borderRadius: '12px',
+                                border: '1px solid #E2E8F0', width: '100%', maxWidth: '800px',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                            }}>
+                                <FileText size={40} color="#94A3B8" />
+                                <div style={{ fontSize: '14px', fontWeight: '600', color: '#64748B' }}>PDF Document</div>
+                                <div style={{ fontSize: '12px', color: '#94A3B8' }}>Page {i + 1}</div>
                             </div>
                         ) : (
-                            <img src={url} alt={`p.${i+1}`}
-                                onError={() => setImgError(prev => ({ ...prev, [i]: true }))}
-                                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                            <div style={{ position: 'relative', width: '100%', maxWidth: '800px' }}>
+                                <img
+                                    src={url}
+                                    alt={'Page ' + (i + 1)}
+                                    style={{
+                                        width: '100%', borderRadius: '12px',
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                                        display: 'block', border: '1px solid #E2E8F0',
+                                    }}
+                                />
+                                <div style={{
+                                    position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)',
+                                    background: 'rgba(15, 23, 42, 0.75)', color: '#fff',
+                                    fontSize: '12px', fontWeight: '600',
+                                    padding: '4px 10px', borderRadius: '20px',
+                                    backdropFilter: 'blur(4px)', whiteSpace: 'nowrap'
+                                }}>
+                                    Page {i + 1} of {images.length}
+                                </div>
+                            </div>
                         )}
-                        <div style={{
-                            position: 'absolute', bottom: '3px', left: '50%', transform: 'translateX(-50%)',
-                            background: 'rgba(0,0,0,0.55)', color: '#fff',
-                            fontSize: '8px', fontWeight: '700',
-                            padding: '1px 5px', borderRadius: '4px',
-                            backdropFilter: 'blur(4px)', whiteSpace: 'nowrap'
-                        }}>{i + 1}</div>
-                    </button>
-                ))}
-            </div>
-
-            {/* Main preview */}
-            <div style={{
-                flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column',
-                background: '#F8FAFC',
-            }}>
-                <div style={{
-                    padding: '10px 14px', borderBottom: '1px solid #E2E8F0',
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    background: '#fff',
-                }}>
-                    <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>
-                        Page {selected + 1} of {images.length}
-                    </span>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                        <button
-                            disabled={selected === 0}
-                            onClick={() => setSelected(s => Math.max(0, s - 1))}
-                            style={{
-                                width: '28px', height: '28px', border: '1px solid #E2E8F0',
-                                borderRadius: '6px', background: '#fff', cursor: selected === 0 ? 'not-allowed' : 'pointer',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                opacity: selected === 0 ? 0.4 : 1, transition: 'opacity 0.15s'
-                            }}
-                        >
-                            <svg width="10" height="10" viewBox="0 0 10 10"><path d="M7 1L3 5L7 9" stroke="#475569" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg>
-                        </button>
-                        <button
-                            disabled={selected === images.length - 1}
-                            onClick={() => setSelected(s => Math.min(images.length - 1, s + 1))}
-                            style={{
-                                width: '28px', height: '28px', border: '1px solid #E2E8F0',
-                                borderRadius: '6px', background: '#fff', cursor: selected === images.length - 1 ? 'not-allowed' : 'pointer',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                opacity: selected === images.length - 1 ? 0.4 : 1, transition: 'opacity 0.15s'
-                            }}
-                        >
-                            <svg width="10" height="10" viewBox="0 0 10 10"><path d="M3 1L7 5L3 9" stroke="#475569" strokeWidth="1.5" strokeLinecap="round" fill="none"/></svg>
-                        </button>
                     </div>
-                </div>
-
-                <div style={{
-                    flex: 1, overflowY: 'auto', display: 'flex',
-                    alignItems: 'flex-start', justifyContent: 'center',
-                    padding: '20px',
-                }}>
-                    {isPdf ? (
-                        <div style={{
-                            display: 'flex', flexDirection: 'column',
-                            alignItems: 'center', justifyContent: 'center',
-                            gap: '12px', padding: '48px', textAlign: 'center',
-                            background: '#fff', borderRadius: '12px',
-                            border: '1px solid #E2E8F0', width: '100%',
-                        }}>
-                            <FileText size={40} color="#94A3B8" />
-                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#64748B' }}>PDF Document</div>
-                            <div style={{ fontSize: '12px', color: '#94A3B8' }}>Page {selected + 1}</div>
-                        </div>
-                    ) : (
-                        <img
-                            src={images[selected]}
-                            alt={`Page ${selected + 1}`}
-                            onError={() => setImgError(prev => ({ ...prev, [selected]: true }))}
-                            style={{
-                                maxWidth: '100%', borderRadius: '8px',
-                                boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
-                                display: 'block',
-                            }}
-                        />
-                    )}
-                </div>
-            </div>
+                );
+            })}
         </div>
     );
 };
 
-
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Format picker modal for Inbox Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* Format picker modal for Inbox */
 function InboxModal({ onClose, onSend }) {
     const [selected, setSelected] = useState({ docx: true, pdf: false });
 
@@ -830,6 +753,13 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     );
 
     /* â”€â”€ Tab toggle â”€â”€ */
+        const persistentAudioPlayer = audioUrl && !value.startsWith('[Raw voice dictation') ? (
+        <div style={{ padding: '12px', background: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', marginBottom: '16px' }}>
+            <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748B', display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Original Audio</span>
+            <audio src={audioUrl} controls style={{ width: '100%', height: '40px' }} />
+        </div>
+    ) : null;
+
     const tabToggle = images.length > 0 && (
         <div style={{
             display: 'flex',
@@ -917,6 +847,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     if (isDesktop) {
         return (
             <div style={{ display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.4s ease', gap: 16 }}>
+                {persistentAudioPlayer}
                 {tabToggle}
                 {reviewBanner}
                 
@@ -957,11 +888,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                                             renderRawAudioDashboard()
                                         ) : (
                                             <>
-                                                {audioUrl && !value.startsWith('[Raw voice dictation') && (
-                                                    <div style={{ padding: '12px 14px', borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
-                                                        <audio src={audioUrl} controls style={{ width: '100%', height: '40px' }} />
-                                                    </div>
-                                                )}
+                                                
                                                 <RichEditor
                                                     content={value}
                                                     onChange={handleChange}
@@ -1004,7 +931,8 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                     Back
                 </button>
             </div>
-            {tabToggle}
+            {persistentAudioPlayer}
+                {tabToggle}
             {reviewBanner}
 
             {images.length > 0 && (activeTab === 'split' || activeTab === 'original') && (
@@ -1059,6 +987,8 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 }
+
+
 
 
 

@@ -29,11 +29,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-[#E2E8F0] shadow-sm shrink-0">
         <div className="p-6 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[#4F46E5] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center">
             {/* Custom Logo Icon */}
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2L2 22H22L12 2Z" fill="white"/>
-            </svg>
+            <img src="/icon-192.png" alt="Inkto Logo" className="w-6 h-6 object-contain" />
           </div>
           <span className="font-display font-bold text-xl tracking-tight">inkto</span>
         </div>
@@ -105,3 +103,5 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
+

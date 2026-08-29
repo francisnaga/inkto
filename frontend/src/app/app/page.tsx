@@ -28,6 +28,7 @@ function AppPageContent() {
   const searchParams = useSearchParams();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const {
     state, error, transcribedText,
@@ -192,8 +193,9 @@ function AppPageContent() {
           </button>
           
           <input type="file" ref={fileInputRef} className="hidden" multiple accept="image/*,application/pdf,audio/*" onChange={handleInput} />
+          <input type="file" ref={cameraInputRef} className="hidden" accept="image/*" capture="environment" onChange={handleInput} />
 
-          <button onClick={() => fileInputRef.current?.click()} className="bg-white p-5 rounded-2xl border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow flex flex-col items-center justify-center gap-3 active:scale-95">
+          <button onClick={() => cameraInputRef.current?.click()} className="bg-white p-5 rounded-2xl border border-[#E2E8F0] shadow-sm hover:shadow-md transition-shadow flex flex-col items-center justify-center gap-3 active:scale-95">
             <div className="w-12 h-12 rounded-full bg-[#E0E7FF] text-[#4F46E5] flex items-center justify-center">
               <PenTool size={24} />
             </div>

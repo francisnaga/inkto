@@ -8,9 +8,16 @@ export function FetchInterceptor() {
       window.fetch = async (...args) => {
         let [resource, config] = args;
         if (typeof resource === 'string' && resource.includes('inkto.jointaccount.org/api/')) {
+          const url = new URL(resource);
+          url.searchParams.set('_t', Date.now().toString());
+          resource = url.toString();
+        }
+        if (typeof resource === 'string' && resource.includes('inkto.jointaccount.org/api/')) {
           config = config || {};
           config.headers = config.headers || {};
           config.credentials = 'include';
+          config.cache = 'no-store';
+          if (config.headers instanceof Headers) { config.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate'); } else if (!Array.isArray(config.headers)) { (config.headers)['Cache-Control'] = 'no-cache, no-store, must-revalidate'; }
           const token = localStorage.getItem('inkto_session');
           if (token) {
             if (config.headers instanceof Headers) {

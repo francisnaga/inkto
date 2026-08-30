@@ -27,12 +27,10 @@ export default function LoginPage() {
     if (!isValidEmail) return;
     setBusy(true); setErr('');
     try {
-      const data = await apiPost('/send-otp', { email });
-      const res = { ok: true }; // shim
-      if (!res.ok) { setErr(data.error || 'Failed to send code.'); return; }
+      await apiPost('/send-otp', { email });
       router.push(`/verify?email=${encodeURIComponent(email)}`);
     } catch (err: any) {
-      setErr('Network error: ' + (err.message || String(err)));
+      setErr(err.message || 'Failed to send code.');
     } finally {
       setBusy(false);
     }

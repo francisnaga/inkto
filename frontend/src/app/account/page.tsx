@@ -143,7 +143,7 @@ function AccountPageContent() {
       const data = await apiPost('/update-profile', { phone });
       if (data) { setPhoneSaved(true); setTimeout(() => setPhoneSaved(false), 3000); }
       else alert('Could not update phone number.');
-    } catch { alert('Network error — please try again.'); }
+    } catch (err: any) { alert(err.message || 'Network error.'); }
     finally { setSavingPhone(false); }
   };
 
@@ -156,7 +156,7 @@ function AccountPageContent() {
         setNameSaved(true);
         setTimeout(() => setNameSaved(false), 3000);
       } else alert('Could not update display name.');
-    } catch { alert('Network error — please try again.'); }
+    } catch (err: any) { alert(err.message || 'Network error.'); }
     finally { setSavingName(false); }
   };
 
@@ -166,7 +166,7 @@ function AccountPageContent() {
       const data = await apiPost<{authorization_url?: string, error?: string}>('/checkout', { email: user!.email });
       if (data.authorization_url) window.location.href = data.authorization_url;
       else { alert(data.error || 'Could not start upgrade.'); setUpgrading(false); }
-    } catch { alert('Network error.'); setUpgrading(false); }
+    } catch (err: any) { alert(err.message || 'Network error.'); setUpgrading(false); }
   };
 
   if (loading) {

@@ -44,21 +44,16 @@ function VerifyForm() {
     setBusy(true); setErr('');
     try {
       const data = await apiPost('/verify', { email, code: otp });
-      const res = { ok: true }; // shim
-      if (!res.ok) {
-        setErr(data.error || 'Invalid code — try again.');
-        setOtp('');
-        setTimeout(() => inputRef.current?.focus(), 50);
-        return;
-      }
       if (data.sessionToken) localStorage.setItem('inkto_session', data.sessionToken);
-      if (data.refreshToken)  localStorage.setItem('inkto_refresh_token', data.refreshToken);
+      if (data.refreshToken) localStorage.setItem('inkto_refresh_token', data.refreshToken);
       localStorage.setItem('inkto_user_email', data.email || email);
       setDone(true);
       await refreshUser();
       setTimeout(() => router.replace('/app'), 600);
-    } catch {
-      setErr('Network error — please try again.');
+    } catch (err: any) {
+      setErr(err.message || 'Invalid code — try again.');
+      setOtp('');
+      setTimeout(() => inputRef.current?.focus(), 50);
     } finally {
       setBusy(false);
     }

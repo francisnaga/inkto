@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { opencvBridge } from '@/lib/opencv-bridge';
 import { compilePagesToPdf, canvasToFile } from '@/lib/pdf-compiler';
 import { Quad, FilterType, ScannedPage, ScannerStage } from '@/types/scanner';
+import { apiPostForm } from '@/lib/api';
 
 import { CameraCapture } from './CameraCapture';
 import { CropEditor } from './CropEditor';
@@ -268,7 +269,7 @@ export function ScannerContainer({
       const fd = new FormData(); 
       fd.append('file', pdfBlob, name); 
       fd.append('title', name);
-      fetch('https://inkto.jointaccount.org/api/save-scan', { method: 'POST', credentials: 'include', body: fd }).catch(e => console.error('Background PDF save failed:', e));
+      apiPostForm('/save-scan', fd).catch(e => console.error('Background PDF save failed:', e));
 
       // 2. Convert pages to JPEGs for the OCR pipeline
       const filePromises = pages.map((p, idx) => 

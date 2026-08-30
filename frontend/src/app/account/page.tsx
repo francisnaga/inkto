@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import { apiGet, apiPost } from '@/lib/api';
 import Link from 'next/link';
 import {
   Loader2, LogOut, ChevronRight, Crown, MessageSquare,
@@ -126,11 +127,7 @@ function AccountPageContent() {
   useEffect(() => {
     if (!user) return;
     if (user.displayName) setName(user.displayName);
-    fetch(`https://inkto.jointaccount.org/api/user-status?t=${Date.now()}`, {
-      credentials: 'include', headers: { 'Cache-Control': 'no-cache' },
-    })
-      .then(r => r.json())
-      .then(d => {
+    apiGet('/user-status').then(d => {
         if (d.subscription_status) {
           setPlan({ status: d.subscription_status, expiresAt: d.plan_expires_at, isPro: d.is_pro === true || d.subscription_status === 'active' });
         }
@@ -143,10 +140,8 @@ function AccountPageContent() {
   const handleSavePhone = async (e: React.FormEvent) => {
     e.preventDefault(); setSavingPhone(true);
     try {
-      const res = await fetch('https://inkto.jointaccount.org/api/update-profile', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone }),
-      });
-      if (res.ok) { setPhoneSaved(true); setTimeout(() => setPhoneSaved(false), 3000); }
+      const data = await apiPost('/update-profile', { phone });
+      if (data) { setPhoneSaved(true); setTimeout(() => setPhoneSaved(false), 3000); }
       else alert('Could not update phone number.');
     } catch { alert('Network error — please try again.'); }
     finally { setSavingPhone(false); }
@@ -155,10 +150,8 @@ function AccountPageContent() {
   const handleSaveName = async (e: React.FormEvent) => {
     e.preventDefault(); setSavingName(true);
     try {
-      const res = await fetch('https://inkto.jointaccount.org/api/update-profile', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }),
-      });
-      if (res.ok) {
+      const data = await apiPost('/update-profile', { name });
+        if (data) {
         setDisplayName(name);
         setNameSaved(true);
         setTimeout(() => setNameSaved(false), 3000);
@@ -170,10 +163,7 @@ function AccountPageContent() {
   const upgrade = async () => {
     setUpgrading(true);
     try {
-      const res  = await fetch('https://inkto.jointaccount.org/api/checkout', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: user!.email }),
-      });
-      const data = await res.json();
+      const data = await apiPost<{authorization_url?: string, error?: string}>('/checkout', { email: user!.email });
       if (data.authorization_url) window.location.href = data.authorization_url;
       else { alert(data.error || 'Could not start upgrade.'); setUpgrading(false); }
     } catch { alert('Network error.'); setUpgrading(false); }

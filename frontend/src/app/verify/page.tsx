@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import { apiPost } from '@/lib/api';
 import Link from 'next/link';
 import { InktoLogo } from '@/components/inkto-logo';
 import { motion } from 'framer-motion';
@@ -42,13 +43,8 @@ function VerifyForm() {
     e.preventDefault();
     setBusy(true); setErr('');
     try {
-      const res  = await fetch('https://inkto.jointaccount.org/api/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, otp }),
-      });
-      const data = await res.json();
+      const data = await apiPost('/verify', { email, code: otp });
+      const res = { ok: true }; // shim
       if (!res.ok) {
         setErr(data.error || 'Invalid code — try again.');
         setOtp('');
@@ -72,11 +68,7 @@ function VerifyForm() {
     if (cooldown > 0) return;
     startCooldown(); setResent(true);
     try {
-      await fetch('https://inkto.jointaccount.org/api/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
+      await apiPost('/send-otp', { email });
     } catch {}
   };
 

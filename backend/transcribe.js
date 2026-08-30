@@ -103,8 +103,8 @@ function cleanSinglePageText(text) {
 async function callGemini(apiKey, parts, timeoutMs, systemPrompt = SYSTEM_PROMPT, isAudio = false) {
     // Model chain: prefer dedicated transcribe model for audio, then low-latency multimodal models, then fall back.
     const models = isAudio
-        ? ['gemini-3.5-transcribe', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash']
-        : ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+        ? ['gemini-2.0-flash-exp', 'gemini-1.5-flash', 'gemini-1.5-pro']
+        : ['gemini-2.0-flash-exp', 'gemini-1.5-flash', 'gemini-1.5-pro'];
     const deadline = Date.now() + timeoutMs;
 
     for (const model of models) {
@@ -166,7 +166,7 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Inkto-Auth, Cookie');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Inkto-Auth, Cookie, Cache-Control');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -208,6 +208,17 @@ module.exports = async function handler(req, res) {
 
     if (!userEmail) {
         return res.status(401).json({ error: 'Please sign in to convert documents.', requireAuth: true });
+    }
+
+    // Parse JSON body manually (since bodyParser is disabled for Multer)
+    if (req.headers['content-type']?.includes('application/json')) {
+        try {
+            const buffers = [];
+            for await (const chunk of req) { buffers.push(chunk); }
+            req.body = JSON.parse(Buffer.concat(buffers).toString());
+        } catch (e) {
+            console.warn('JSON parse failed:', e.message);
+        }
     }
 
     // ---- Free-tier daily limit: 5 conversions/day (server-side per Rule 6) ----

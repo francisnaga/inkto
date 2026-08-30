@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import { apiPost } from '@/lib/api';
 import { InktoLogo } from '@/components/inkto-logo';
 import { motion } from 'framer-motion';
 import { Mail, ArrowRight, Loader2 } from 'lucide-react';
@@ -26,12 +27,8 @@ export default function LoginPage() {
     if (!isValidEmail) return;
     setBusy(true); setErr('');
     try {
-      const res  = await fetch('https://inkto.jointaccount.org/api/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
+      const data = await apiPost('/send-otp', { email });
+      const res = { ok: true }; // shim
       if (!res.ok) { setErr(data.error || 'Failed to send code.'); return; }
       router.push(`/verify?email=${encodeURIComponent(email)}`);
     } catch (err: any) {

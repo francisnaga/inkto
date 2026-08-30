@@ -1,46 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-
-if (typeof window !== 'undefined' && !(window as any).__fetch_intercepted__) {
-  (window as any).__fetch_intercepted__ = true;
-  const originalFetch = window.fetch;
-  window.fetch = async function (input, init) {
-    if (typeof input === 'string' && input.startsWith('/api/')) {
-      const token = localStorage.getItem('inkto_session');
-      if (token) {
-        init = init || {};
-        init.headers = init.headers || {};
-        if (init.headers instanceof Headers) {
-          if (!init.headers.has('Authorization')) {
-            init.headers.set('Authorization', `Bearer ${token}`);
-          }
-          if (!init.headers.has('X-Inkto-Auth')) {
-            init.headers.set('X-Inkto-Auth', token);
-          }
-        } else if (Array.isArray(init.headers)) {
-          const hasAuth = init.headers.some(([k]) => k.toLowerCase() === 'authorization');
-          if (!hasAuth) {
-            init.headers.push(['Authorization', `Bearer ${token}`]);
-          }
-          const hasX = init.headers.some(([k]) => k.toLowerCase() === 'x-inkto-auth');
-          if (!hasX) {
-            init.headers.push(['X-Inkto-Auth', token]);
-          }
-        } else {
-          const headersObj = init.headers as Record<string, string>;
-          if (!headersObj['Authorization'] && !headersObj['authorization']) {
-            headersObj['Authorization'] = `Bearer ${token}`;
-          }
-          if (!headersObj['X-Inkto-Auth'] && !headersObj['x-inkto-auth']) {
-            headersObj['X-Inkto-Auth'] = token;
-          }
-        }
-      }
-    }
-    return originalFetch.call(this, input, init);
-  };
-}
+import { apiGet, apiPost } from '@/lib/api';
 
 interface AuthUser {
   email: string;
@@ -85,12 +46,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const headers: Record<string, string> = { 'Authorization': `Bearer ${token}` };
-      const res = await fetch(`https://inkto.jointaccount.org/api/user-status?t=${Date.now()}`, { credentials: 'include', headers });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.email) {
+      try {
+        const data = await apiGet<{email: string; name?: string; credits?: number; subscription?: any}>('/user-status');
+        if (data && data.email) {
           if (typeof window !== 'undefined') {
             localStorage.setItem('inkto_user_email', data.email);
             if (data.name) localStorage.setItem('inkto_display_name', data.name);
@@ -98,46 +56,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(prev => ({ email: data.email, displayName: data.name || prev?.displayName }));
           return;
         }
-      } else if (res.status === 401) {
-        // Attempt refresh!
-        const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('inkto_refresh_token') : null;
-        if (refreshToken) {
-          const refreshRes = await fetch('https://inkto.jointaccount.org/api/refresh-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken })
-          });
-          if (refreshRes.ok) {
-            const refreshData = await refreshRes.json();
-            if (refreshData.sessionToken) {
-              localStorage.setItem('inkto_session', refreshData.sessionToken);
-              if (refreshData.refreshToken) {
-                localStorage.setItem('inkto_refresh_token', refreshData.refreshToken);
-              }
-              // Retry verification
-              const retryRes = await fetch(`https://inkto.jointaccount.org/api/user-status?t=${Date.now()}`, {
-                credentials: 'include',
-                headers: { 'Authorization': `Bearer ${refreshData.sessionToken}` }
-              });
-              if (retryRes.ok) {
-                const retryData = await retryRes.json();
-                if (retryData.email) {
+      } catch (e: any) {
+        if (e.message?.includes('401') || e.status === 401 || (e.response && e.response.status === 401)) {
+          // Attempt refresh!
+          const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('inkto_refresh_token') : null;
+          if (refreshToken) {
+            try {
+              const refreshData = await apiPost<{sessionToken: string; refreshToken?: string}>('/refresh-session', { refreshToken });
+              if (refreshData && refreshData.sessionToken) {
+                localStorage.setItem('inkto_session', refreshData.sessionToken);
+                if (refreshData.refreshToken) {
+                  localStorage.setItem('inkto_refresh_token', refreshData.refreshToken);
+                }
+                // Retry verification
+                const retryData = await apiGet<{email: string; name?: string; credits?: number; subscription?: any}>('/user-status');
+                if (retryData && retryData.email) {
                   localStorage.setItem('inkto_user_email', retryData.email);
                   if (retryData.name) localStorage.setItem('inkto_display_name', retryData.name);
                   setUser(prev => ({ email: retryData.email, displayName: retryData.name || prev?.displayName }));
                   return;
                 }
               }
+            } catch (err) {
+              console.error('Refresh failed', err);
             }
           }
+          
+          // Only clear if refresh explicitly failed or no refresh token
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('inkto_session');
+            localStorage.removeItem('inkto_refresh_token');
+            localStorage.removeItem('inkto_user_email');
+          }
+          setUser(null);
         }
-        // Only clear if refresh explicitly failed
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('inkto_session');
-          localStorage.removeItem('inkto_refresh_token');
-          localStorage.removeItem('inkto_user_email');
-        }
-        setUser(null);
       }
     } catch (e) {
       console.error('refreshUser error:', e);
@@ -148,7 +100,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initAuth = async () => {
       if (typeof window === 'undefined') return;
 
-      // 1. Check if Supabase redirected with access_token / refresh_token in URL hash
       if (window.location.hash) {
         try {
           const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -166,7 +117,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // 2. Check if Supabase redirected with ?code= or ?token_hash= in URL query params
       if (window.location.search) {
         try {
           const searchParams = new URLSearchParams(window.location.search);
@@ -175,26 +125,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const type = searchParams.get('type') || undefined;
 
           if (code || token_hash) {
-            const exRes = await fetch('https://inkto.jointaccount.org/api/exchange-code', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ code, token_hash, type })
-            });
-            if (exRes.ok) {
-              const exData = await exRes.json();
-              if (exData.sessionToken) {
+            try {
+              const exData = await apiPost<{sessionToken: string; refreshToken?: string; email?: string; name?: string}>('/exchange-code', { code, token_hash, type });
+              if (exData && exData.sessionToken) {
                 localStorage.setItem('inkto_session', exData.sessionToken);
+                if (exData.refreshToken) {
+                  localStorage.setItem('inkto_refresh_token', exData.refreshToken);
+                }
+                if (exData.email) {
+                  localStorage.setItem('inkto_user_email', exData.email);
+                }
+                if (exData.name) {
+                  localStorage.setItem('inkto_display_name', exData.name);
+                }
+                window.history.replaceState(null, '', window.location.pathname);
               }
-              if (exData.refreshToken) {
-                localStorage.setItem('inkto_refresh_token', exData.refreshToken);
-              }
-              if (exData.email) {
-                localStorage.setItem('inkto_user_email', exData.email);
-              }
-              if (exData.name) {
-                localStorage.setItem('inkto_display_name', exData.name);
-              }
-              window.history.replaceState(null, '', window.location.pathname);
+            } catch (err) {
+              console.error('Exchange code failed', err);
             }
           }
         } catch (e) {
@@ -210,12 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('inkto_session') : null;
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      await fetch('https://inkto.jointaccount.org/api/logout', { method: 'POST', credentials: 'include', headers });
+      await apiPost('/logout', {});
     } catch {}
     if (typeof window !== 'undefined') {
       localStorage.removeItem('inkto_session');

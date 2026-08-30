@@ -193,9 +193,10 @@ import { Capacitor } from '@capacitor/core';
 
 async function downloadFile(endpoint, text, filename, fallbackMsg) {
     try {
-        const res = await fetch(endpoint, {
+        const token = localStorage.getItem('inkto_session');
+        const res = await fetch(`https://inkto.jointaccount.org${endpoint.replace('/api/', '/api/')}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...(token ? {'Authorization': `Bearer ${token}`} : {}) },
             body: JSON.stringify({ text }),
         });
         if (!res.ok) {

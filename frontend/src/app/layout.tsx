@@ -3,7 +3,6 @@ import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/auth-context";
 import { ServiceWorkerRegister } from "@/components/sw-register";
-import { FetchInterceptor } from "@/components/fetch-interceptor";
 import { BackButtonHandler } from "@/components/back-button-handler";
 import { AppLayout } from "@/components/app-layout";
 
@@ -34,7 +33,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${poppins.variable}`}>
       <body className="bg-[#F8FAFC] text-[#0F172A] font-sans antialiased m-0 p-0 overflow-hidden">
         <BackButtonHandler />
-        <FetchInterceptor />
         <AuthProvider>
           <AppLayout>
             {children}

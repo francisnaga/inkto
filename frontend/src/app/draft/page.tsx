@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import { apiGet, apiPost } from '@/lib/api';
 import { Sparkles, Loader2, FileText, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -32,14 +33,12 @@ export default function DraftPage() {
     setGenerating(true);
     setError(null);
     try {
-      const res = await fetch('https://inkto.jointaccount.org/api/draft', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'draft', prompt: description }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Draft generation failed.');
-      router.push('/app?doc=' + data.sessionId);
+      const data = await apiPost('/draft', { mode: 'draft', prompt: description });
+      if (data) {
+        router.push('/app?doc=' + data.sessionId);
+      } else {
+        throw new Error('Draft generation failed.');
+      }
     } catch (err: any) {
       setError(err.message || 'An error occurred while generating the draft.');
       setGenerating(false);

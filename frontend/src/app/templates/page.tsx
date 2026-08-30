@@ -4,13 +4,18 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import { apiGet, apiPost } from '@/lib/api';
 import { ChevronRight, FileText, Search, FileDown, File, Loader2, PenTool, Sparkles, X, History, ClipboardPaste } from 'lucide-react';
 
 async function downloadFile(endpoint: string, text: string, filename: string, fallbackMsg: string) {
   try {
-    const res = await fetch(endpoint, {
+    const token = localStorage.getItem('inkto_session');
+    const res = await fetch(`https://inkto.jointaccount.org${endpoint.replace('/api/', '/api/')}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
       body: JSON.stringify({ text }),
     });
     if (!res.ok) {
@@ -85,9 +90,8 @@ export default function TemplatesPage() {
   const fetchHistory = async () => {
     if (historyItems.length > 0) return;
     try {
-      const res = await fetch('https://inkto.jointaccount.org/api/history?limit=15');
-      if (res.ok) {
-        const data = await res.json();
+      const data = await apiGet('/history?limit=15');
+        if (data) {
         setHistoryItems(data.documents || []);
       }
     } catch (e) {
@@ -124,19 +128,17 @@ export default function TemplatesPage() {
     if (!fittingInput.trim() || !fittingTemplate) return;
     setIsFitting(true);
     try {
-      const res = await fetch('https://inkto.jointaccount.org/api/draft', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: `Fill this template with the provided details. Output ONLY the filled template text.\n\nTEMPLATE:\n${fittingTemplate.content}\n\nDETAILS:\n${fittingInput}`,
-          format: 'text',
-        }),
+      const data = await apiPost('/draft', {
+        prompt: `Fill this template with the provided details. Output ONLY the filled template text.\n\nTEMPLATE:\n${fittingTemplate.content}\n\nDETAILS:\n${fittingInput}`,
+        format: 'text',
       });
-      if (!res.ok) throw new Error('AI generation failed');
-      const data = await res.json();
-      setEditorContent(data.draft);
-      setActiveTemplate(fittingTemplate);
-      setView('editor');
+      if (data && data.draft) {
+        setEditorContent(data.draft);
+        setActiveTemplate(fittingTemplate);
+        setView('editor');
+      } else {
+        throw new Error('AI generation failed');
+      }
     } catch (err) {
       alert('Failed to customize template with AI.');
     } finally {

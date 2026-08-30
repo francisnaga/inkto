@@ -20,7 +20,7 @@ module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Inkto-Auth, Cookie');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Inkto-Auth, Cookie, Cache-Control');
 
     if (req.method === 'OPTIONS') {
         return res.status(200).end();

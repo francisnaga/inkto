@@ -1,6 +1,6 @@
 'use client';
 
-import { Camera, Mic, FileText, X, Download, Loader2, ChevronRight, CheckCircle2, Crown, Sparkles } from 'lucide-react';
+import { Camera, Mic, FileText, X, Download, Loader2, ChevronRight, CheckCircle2, Crown, Sparkles, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useTranscribe } from '@/hooks/useTranscribe';
@@ -491,86 +491,97 @@ function AppPageContent() {
           </button>
         </div>
 
-        {/* Big Central Capture Button */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '48px 0 32px' }}>
-          <motion.button
-            whileTap={{ scale: 0.94 }}
-            transition={{ type: 'spring', stiffness: 450, damping: 22 }}
-            onClick={() => setShowScanner(true)}
-            style={{
-              width: 144,
-              height: 144,
-              borderRadius: '50%',
-              background: '#FFFFFF',
-              border: `3px solid ${C.blue}`,
-              boxShadow: `0 8px 24px rgba(36, 70, 122, 0.06)`,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              cursor: 'pointer',
-            }}
+        {/* Big Central Capture Button -> Replaced with August 21st UploadZone UI */}
+        <div style={{ animation: 'fadeIn 0.35s ease', marginBottom: 48 }}>
+          {/* Drop Zone */}
+          <div
+              onClick={() => document.getElementById('file-upload')?.click()}
+              style={{
+                  border: `2px dashed ${C.border}`,
+                  borderRadius: '16px',
+                  background: '#FAFAF9',
+                  padding: '40px 24px',
+                  textAlign: 'center',
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer',
+              }}
           >
-            <div style={{ width: 44, height: 44, borderRadius: '50%', background: C.blueSub, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Camera size={22} color={C.blue} strokeWidth={2} />
-            </div>
-            <span style={{ fontSize: 15, fontWeight: 700, color: C.ink, fontFamily: UI }}>Capture</span>
-          </motion.button>
-        </div>
+              <div style={{
+                  width: '56px', height: '56px', margin: '0 auto 18px',
+                  background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)',
+                  borderRadius: '14px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: '1px solid #BFDBFE'
+              }}>
+                  <FileText size={24} color="#1D4ED8" />
+              </div>
 
-        {/* Record & Convert to Text row */}
-        <div style={{ display: 'flex', gap: 12, width: '100%', maxWidth: 320, margin: '0 auto 48px' }}>
-          <motion.button
-            whileTap={{ scale: 0.96, background: '#F3F1EC' }}
-            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-            onClick={() => setShowDictate(true)}
-            style={{
-              flex: 1,
-              height: 44,
-              background: '#FFFFFF',
-              border: `1px solid ${C.border}`,
-              borderRadius: 8,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 7,
-              cursor: 'pointer',
-              fontSize: 13,
-              fontWeight: 600,
-              color: C.inkMid,
-              fontFamily: UI,
-            }}
-          >
-            <Mic size={15} color={C.blue} />
-            Record
-          </motion.button>
-          <motion.label
-            htmlFor="file-upload"
-            whileTap={{ scale: 0.96, background: '#F3F1EC' }}
-            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-            style={{
-              flex: 1.3,
-              height: 44,
-              background: '#FFFFFF',
-              border: `1px solid ${C.border}`,
-              borderRadius: 8,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 7,
-              cursor: 'pointer',
-              fontSize: 13,
-              fontWeight: 600,
-              color: C.inkMid,
-              fontFamily: UI,
-              boxSizing: 'border-box',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <FileText size={15} color={C.blue} />
-            Convert to Text
-          </motion.label>
+              <p style={{ fontSize: '16px', fontWeight: '700', color: '#1C1917', marginBottom: '6px' }}>
+                  Drop files or tap to upload
+              </p>
+              <p style={{ fontSize: '13px', color: '#A8A29E', marginBottom: '28px' }}>
+                  Photos, scanned PDFs, Audio · JPG, PNG, PDF, MP3 · up to 25 MB
+              </p>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button
+                      onClick={e => { e.stopPropagation(); document.getElementById('camera-upload')?.click(); }}
+                      style={{
+                          display: 'flex', alignItems: 'center', gap: '9px',
+                          padding: '12px 24px',
+                          background: '#1C1917', color: '#fff',
+                          border: 'none', borderRadius: '10px',
+                          fontSize: '14px', fontWeight: '700',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.16)',
+                          transition: 'transform 0.15s, box-shadow 0.15s',
+                          minWidth: '148px', justifyContent: 'center'
+                      }}
+                  >
+                      <Camera size={17} /> Take Photo
+                  </button>
+                  <button
+                      onClick={e => { e.stopPropagation(); document.getElementById('file-upload')?.click(); }}
+                      style={{
+                          display: 'flex', alignItems: 'center', gap: '9px',
+                          padding: '12px 24px',
+                          background: '#fff', color: '#1C1917',
+                          border: '1.5px solid #D6D3CE', borderRadius: '10px',
+                          fontSize: '14px', fontWeight: '700',
+                          cursor: 'pointer',
+                          minWidth: '148px', justifyContent: 'center'
+                      }}
+                  >
+                      <Upload size={17} /> Browse Files
+                  </button>
+                  <button
+                      onClick={e => { e.stopPropagation(); setShowDictate(true); }}
+                      style={{
+                          display: 'flex', alignItems: 'center', gap: '9px',
+                          padding: '12px 24px',
+                          background: '#EFF6FF', color: '#1D4ED8',
+                          border: 'none', borderRadius: '10px',
+                          fontSize: '14px', fontWeight: '700',
+                          cursor: 'pointer',
+                          minWidth: '148px', justifyContent: 'center'
+                      }}
+                  >
+                      <Mic size={17} /> Audio
+                  </button>
+              </div>
+          </div>
+
+          <div style={{ marginTop: 24, textAlign: 'center' }}>
+             <button
+                onClick={() => alert("Please download our mobile app to use the native document scanner.")}
+                style={{ background: 'none', border: 'none', fontSize: 13, color: C.blue, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+             >
+                Scan Document natively (App Only)
+             </button>
+          </div>
+          
+          {/* Hidden inputs */}
+          <input id="camera-upload" type="file" style={{ display: 'none' }} accept="image/*" capture="environment" onChange={handleInput} />
         </div>
 
         {/* PDF download banner if active */}

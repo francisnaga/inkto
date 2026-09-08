@@ -763,7 +763,21 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     );
 
     /* ── Tip banner ── */
-    const tipBanner = null;
+    const tipBanner = (
+        <div style={{ marginTop: '8px', marginBottom: '14px', background: '#FFFBEB', border: '1px solid #FEF3C7', borderRadius: '10px', padding: '16px', textAlign: 'center' }}>
+            <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#92400E', lineHeight: '1.5', fontWeight: '500' }}>
+                Did Inkto save you time? Consider tipping the creator to keep the servers running.
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <a href="https://paystack.shop/pay/4h04eqpye7" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#10B981', color: '#fff', textDecoration: 'none', padding: '9px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: '700' }}>
+                    <IconPaystack size={14} /> Tip (NGN)
+                </a>
+                <a href="https://paypal.me/frankyideal25" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#F59E0B', color: '#fff', textDecoration: 'none', padding: '9px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: '700' }}>
+                    <IconPayPal size={14} /> Tip (USD)
+                </a>
+            </div>
+        </div>
+    );
 
     /* â”€â”€ Shared textarea styles â”€â”€ */
     const textareaStyleMobile = {
@@ -933,12 +947,20 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                                         {value.startsWith('[Raw voice dictation') ? (
                                             renderRawAudioDashboard()
                                         ) : (
-                                            <RichEditor
-                                                content={value}
-                                                onChange={handleChange}
-                                                readOnly={!isEditing || isNoText}
-                                                style={textareaStyleDesktop}
-                                            />
+                                            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                                                {audioUrl && (
+                                                    <div style={{ padding: '16px 24px', borderBottom: '1px solid #E4E2DC', background: '#FAFAF9' }}>
+                                                        <div style={{ fontSize: '12px', fontWeight: '700', color: '#78716C', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Source Audio</div>
+                                                        <audio src={audioUrl} controls style={{ width: '100%', maxWidth: '400px', height: '36px' }} />
+                                                    </div>
+                                                )}
+                                                <RichEditor
+                                                    content={value}
+                                                    onChange={handleChange}
+                                                    readOnly={!isEditing || isNoText}
+                                                    style={textareaStyleDesktop}
+                                                />
+                                            </div>
                                         )}
                                         {showScrollTop && !value.startsWith('[Raw voice dictation') && (
                                             <button onClick={scrollToTop} style={{ position: 'absolute', bottom: '16px', right: '16px', width: '36px', height: '36px', background: 'rgba(28,25,23,0.65)', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
@@ -1000,12 +1022,20 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                             {value.startsWith('[Raw voice dictation') ? (
                                 renderRawAudioDashboard()
                             ) : (
-                                <RichEditor
-                                    content={value}
-                                    onChange={handleChange}
-                                    readOnly={!isEditing || isNoText}
-                                    style={textareaStyleMobile}
-                                />
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    {audioUrl && (
+                                        <div style={{ padding: '16px', borderBottom: '1px solid #E4E2DC', background: '#FAFAF9' }}>
+                                            <div style={{ fontSize: '11px', fontWeight: '700', color: '#78716C', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Source Audio</div>
+                                            <audio src={audioUrl} controls style={{ width: '100%', height: '36px' }} />
+                                        </div>
+                                    )}
+                                    <RichEditor
+                                        content={value}
+                                        onChange={handleChange}
+                                        readOnly={!isEditing || isNoText}
+                                        style={textareaStyleMobile}
+                                    />
+                                </div>
                             )}
                             {showScrollTop && !value.startsWith('[Raw voice dictation') && (
                                 <button onClick={scrollToTop} style={{ position: 'absolute', bottom: '12px', right: '12px', width: '32px', height: '32px', background: 'rgba(28,25,23,0.65)', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>

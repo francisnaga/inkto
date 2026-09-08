@@ -125,13 +125,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           }
         }
-        // Only clear if refresh explicitly failed
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('inkto_session');
-          localStorage.removeItem('inkto_refresh_token');
-          localStorage.removeItem('inkto_user_email');
-        }
-        setUser(null);
+        // Removed automatic logout on 401 so the session "always stays"
+        // if (typeof window !== 'undefined') {
+        //   localStorage.removeItem('inkto_session');
+        //   localStorage.removeItem('inkto_refresh_token');
+        //   localStorage.removeItem('inkto_user_email');
+        // }
+        // setUser(null);
       }
     } catch (e) {
       console.error('refreshUser error:', e);

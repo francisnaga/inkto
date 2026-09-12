@@ -23,11 +23,10 @@ const LOADING_STEPS = [
     { icon: '✨', text: 'Finalising transcript...' },
 ];
 
-function ProcessingScreen({ pageCount, batchProgress }: { pageCount: number, batchProgress: any }) {
+function ProcessingScreen({ pageCount }) {
     const [stepIndex, setStepIndex] = useState(0);
     const [elapsed, setElapsed] = useState(0);
     const startTime = useRef(Date.now());
-    const isChunked = batchProgress && batchProgress.total > 1;
 
     useEffect(() => {
         const stepTimer = setInterval(() => {
@@ -40,14 +39,8 @@ function ProcessingScreen({ pageCount, batchProgress }: { pageCount: number, bat
     }, []);
 
     const step = LOADING_STEPS[stepIndex];
-    const totalEstimatedTime = isChunked ? batchProgress.total * 75 : 75;
-    const batchElapsedFraction = isChunked ? ((batchProgress.current - 1) / batchProgress.total) : 0;
-    const batchProgressFraction = Math.min(0.95 / (batchProgress?.total || 1), (elapsed / 75) * (1 / (batchProgress?.total || 1)));
-    const progressPct = Math.min(95, (batchElapsedFraction + batchProgressFraction) * 100);
-
-    const estimateSecs = isChunked
-        ? `~${Math.round((batchProgress.total * 75) / 60)} min total for ${pageCount} pages`
-        : `Usually completes in 60 to 90 seconds`;
+    // With 2-pass verification it takes a bit longer, so stretch the bar duration
+    const progressPct = Math.min(95, (elapsed / 75) * 100); 
 
     return (
         <div style={{ animation: 'fadeIn 0.35s ease' }}>
@@ -56,21 +49,21 @@ function ProcessingScreen({ pageCount, batchProgress }: { pageCount: number, bat
                     width: '22px', height: '22px', borderRadius: '50%',
                     background: '#E5E7EB', color: '#9CA3AF',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '11px', fontWeight: 800
+                    fontSize: '11px', fontWeight: '800'
                 }}>1</div>
                 <div style={{ flex: 1, height: '2px', background: 'linear-gradient(90deg, #2563EB, #2563EB)', borderRadius: '99px' }} />
                 <div style={{
                     width: '22px', height: '22px', borderRadius: '50%',
                     background: '#2563EB', color: '#fff',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '11px', fontWeight: 800, boxShadow: '0 0 0 4px rgba(37,99,235,0.15)'
+                    fontSize: '11px', fontWeight: '800', boxShadow: '0 0 0 4px rgba(37,99,235,0.15)'
                 }}>2</div>
                 <div style={{ flex: 1, height: '2px', background: '#E5E7EB', borderRadius: '99px' }} />
                 <div style={{
                     width: '22px', height: '22px', borderRadius: '50%',
                     background: '#F3F4F6', color: '#D1D5DB',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '11px', fontWeight: 800
+                    fontSize: '11px', fontWeight: '800'
                 }}>3</div>
             </div>
 
@@ -103,36 +96,11 @@ function ProcessingScreen({ pageCount, batchProgress }: { pageCount: number, bat
                     }} />
                 </div>
 
-                {isChunked && batchProgress && (
-                    <div style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        gap: '6px', marginBottom: '12px'
-                    }}>
-                        <div style={{
-                            background: '#EFF6FF', border: '1px solid #BFDBFE',
-                            borderRadius: '20px', padding: '4px 12px',
-                            fontSize: '12px', fontWeight: 700, color: '#1D4ED8'
-                        }}>
-                            Batch {batchProgress.current} of {batchProgress.total}
-                        </div>
-                        <div style={{
-                            background: '#F3F4F6',
-                            borderRadius: '20px', padding: '4px 10px',
-                            fontSize: '11px', fontWeight: 600, color: '#6B7280'
-                        }}>
-                            {pageCount} pages total
-                        </div>
-                    </div>
-                )}
-
                 <h3 style={{
-                    fontSize: '19px', fontWeight: 800, color: '#111827',
+                    fontSize: '19px', fontWeight: '800', color: '#111827',
                     marginBottom: '6px', letterSpacing: '-0.3px'
                 }}>
-                    {isChunked && batchProgress
-                        ? `Reading pages ${((batchProgress.current - 1) * 5) + 1} to ${Math.min(batchProgress.current * 5, pageCount)}...`
-                        : `Reading ${pageCount} ${pageCount === 1 ? 'page' : 'pages'}...`
-                    }
+                    Reading {pageCount} {pageCount === 1 ? 'page' : 'pages'}...
                 </h3>
 
                 <div style={{
@@ -143,7 +111,7 @@ function ProcessingScreen({ pageCount, batchProgress }: { pageCount: number, bat
                         {step.icon}
                     </span>
                     <p style={{
-                        color: '#6B7280', fontSize: '14px', fontWeight: 500,
+                        color: '#6B7280', fontSize: '14px', fontWeight: '500',
                         margin: 0, animation: 'fadeIn 0.4s ease'
                     }} key={stepIndex + 'text'}>
                         {step.text}
@@ -165,7 +133,7 @@ function ProcessingScreen({ pageCount, batchProgress }: { pageCount: number, bat
                 </div>
 
                 <p style={{ fontSize: '12px', color: '#C4C4C4', margin: 0 }}>
-                    {elapsed < 5 ? 'Starting...' : `${elapsed}s elapsed · ${estimateSecs}`}
+                    {elapsed < 5 ? 'Starting...' : `${elapsed}s elapsed · Usually completes in ~60-90s`}
                 </p>
             </div>
 
@@ -173,9 +141,8 @@ function ProcessingScreen({ pageCount, batchProgress }: { pageCount: number, bat
                 marginTop: '14px', background: '#F8FAFC',
                 border: '1px solid #E5E7EB', borderRadius: '12px', padding: '14px 18px'
             }}>
-                <p style={{ fontSize: '12px', color: '#6B7280', margin: 0, lineHeight: 1.7 }}>
-                    <strong style={{ color: '#374151' }}>Two-pass accuracy check:</strong> After the initial transcription, a second AI pass verifies all numbers, dates, and proper nouns for legal-grade accuracy.
-                    {isChunked && <><br /><strong style={{ color: '#374151' }}>Large document mode:</strong> Processing in batches of 5 pages to guarantee reliability and avoid timeouts.</>}
+                <p style={{ fontSize: '12px', color: '#6B7280', margin: 0, lineHeight: '1.7' }}>
+                    <strong style={{ color: '#374151' }}>Accuracy Verification:</strong> After the initial transcription, a second AI pass strictly verifies all numbers, dates, and proper nouns against the original image to guarantee legal-grade accuracy.
                 </p>
             </div>
         </div>
@@ -206,34 +173,34 @@ function AppPageInner() {
 
     return (
         <div className={state === 'success' ? 'app-container-desktop' : 'app-container'}>
-            <header>
-                <div
-                    onClick={() => { reset(); router.push('/app'); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: '9px', cursor: 'pointer', userSelect: 'none' }}
-                    title="Back to home"
+            <header style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                marginBottom: '32px', animation: 'fadeIn 0.3s ease'
+            }}>
+                <div 
+                    onClick={() => { reset(); router.push('/'); }} 
+                    style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                 >
-                    <svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M16 50 L36 28 L54 38 L54 62 L36 72 Z" fill="#2563EB"/>
-                        <circle cx="30" cy="50" r="3.5" fill="white"/>
-                        <line x1="16" y1="50" x2="36" y2="50" stroke="white" strokeWidth="3" strokeLinecap="round"/>
-                        <line x1="36" y1="28" x2="36" y2="72" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                        <rect x="57" y="30" width="28" height="7" rx="3.5" fill="#2563EB"/>
-                        <rect x="57" y="46.5" width="26" height="7" rx="3.5" fill="#2563EB"/>
-                        <rect x="57" y="63" width="20" height="7" rx="3.5" fill="#2563EB"/>
+                    <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 75 C 20 50, 40 30, 50 20 C 60 30, 80 50, 80 75 C 80 90, 65 95, 50 95 C 35 95, 20 90, 20 75 Z" fill="#2563EB"/>
+                        <path d="M35 70 C 35 55, 45 45, 50 40 C 55 45, 65 55, 65 70 C 65 80, 55 85, 50 85 C 45 85, 35 80, 35 70 Z" fill="#60A5FA"/>
+                        <circle cx="50" cy="75" r="5" fill="#EFF6FF"/>
+                        <path d="M50 20 L50 40" stroke="#BFDBFE" strokeWidth="3" strokeLinecap="round"/>
+                        <path d="M42 35 C 45 28, 55 28, 58 35" stroke="#93C5FD" strokeWidth="2" strokeLinecap="round" fill="none"/>
                     </svg>
-                    <span style={{ fontSize: '17px', fontWeight: 800, letterSpacing: '-0.4px', color: '#1C1917' }}>Inkto</span>
+                    <span style={{ fontSize: '22px', fontWeight: '800', letterSpacing: '-0.5px', color: '#111827', marginLeft: '10px' }}>Inkto</span>
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                     <button
                         onClick={navigateToHistory}
                         style={{
                             display: 'flex', alignItems: 'center', gap: '6px',
-                            fontSize: '12px', color: '#78716C', background: 'transparent',
-                            padding: '7px 12px', borderRadius: '8px', border: 'none',
-                            fontWeight: 600, cursor: 'pointer', transition: 'color 0.2s, background 0.2s'
+                            fontSize: '12px', color: '#78716C', background: '#F5F4F0',
+                            padding: '7px 14px', borderRadius: '8px', border: 'none',
+                            fontWeight: '600', cursor: 'pointer', transition: 'background 0.2s'
                         }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#F5F4F0'; e.currentTarget.style.color = '#1C1917'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#78716C'; }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#E4E2DC'}
+                        onMouseLeave={e => e.currentTarget.style.background = '#F5F4F0'}
                     >
                         <HistoryIcon size={13} /> History
                     </button>
@@ -245,7 +212,7 @@ function AppPageInner() {
                             fontSize: '12px', color: '#78716C', textDecoration: 'none',
                             padding: '7px 14px', borderRadius: '8px',
                             border: '1px solid #E4E2DC', background: '#fff',
-                            fontWeight: 600, transition: 'border-color 0.2s, color 0.2s'
+                            fontWeight: '600', transition: 'border-color 0.2s, color 0.2s'
                         }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = '#A8A29E'; e.currentTarget.style.color = '#1C1917'; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = '#E4E2DC'; e.currentTarget.style.color = '#78716C'; }}

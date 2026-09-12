@@ -67,7 +67,7 @@ export function useTranscribe() {
         setState('fetching_session');
         setError(null);
         try {
-            const response = await fetch(`https://inkto.jointaccount.org/api/session?id=${id}`);
+            const response = await fetch(`/api/session?id=${id}`);
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Failed to load session');
             setTranscribedText(data.session.text);
@@ -131,7 +131,7 @@ export function useTranscribe() {
                 formData.append('isFinalBatch', 'false');
                 formData.append('totalFilesCount', String(totalPages));
 
-                const response = await fetch('https://inkto.jointaccount.org/api/transcribe', {
+                const response = await fetch('/api/transcribe', {
                     method: 'POST',
                     body: formData,
                 });
@@ -181,7 +181,7 @@ export function useTranscribe() {
 
             const fullTranscript = pageBlocks.join('\n\n');
 
-            const saveResponse = await fetch('https://inkto.jointaccount.org/api/transcribe', {
+            const saveResponse = await fetch('/api/transcribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

@@ -23,10 +23,11 @@ const LOADING_STEPS = [
     { icon: '✨', text: 'Finalising transcript...' },
 ];
 
-function ProcessingScreen({ pageCount }) {
+function ProcessingScreen({ pageCount, batchProgress }: { pageCount: number, batchProgress?: any }) {
     const [stepIndex, setStepIndex] = useState(0);
     const [elapsed, setElapsed] = useState(0);
     const startTime = useRef(Date.now());
+    const isChunked = batchProgress && batchProgress.total > 1;
 
     useEffect(() => {
         const stepTimer = setInterval(() => {
@@ -39,8 +40,11 @@ function ProcessingScreen({ pageCount }) {
     }, []);
 
     const step = LOADING_STEPS[stepIndex];
-    // With 2-pass verification it takes a bit longer, so stretch the bar duration
-    const progressPct = Math.min(95, (elapsed / 75) * 100); 
+    
+    // Calculate progress based on completed pages plus fake progress for current page
+    const batchElapsedFraction = isChunked ? (batchProgress.current / batchProgress.total) : 0;
+    const batchProgressFraction = isChunked ? Math.min(0.95 / batchProgress.total, (elapsed / 25) * (1 / batchProgress.total)) : Math.min(0.95, elapsed / 75);
+    const progressPct = Math.min(95, (batchElapsedFraction + batchProgressFraction) * 100); 
 
     return (
         <div style={{ animation: 'fadeIn 0.35s ease' }}>
@@ -96,11 +100,28 @@ function ProcessingScreen({ pageCount }) {
                     }} />
                 </div>
 
+                {isChunked && (
+                    <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        gap: '6px', marginBottom: '12px'
+                    }}>
+                        <div style={{
+                            background: '#EFF6FF', border: '1px solid #BFDBFE',
+                            borderRadius: '20px', padding: '4px 12px',
+                            fontSize: '12px', fontWeight: 700, color: '#1D4ED8'
+                        }}>
+                            Page {Math.min(batchProgress.current + 1, pageCount)} of {pageCount}
+                        </div>
+                    </div>
+                )}
+
                 <h3 style={{
                     fontSize: '19px', fontWeight: '800', color: '#111827',
                     marginBottom: '6px', letterSpacing: '-0.3px'
                 }}>
-                    Reading {pageCount} {pageCount === 1 ? 'page' : 'pages'}...
+                    {isChunked 
+                        ? `Reading page ${Math.min(batchProgress.current + 1, pageCount)}...` 
+                        : `Reading ${pageCount} ${pageCount === 1 ? 'page' : 'pages'}...`}
                 </h3>
 
                 <div style={{

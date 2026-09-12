@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 
@@ -287,7 +287,7 @@ export default function LandingPage() {
                     maxWidth: '480px', margin: '0 auto 40px',
                     lineHeight: 1.7, fontWeight: 400,
                 }}>
-                    Snap a photo of any handwritten document or record your voice, and Inkto converts it to clean, editable text in seconds.
+                    Snap a photo of any handwritten document and Inkto converts it to clean, editable text.
                 </p>
 
                 {/* Before Ã”Ã¥Ã† After demo */}

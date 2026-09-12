@@ -1,13 +1,14 @@
 /* eslint-disable */
 // @ts-nocheck
 'use client';
-import * as pdfjsLib from 'pdfjs-dist';
-
-
-// Use local worker bundled by Vite
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 export async function convertPdfToImages(file, onProgress) {
+    // Dynamic import to avoid SSR crash with pdfjs-dist's DOMMatrix
+    const pdfjsModule = await import('pdfjs-dist');
+    const pdfjsLib = pdfjsModule.default || pdfjsModule;
+    
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     

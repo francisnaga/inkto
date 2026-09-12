@@ -1,720 +1,404 @@
 'use client';
 
-import { Camera, Mic, FileText, X, Download, Loader2, ChevronRight, CheckCircle2, Crown, Sparkles, Upload } from 'lucide-react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { HelpCircle, History as HistoryIcon, ArrowRight } from 'lucide-react';
 import { useTranscribe } from '@/hooks/useTranscribe';
 import { useAuth } from '@/contexts/auth-context';
-import { Capacitor } from '@capacitor/core';
-import { DocumentScanner } from '@capacitor-mlkit/document-scanner';
-import { useState, useEffect, useCallback, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { InktoWordmark } from '@/components/inkto-logo';
-import { BottomNav } from '@/components/bottom-nav';
-import { motion } from 'framer-motion';
-
+import ErrorMessage from '@/components/error-message';
+const UploadZone    = dynamic(() => import('@/components/upload-zone'), { ssr: false });
 const ThumbnailGrid = dynamic(() => import('@/components/thumbnail-grid'), { ssr: false });
 const OutputBox     = dynamic(() => import('@/components/output-box'), { ssr: false });
-const ScannerModal  = dynamic(() => import('@/components/scanner-modal'), { ssr: false });
 const DictateModal  = dynamic(() => import('@/components/dictate-modal'), { ssr: false });
 
-interface HistoryEntry {
-  id: string;
-  title: string;
-  preview: string;
-  createdAt: string;
-  sourceImageCount: number;
-  type: 'scan' | 'transcription' | 'voice' | 'draft';
-  fileUrl: string | null;
-  hasText: boolean;
-}
-
-/* Inkto design tokens */
-const C = {
-  paper:   '#FBFAF7',
-  border:  '#E4E1D9',
-  ink:     '#0B0D12',
-  inkMid:  '#444240',
-  inkMute: '#6B6760',
-  blue:    '#24467A',
-  blueSub: '#EEF2F8',
-  brass:   '#A6822C',
-  brassS:  '#F8F2E6',
-  red:     '#B23A34',
-  warmMid: '#C8C4BA',
-};
-const UI      = '-apple-system, "Segoe UI", Roboto, sans-serif';
-const DISPLAY = 'Georgia, "Iowan Old Style", "Times New Roman", serif';
-
-/* Action rows — thin horizontal rules between, no card boxes */
-const ACTIONS = [
-  {
-    id: 'scan',
-    icon: <Camera size={18} color={C.blue} strokeWidth={1.8} />,
-    label: 'Scan Document',
-    sub: 'Photograph · crop · flatten · save as PDF',
-    trigger: 'scanner',
-  },
-  {
-    id: 'handwriting',
-    icon: <FileText size={18} color={C.blue} strokeWidth={1.8} />,
-    label: 'Handwriting to Text',
-    sub: 'Upload photos, gallery images, or PDFs',
-    trigger: 'upload',
-  },
-  {
-    id: 'voice',
-    icon: <Mic size={18} color={C.blue} strokeWidth={1.8} />,
-    label: 'Voice Dictation',
-    sub: 'Record, save audio, or transcribe with AI',
-    trigger: 'dictate',
-  },
-] as const;
-
-const PROC_STEPS = [
-  'Reading image files',
-  'Detecting handwriting regions',
-  'Running AI transcription',
-  'Formatting result',
+const LOADING_STEPS = [
+    { icon: '🔍', text: 'Scanning document structure...' },
+    { icon: '✍️', text: 'Analysing handwriting patterns...' },
+    { icon: '⚖️', text: 'Applying legal document rules...' },
+    { icon: '✂️', text: 'Removing crossed-out text...' },
+    { icon: '📝', text: 'Drafting initial transcript...' },
+    { icon: '🔍', text: 'Verifying numbers and proper nouns...' },
+    { icon: '✨', text: 'Finalising transcript...' },
 ];
 
-function AppPageContent() {
-  const {
-    state, files, error, transcribedText,
-    sessionId, sessionImages, audioUrl,
-    batchProgress, pdfProgress,
-    addFiles, removeFile, transcribe, reset, fetchSession,
-  } = useTranscribe();
-  const { user, loading } = useAuth();
-  const router = useRouter();
+function ProcessingScreen({ pageCount, batchProgress }: { pageCount: number, batchProgress: any }) {
+    const [stepIndex, setStepIndex] = useState(0);
+    const [elapsed, setElapsed] = useState(0);
+    const startTime = useRef(Date.now());
+    const isChunked = batchProgress && batchProgress.total > 1;
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/login');
-    }
-  }, [loading, user, router]);
+    useEffect(() => {
+        const stepTimer = setInterval(() => {
+            setStepIndex(i => (i + 1) % LOADING_STEPS.length);
+        }, 4000);
+        const elapsedTimer = setInterval(() => {
+            setElapsed(Math.floor((Date.now() - startTime.current) / 1000));
+        }, 1000);
+        return () => { clearInterval(stepTimer); clearInterval(elapsedTimer); };
+    }, []);
 
-  const [showScanner, setShowScanner] = useState(false);
-  const [showDictate, setShowDictate] = useState(false);
-  const [activeDraft, setActiveDraft] = useState<{ id: string; audioUrl: string } | null>(null);
-  const [savedPdf, setSavedPdf]       = useState<{ url: string; name: string } | null>(null);
-  const [procStep, setProcStep]       = useState(0);
-  const searchParams = useSearchParams();
-  const docId = searchParams.get('doc');
-  const resumeId = searchParams.get('resume');
+    const step = LOADING_STEPS[stepIndex];
+    const totalEstimatedTime = isChunked ? batchProgress.total * 75 : 75;
+    const batchElapsedFraction = isChunked ? ((batchProgress.current - 1) / batchProgress.total) : 0;
+    const batchProgressFraction = Math.min(0.95 / (batchProgress?.total || 1), (elapsed / 75) * (1 / (batchProgress?.total || 1)));
+    const progressPct = Math.min(95, (batchElapsedFraction + batchProgressFraction) * 100);
 
-  const [recents, setRecents] = useState<HistoryEntry[]>([]);
-  const [recentsLoading, setRecentsLoading] = useState(true);
+    const estimateSecs = isChunked
+        ? `~${Math.round((batchProgress.total * 75) / 60)} min total for ${pageCount} pages`
+        : `Usually completes in 60 to 90 seconds`;
 
-  useEffect(() => {
-    if (resumeId) {
-      fetch(`https://inkto.jointaccount.org/api/session?id=${resumeId}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success && data.session && data.session.audioUrl) {
-            setActiveDraft({ id: resumeId, audioUrl: data.session.audioUrl });
-          }
-        })
-        .catch(e => console.error('Failed to load draft for resumption:', e));
-    }
-  }, [resumeId]);
-
-  useEffect(() => {
-    const loadRecents = async () => {
-      try {
-        const res = await fetch(`https://inkto.jointaccount.org/api/history?t=${Date.now()}`, {
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setRecents((data.history || []).slice(0, 2));
-        }
-      } catch (e) {
-        console.error('Failed to load recent items:', e);
-      } finally {
-        setRecentsLoading(false);
-      }
-    };
-    loadRecents();
-  }, [state]);
-
-  useEffect(() => { if (docId) fetchSession(docId); }, [docId, fetchSession]);
-
-  /* Offline sync */
-  useEffect(() => {
-    const sync = async () => {
-      if (!navigator.onLine) return;
-      try {
-        const { getOfflineRecordings, deleteOfflineRecording } = await import('@/lib/indexeddb');
-        for (const item of await getOfflineRecordings()) {
-          const fd = new FormData(); fd.append('files', item.blob, 'offline-dictation.wav');
-          if ((await fetch('https://inkto.jointaccount.org/api/transcribe', { method: 'POST', credentials: 'include', body: fd })).ok) await deleteOfflineRecording(item.id);
-        }
-      } catch {}
-    };
-    sync();
-    window.addEventListener('online', sync);
-    return () => window.removeEventListener('online', sync);
-  }, []);
-
-  /* Processing step animation */
-  useEffect(() => {
-    if (state !== 'processing') { setProcStep(0); return; }
-    const id = setInterval(() => setProcStep(n => Math.min(n + 1, PROC_STEPS.length - 1)), 1900);
-    return () => clearInterval(id);
-  }, [state]);
-
-  /* Toggle body class to hide bottom navigation when scanner or dictate modal is open */
-  useEffect(() => {
-    if (showScanner) {
-      document.body.classList.add('scanner-active');
-    } else {
-      document.body.classList.remove('scanner-active');
-    }
-  }, [showScanner]);
-
-  useEffect(() => {
-    if (showDictate) {
-      document.body.classList.add('dictate-active');
-    } else {
-      document.body.classList.remove('dictate-active');
-    }
-  }, [showDictate]);
-
-  useEffect(() => {
-    return () => {
-      document.body.classList.remove('scanner-active', 'dictate-active');
-    };
-  }, []);
-
-  const handleScanComplete = useCallback(async (pages: File[], pdfBlob: Blob) => {
-    setShowScanner(false);
-    if (savedPdf) URL.revokeObjectURL(savedPdf.url);
-    const url  = URL.createObjectURL(pdfBlob);
-    const name = `scan-${new Date().toISOString().slice(0, 10)}-${pages.length}p.pdf`;
-    setSavedPdf({ url, name });
-    const a = document.createElement('a'); a.href = url; a.download = name; a.click();
-    try { 
-      const fd = new FormData(); fd.append('file', pdfBlob, name); fd.append('title', name); 
-      await fetch('https://inkto.jointaccount.org/api/save-scan', { method: 'POST', credentials: 'include', body: fd }); 
-    } catch {}
-  }, [savedPdf]);
-
-  const handleConvertToText = useCallback((pages: File[]) => { setShowScanner(false); addFiles(pages); }, [addFiles]);
-  const startNativeScanner = async () => {
-    try {
-      const { scannedImages } = await DocumentScanner.scanDocument({
-        pageLimit: 20,
-        galleryImportAllowed: true,
-        resultFormats: 'JPEG'
-      });
-      if (scannedImages && scannedImages.length > 0) {
-        const newFiles = await Promise.all(scannedImages.map(async (pageUrl: string, i: number) => {
-           const webPath = Capacitor.convertFileSrc(pageUrl);
-           const res = await fetch(webPath);
-           const blob = await res.blob();
-           return new File([blob], `scan-${Date.now()}-${i}.jpeg`, { type: 'image/jpeg' });
-        }));
-        addFiles(newFiles);
-      }
-    } catch (e: any) {
-      if (e.message !== 'canceled' && e.message !== 'Canceled') alert('Scanner error: ' + e.message);
-    }
-  };
-
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => { if (!e.target.files?.length) return; addFiles(Array.from(e.target.files)); if (e.target) e.target.value = ''; };
-
-  /* ── Loading session ─────────────────────────────── */
-  if (state === 'fetching_session') {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200, gap: 12, fontFamily: UI }}>
-        <Loader2 size={20} color={C.blue} style={{ animation: 'spin 0.8s linear infinite' }} />
-        <span style={{ fontSize: 14, color: C.inkMute }}>Loading document…</span>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      </div>
-    );
-  }
-
-  /* ── Result ──────────────────────────────────────── */
-  if (state === 'success') {
-    return (
-      <OutputBox
-        text={transcribedText}
-        sessionId={sessionId}
-        images={sessionImages}
-        audioUrl={audioUrl}
-        onReset={reset}
-      />
-    );
-  }
-
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#FBFAF7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Loader2 size={24} color={C.blue} style={{ animation: 'spin 0.8s linear infinite' }} />
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
-  /* ── Error ───────────────────────────────────────── */
-  if (state === 'error') {
-    const errStr = String(error || '');
-    const isLimit = errStr.toLowerCase().includes('limit') || errStr.toLowerCase().includes('free') || errStr.toLowerCase().includes('upgrade');
-    return (
-      <div style={{ paddingTop: 48, fontFamily: UI, textAlign: isLimit ? 'center' : 'left' }}>
-        {isLimit ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-            <div style={{ width: 56, height: 56, borderRadius: '50%', background: C.brassS, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Crown size={24} color={C.brass} />
+        <div style={{ animation: 'fadeIn 0.35s ease' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                <div style={{
+                    width: '22px', height: '22px', borderRadius: '50%',
+                    background: '#E5E7EB', color: '#9CA3AF',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '11px', fontWeight: 800
+                }}>1</div>
+                <div style={{ flex: 1, height: '2px', background: 'linear-gradient(90deg, #2563EB, #2563EB)', borderRadius: '99px' }} />
+                <div style={{
+                    width: '22px', height: '22px', borderRadius: '50%',
+                    background: '#2563EB', color: '#fff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '11px', fontWeight: 800, boxShadow: '0 0 0 4px rgba(37,99,235,0.15)'
+                }}>2</div>
+                <div style={{ flex: 1, height: '2px', background: '#E5E7EB', borderRadius: '99px' }} />
+                <div style={{
+                    width: '22px', height: '22px', borderRadius: '50%',
+                    background: '#F3F4F6', color: '#D1D5DB',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '11px', fontWeight: 800
+                }}>3</div>
             </div>
-            <h2 style={{ fontFamily: DISPLAY, fontSize: 22, fontWeight: 700, margin: 0 }}>Daily Limit Reached</h2>
-            <p style={{ fontSize: 13, color: C.inkMute, margin: 0, maxWidth: 320, lineHeight: 1.5 }}>
-              You have completed your 5 free conversions/drafts for today. Upgrade to Pro for unlimited document scanning, text conversions, and drafting.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 280, marginTop: 12 }}>
-              <Link href="/account" style={{ width: '100%' }}>
-                <Button style={{ width: '100%', height: 44, background: C.blue, color: '#fff', fontWeight: 700, borderRadius: 6 }}>
-                  Upgrade to Pro
-                </Button>
-              </Link>
-              <button
-                onClick={reset}
-                style={{ height: 44, background: 'transparent', border: `1.5px solid ${C.border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, color: C.inkMid, cursor: 'pointer' }}
-              >
-                Go back
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <p style={{ fontSize: 13, color: C.red, marginBottom: 16, lineHeight: 1.6 }}>
-              {error || 'An unexpected error occurred.'}
-            </p>
-            <button
-              onClick={reset}
-              style={{ height: 44, padding: '0 24px', background: C.blue, border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: UI }}
-            >
-              Try again
-            </button>
-          </>
-        )}
-      </div>
-    );
-  }
 
-  /* ── Preparing PDF (extracting pages client-side) ── */
-  if (state === 'preparing_pdf') {
-    const cur = (pdfProgress as any)?.current || 1;
-    const tot = (pdfProgress as any)?.total || 1;
-    const pct = Math.max(5, Math.round((cur / tot) * 100));
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', fontFamily: UI, textAlign: 'center', padding: 24 }}>
-        <div style={{
-          width: 72,
-          height: 72,
-          borderRadius: '50%',
-          background: C.blueSub,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: 20,
-          animation: 'pulse 1.5s infinite'
-        }}>
-          <FileText size={32} color={C.blue} />
-        </div>
-        <h2 style={{ fontFamily: UI, fontSize: 20, fontWeight: 700, color: C.ink, margin: '0 0 6px' }}>
-          Preparing PDF for Transcription…
-        </h2>
-        <p style={{ fontSize: 13, color: C.inkMute, margin: '0 0 20px', maxWidth: 320, lineHeight: 1.5 }}>
-          {(pdfProgress as any)?.fileName ? `${(pdfProgress as any).fileName} — ` : ''}Extracting page {cur} of {tot} ({pct}%)
-        </p>
-        {/* Progress bar */}
-        <div style={{ width: '100%', maxWidth: 280, height: 6, background: C.border, borderRadius: 99, overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${pct}%`, background: C.blue, borderRadius: 99, transition: 'width 0.2s ease' }} />
-        </div>
-        <style>{`
-          @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.08); opacity: 0.8; }
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  /* ── Files staged / Processing ───────────────────── */
-  if (state === 'uploading' || state === 'processing') {
-    const processing = state === 'processing';
-    if (processing) {
-      const cur = batchProgress?.current || 0;
-      const tot = batchProgress?.total || files.length || 1;
-      const pct = Math.min(100, Math.max(5, Math.round((cur / tot) * 100)));
-      return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', fontFamily: UI, textAlign: 'center', padding: 24 }}>
-          {/* Calm pulse animation container */}
-          <div style={{ position: 'relative', marginBottom: 20 }}>
             <div style={{
-              width: 72,
-              height: 72,
-              borderRadius: '50%',
-              background: C.blueSub,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                background: '#fff', border: '1px solid #E5E7EB',
+                borderRadius: '20px', padding: '36px 24px',
+                textAlign: 'center',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.07)'
             }}>
-              <FileText size={28} color={C.blue} />
+                <div style={{
+                    position: 'relative', width: '80px', height: '96px',
+                    margin: '0 auto 28px', borderRadius: '8px',
+                    background: 'linear-gradient(145deg, #EFF6FF, #DBEAFE)',
+                    border: '2px solid #BFDBFE',
+                    overflow: 'hidden',
+                    boxShadow: '0 8px 24px rgba(37,99,235,0.15)'
+                }}>
+                    {[20, 36, 52, 66, 80].map((top) => (
+                        <div key={top} style={{
+                            position: 'absolute', left: '12px', right: '12px',
+                            top: `${top}%`, height: '2px',
+                            background: 'rgba(37,99,235,0.2)', borderRadius: '2px'
+                        }} />
+                    ))}
+                    <div style={{
+                        position: 'absolute', left: 0, right: 0, height: '2px',
+                        background: 'linear-gradient(90deg, transparent, #2563EB, transparent)',
+                        animation: 'scanLine 1.8s ease-in-out infinite',
+                        boxShadow: '0 0 8px rgba(37,99,235,0.6)'
+                    }} />
+                </div>
+
+                {isChunked && batchProgress && (
+                    <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        gap: '6px', marginBottom: '12px'
+                    }}>
+                        <div style={{
+                            background: '#EFF6FF', border: '1px solid #BFDBFE',
+                            borderRadius: '20px', padding: '4px 12px',
+                            fontSize: '12px', fontWeight: 700, color: '#1D4ED8'
+                        }}>
+                            Batch {batchProgress.current} of {batchProgress.total}
+                        </div>
+                        <div style={{
+                            background: '#F3F4F6',
+                            borderRadius: '20px', padding: '4px 10px',
+                            fontSize: '11px', fontWeight: 600, color: '#6B7280'
+                        }}>
+                            {pageCount} pages total
+                        </div>
+                    </div>
+                )}
+
+                <h3 style={{
+                    fontSize: '19px', fontWeight: 800, color: '#111827',
+                    marginBottom: '6px', letterSpacing: '-0.3px'
+                }}>
+                    {isChunked && batchProgress
+                        ? `Reading pages ${((batchProgress.current - 1) * 5) + 1} to ${Math.min(batchProgress.current * 5, pageCount)}...`
+                        : `Reading ${pageCount} ${pageCount === 1 ? 'page' : 'pages'}...`
+                    }
+                </h3>
+
+                <div style={{
+                    minHeight: '48px', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', gap: '8px', marginBottom: '24px'
+                }}>
+                    <span style={{ fontSize: '16px', animation: 'fadeIn 0.4s ease' }} key={stepIndex + 'icon'}>
+                        {step.icon}
+                    </span>
+                    <p style={{
+                        color: '#6B7280', fontSize: '14px', fontWeight: 500,
+                        margin: 0, animation: 'fadeIn 0.4s ease'
+                    }} key={stepIndex + 'text'}>
+                        {step.text}
+                    </p>
+                </div>
+
+                <div style={{
+                    height: '5px', background: '#F3F4F6',
+                    borderRadius: '99px', overflow: 'hidden',
+                    maxWidth: '220px', margin: '0 auto 14px'
+                }}>
+                    <div style={{
+                        height: '100%',
+                        background: 'linear-gradient(90deg, #2563EB, #60A5FA)',
+                        borderRadius: '99px',
+                        width: `${progressPct}%`,
+                        transition: 'width 1s linear'
+                    }} />
+                </div>
+
+                <p style={{ fontSize: '12px', color: '#C4C4C4', margin: 0 }}>
+                    {elapsed < 5 ? 'Starting...' : `${elapsed}s elapsed · ${estimateSecs}`}
+                </p>
             </div>
-            <style>{`
-              @keyframes pulse {
-                0%, 100% { transform: scale(1); opacity: 1; }
-                50% { transform: scale(1.08); opacity: 0.8; }
-              }
-            `}</style>
-          </div>
-          <h2 style={{ fontFamily: UI, fontSize: 20, fontWeight: 700, color: C.ink, margin: '0 0 6px', letterSpacing: '-0.01em' }}>
-            Transcribing Legal Document…
-          </h2>
-          <p style={{ fontSize: 13, color: C.inkMute, margin: '0 0 20px', maxWidth: 300, lineHeight: 1.5 }}>
-            Inkto AI is transcribing page {Math.min(cur + 1, tot)} of {tot} ({pct}% complete)
-          </p>
 
-          {/* Progress Bar */}
-          <div style={{ width: '100%', maxWidth: 280, height: 6, background: C.border, borderRadius: 99, overflow: 'hidden', marginBottom: 16 }}>
-            <div style={{ height: '100%', width: `${pct}%`, background: C.blue, borderRadius: 99, transition: 'width 0.3s ease' }} />
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: C.inkMid, fontWeight: 500 }}>
-            <Loader2 size={13} color={C.blue} style={{ animation: 'spin 1s linear infinite' }} />
-            <span>Processing {batchProgress?.concurrency || 3} pages in parallel</span>
-          </div>
+            <div style={{
+                marginTop: '14px', background: '#F8FAFC',
+                border: '1px solid #E5E7EB', borderRadius: '12px', padding: '14px 18px'
+            }}>
+                <p style={{ fontSize: '12px', color: '#6B7280', margin: 0, lineHeight: 1.7 }}>
+                    <strong style={{ color: '#374151' }}>Two-pass accuracy check:</strong> After the initial transcription, a second AI pass verifies all numbers, dates, and proper nouns for legal-grade accuracy.
+                    {isChunked && <><br /><strong style={{ color: '#374151' }}>Large document mode:</strong> Processing in batches of 5 pages to guarantee reliability and avoid timeouts.</>}
+                </p>
+            </div>
         </div>
-      );
-    }
+    );
+}
+
+function AppPageInner() {
+    const { 
+        state, files, error, transcribedText, 
+        sessionId, sessionImages, batchProgress, 
+        addFiles, removeFile, transcribe, fetchSession, reset 
+    } = useTranscribe();
+    const { user, loading } = useAuth();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const docId = searchParams.get('doc');
+    const [customPrompt, setCustomPrompt] = useState('');
+    const [promptFocused, setPromptFocused] = useState(false);
+
+    useEffect(() => {
+        if (!loading && !user) {
+            router.replace('/login');
+        }
+    }, [loading, user, router]);
+
+    useEffect(() => {
+        if (docId) fetchSession(docId);
+    }, [docId, fetchSession]);
+
+    const handleTranscribe = () => transcribe(customPrompt);
+
+    const navigateToHistory = () => {
+        router.push('/history');
+    };
 
     return (
-      <div style={{ paddingTop: 28, paddingBottom: 32, fontFamily: UI }}>
-        {/* Header row */}
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 24 }}>
-          <h2 style={{ fontFamily: DISPLAY, fontSize: 20, fontWeight: 700, color: C.ink, margin: 0, letterSpacing: '-0.02em' }}>
-            {files.length} page{files.length !== 1 ? 's' : ''} staged
-          </h2>
-          <button onClick={reset} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.inkMute, padding: 0, display: 'flex', alignItems: 'center' }}>
-            <X size={18} />
-          </button>
+        <div className={state === 'success' ? 'app-container-desktop' : 'app-container'}>
+            <header>
+                <div
+                    onClick={() => { reset(); router.push('/app'); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '9px', cursor: 'pointer', userSelect: 'none' }}
+                    title="Back to home"
+                >
+                    <svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16 50 L36 28 L54 38 L54 62 L36 72 Z" fill="#2563EB"/>
+                        <circle cx="30" cy="50" r="3.5" fill="white"/>
+                        <line x1="16" y1="50" x2="36" y2="50" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+                        <line x1="36" y1="28" x2="36" y2="72" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                        <rect x="57" y="30" width="28" height="7" rx="3.5" fill="#2563EB"/>
+                        <rect x="57" y="46.5" width="26" height="7" rx="3.5" fill="#2563EB"/>
+                        <rect x="57" y="63" width="20" height="7" rx="3.5" fill="#2563EB"/>
+                    </svg>
+                    <span style={{ fontSize: '17px', fontWeight: 800, letterSpacing: '-0.4px', color: '#1C1917' }}>Inkto</span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                        onClick={navigateToHistory}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            fontSize: '12px', color: '#78716C', background: 'transparent',
+                            padding: '7px 12px', borderRadius: '8px', border: 'none',
+                            fontWeight: 600, cursor: 'pointer', transition: 'color 0.2s, background 0.2s'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#F5F4F0'; e.currentTarget.style.color = '#1C1917'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#78716C'; }}
+                    >
+                        <HistoryIcon size={13} /> History
+                    </button>
+                    <a
+                        href="https://wa.me/2349130436032"
+                        target="_blank" rel="noopener noreferrer"
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            fontSize: '12px', color: '#78716C', textDecoration: 'none',
+                            padding: '7px 14px', borderRadius: '8px',
+                            border: '1px solid #E4E2DC', background: '#fff',
+                            fontWeight: 600, transition: 'border-color 0.2s, color 0.2s'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#A8A29E'; e.currentTarget.style.color = '#1C1917'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#E4E2DC'; e.currentTarget.style.color = '#78716C'; }}
+                    >
+                        <HelpCircle size={13} /> Help
+                    </a>
+                </div>
+            </header>
+
+            <main>
+                {/* ── Upload / Review ── */}
+                {(state === 'idle' || state === 'uploading') && (
+                    <div style={{ animation: 'fadeIn 0.3s ease' }}>
+                        <UploadZone onFilesSelected={addFiles} />
+
+                        {state === 'uploading' && files.length > 0 && (
+                            <div style={{ marginTop: '18px' }}>
+                                <ThumbnailGrid files={files} onRemove={removeFile} />
+
+                                <div style={{ marginTop: '16px' }}>
+                                    <div style={{
+                                        background: '#fff',
+                                        border: `1.5px solid ${promptFocused ? '#A8A29E' : '#D6D3CE'}`,
+                                        borderRadius: '12px', padding: '14px 16px',
+                                        transition: 'border-color 0.2s, box-shadow 0.2s',
+                                        boxShadow: promptFocused ? '0 0 0 3px rgba(168,162,158,0.1)' : 'none'
+                                    }}>
+                                        <label style={{
+                                            display: 'block', fontSize: '11px', fontWeight: 700,
+                                            letterSpacing: '0.06em', color: promptFocused ? '#57534E' : '#A8A29E',
+                                            textTransform: 'uppercase', marginBottom: '8px',
+                                            transition: 'color 0.2s'
+                                        }}>
+                                            Special Instructions (optional)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder='e.g. "This is a Lagos State affidavit — note 2 exhibits at the back"'
+                                            value={customPrompt}
+                                            onChange={(e) => setCustomPrompt(e.target.value)}
+                                            onFocus={() => setPromptFocused(true)}
+                                            onBlur={() => setPromptFocused(false)}
+                                            style={{
+                                                width: '100%', border: 'none', outline: 'none',
+                                                fontSize: '14px', color: '#1F2937',
+                                                fontFamily: 'inherit', background: 'transparent',
+                                                boxSizing: 'border-box'
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={handleTranscribe}
+                                    style={{
+                                        marginTop: '14px', width: '100%',
+                                        display: 'flex', alignItems: 'center',
+                                        justifyContent: 'center', gap: '10px',
+                                        padding: '17px',
+                                        background: '#1C1917',
+                                        color: '#fff', border: 'none', borderRadius: '14px',
+                                        fontSize: '15px', fontWeight: 800,
+                                        cursor: 'pointer', letterSpacing: '-0.1px',
+                                        boxShadow: '0 6px 20px rgba(0,0,0,0.22)',
+                                        transition: 'transform 0.15s, box-shadow 0.15s'
+                                    }}
+                                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 28px rgba(0,0,0,0.3)'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.22)'; }}
+                                >
+                                    <svg width="22" height="22" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M16 50 L36 28 L54 38 L54 62 L36 72 Z" fill="#38BDF8"/>
+                                        <circle cx="30" cy="50" r="3.5" fill="white"/>
+                                        <line x1="16" y1="50" x2="36" y2="50" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+                                        <line x1="36" y1="28" x2="36" y2="72" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                                        <rect x="57" y="30" width="28" height="7" rx="3.5" fill="#38BDF8"/>
+                                        <rect x="57" y="46.5" width="26" height="7" rx="3.5" fill="#38BDF8"/>
+                                        <rect x="57" y="63" width="20" height="7" rx="3.5" fill="#38BDF8"/>
+                                    </svg>
+                                    Transcribe {files.length} {files.length === 1 ? 'Page' : 'Pages'} →
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Processing */}
+                {state === 'processing' && <ProcessingScreen pageCount={files.length} batchProgress={batchProgress} />}
+
+                {/* Sleeker Fetching Animation */}
+                {state === 'fetching_session' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 20px', animation: 'fadeIn 0.4s ease' }}>
+                        <div style={{
+                            display: 'flex', gap: '8px', marginBottom: '24px'
+                        }}>
+                            <div className="bounce-dot" style={{ width: '10px', height: '10px', background: '#1C1917', borderRadius: '50%', animationDelay: '0s' }} />
+                            <div className="bounce-dot" style={{ width: '10px', height: '10px', background: '#1C1917', borderRadius: '50%', animationDelay: '0.15s' }} />
+                            <div className="bounce-dot" style={{ width: '10px', height: '10px', background: '#1C1917', borderRadius: '50%', animationDelay: '0.3s' }} />
+                        </div>
+                        <div style={{
+                            fontSize: '18px', fontWeight: 700, color: '#1C1917', letterSpacing: '-0.2px',
+                            display: 'flex', alignItems: 'center', gap: '8px'
+                        }}>
+                            Opening document <ArrowRight size={18} color="#A8A29E" className="slide-arrow" />
+                        </div>
+                        <p style={{ fontSize: '13px', color: '#A8A29E', marginTop: '6px' }}>Decrypting and loading securely...</p>
+                        <style>{`
+                            @keyframes bounce-dot {
+                                0%, 100% { transform: translateY(0); opacity: 0.5; }
+                                50% { transform: translateY(-8px); opacity: 1; }
+                            }
+                            .bounce-dot { animation: bounce-dot 1s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+                            @keyframes slide-arrow {
+                                0%, 100% { transform: translateX(0); opacity: 0.5; }
+                                50% { transform: translateX(4px); opacity: 1; }
+                            }
+                            .slide-arrow { animation: slide-arrow 1.5s ease-in-out infinite; }
+                        `}</style>
+                    </div>
+                )}
+
+                {/* Success */}
+                {state === 'success' && <OutputBox text={transcribedText} sessionId={sessionId} images={sessionImages} onReset={reset} />}
+
+                {/* Error */}
+                {state === 'error' && (
+                    <ErrorMessage message={error} onRetry={handleTranscribe} onCancel={reset} />
+                )}
+            </main>
+            
+            {/* Kept audio modal around invisibly for background audio features */}
+            <div style={{ display: 'none' }}>
+              <DictateModal
+                 draftId={undefined}
+                 initialAudioUrl={undefined}
+                 onClose={() => {}}
+                 onTranscribeComplete={() => {}}
+              />
+            </div>
         </div>
-
-        {/* Rule */}
-        <div style={{ height: 1, background: C.border, marginBottom: 24 }} />
-
-        {/* Thumbnails */}
-        <div style={{ marginBottom: 24 }}>
-          <ThumbnailGrid files={files} onRemove={removeFile} />
-        </div>
-
-        {/* CTA */}
-        <>
-          <div style={{ height: 1, background: C.border, marginBottom: 20 }} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <button
-              onClick={() => transcribe()}
-              style={{ width: '100%', height: 48, background: C.blue, border: 'none', borderRadius: 6, fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: UI }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#3A5C94'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = C.blue; }}
-            >
-              Convert to text →
-            </button>
-            <label
-              htmlFor="add-more"
-              style={{ width: '100%', height: 44, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, fontWeight: 600, color: C.inkMid, cursor: 'pointer', fontFamily: UI, display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}
-            >
-              + Add more pages
-            </label>
-            <input id="add-more" type="file" style={{ display: 'none' }} multiple accept="image/*,application/pdf" onChange={handleInput} />
-          </div>
-        </>
-
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      </div>
     );
-  }
-
-  /* ── Idle home ───────────────────────────────────── */
-  const hour   = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-  const firstName = user?.email
-    ? user.email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-    : '';
-
-  return (
-    <>
-      {showScanner && (
-        <ScannerModal
-          onScanComplete={handleScanComplete}
-          onConvertToText={handleConvertToText}
-          onClose={() => setShowScanner(false)}
-        />
-      )}
-      {(showDictate || activeDraft) && (
-        <DictateModal
-          draftId={activeDraft?.id}
-          initialAudioUrl={activeDraft?.audioUrl}
-          onClose={() => { setShowDictate(false); setActiveDraft(null); }}
-          onTranscribeComplete={(_, id) => { setShowDictate(false); setActiveDraft(null); fetchSession(id); }}
-        />
-      )}
-
-      <div style={{ paddingTop: 32, paddingBottom: 32, fontFamily: UI }}>
-
-        {/* Top Header: Wordmark left, Profile right */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 40 }}>
-          <InktoWordmark size={30} />
-          <button
-            onClick={() => router.push('/account')}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0
-            }}
-          >
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: C.blueSub, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: C.blue }}>
-              {firstName ? firstName[0].toUpperCase() : 'U'}
-            </div>
-          </button>
-        </div>
-
-        {/* Big Central Capture Button -> Replaced with August 21st UploadZone UI */}
-        <div style={{ animation: 'fadeIn 0.35s ease', marginBottom: 48 }}>
-          {/* Drop Zone */}
-          <div
-              onClick={() => document.getElementById('file-upload')?.click()}
-              style={{
-                  border: `2px dashed ${C.border}`,
-                  borderRadius: '16px',
-                  background: '#FAFAF9',
-                  padding: '40px 24px',
-                  textAlign: 'center',
-                  transition: 'all 0.2s ease',
-                  cursor: 'pointer',
-              }}
-          >
-              <div style={{
-                  width: '56px', height: '56px', margin: '0 auto 18px',
-                  background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)',
-                  borderRadius: '14px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: '1px solid #BFDBFE'
-              }}>
-                  <FileText size={24} color="#1D4ED8" />
-              </div>
-
-              <p style={{ fontSize: '16px', fontWeight: '700', color: '#1C1917', marginBottom: '6px' }}>
-                  Drop files or tap to upload
-              </p>
-              <p style={{ fontSize: '13px', color: '#A8A29E', marginBottom: '28px' }}>
-                  Photos, scanned PDFs, Audio · JPG, PNG, PDF, MP3 · up to 25 MB
-              </p>
-
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <button
-                      onClick={e => { e.stopPropagation(); document.getElementById('camera-upload')?.click(); }}
-                      style={{
-                          display: 'flex', alignItems: 'center', gap: '9px',
-                          padding: '12px 24px',
-                          background: '#1C1917', color: '#fff',
-                          border: 'none', borderRadius: '10px',
-                          fontSize: '14px', fontWeight: '700',
-                          cursor: 'pointer',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.16)',
-                          transition: 'transform 0.15s, box-shadow 0.15s',
-                          minWidth: '148px', justifyContent: 'center'
-                      }}
-                  >
-                      <Camera size={17} /> Take Photo
-                  </button>
-                  <button
-                      onClick={e => { e.stopPropagation(); document.getElementById('file-upload')?.click(); }}
-                      style={{
-                          display: 'flex', alignItems: 'center', gap: '9px',
-                          padding: '12px 24px',
-                          background: '#fff', color: '#1C1917',
-                          border: '1.5px solid #D6D3CE', borderRadius: '10px',
-                          fontSize: '14px', fontWeight: '700',
-                          cursor: 'pointer',
-                          minWidth: '148px', justifyContent: 'center'
-                      }}
-                  >
-                      <Upload size={17} /> Browse Files
-                  </button>
-                  <button
-                      onClick={e => { e.stopPropagation(); setShowDictate(true); }}
-                      style={{
-                          display: 'flex', alignItems: 'center', gap: '9px',
-                          padding: '12px 24px',
-                          background: '#EFF6FF', color: '#1D4ED8',
-                          border: 'none', borderRadius: '10px',
-                          fontSize: '14px', fontWeight: '700',
-                          cursor: 'pointer',
-                          minWidth: '148px', justifyContent: 'center'
-                      }}
-                  >
-                      <Mic size={17} /> Audio
-                  </button>
-              </div>
-          </div>
-
-          <div style={{ marginTop: 24, textAlign: 'center' }}>
-             <button
-                onClick={() => alert("Please download our mobile app to use the native document scanner.")}
-                style={{ background: 'none', border: 'none', fontSize: 13, color: C.blue, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
-             >
-                Scan Document natively (App Only)
-             </button>
-          </div>
-          
-          {/* Hidden inputs */}
-          <input id="camera-upload" type="file" style={{ display: 'none' }} accept="image/*" capture="environment" onChange={handleInput} />
-        </div>
-
-        {/* PDF download banner if active */}
-        {savedPdf && (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 0', marginBottom: 24 }}>
-              <Download size={15} color={C.brass} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: C.inkMid, margin: '0 0 1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {savedPdf.name}
-                </p>
-                <p style={{ fontSize: 11, color: C.warmMid, margin: 0 }}>Saved to Downloads</p>
-              </div>
-              <a
-                href={savedPdf.url}
-                download={savedPdf.name}
-                style={{ fontSize: 12, fontWeight: 700, color: C.brass, textDecoration: 'none', flexShrink: 0 }}
-              >
-                Re-download
-              </a>
-            </div>
-            <div style={{ height: 1, background: C.border, marginBottom: 24 }} />
-          </>
-        )}
-
-        {/* Recent Items section */}
-        <div style={{ marginBottom: 36 }}>
-          <h3 style={{ fontSize: 11, fontWeight: 700, color: C.warmMid, letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 16px' }}>
-            Recent Documents
-          </h3>
-          
-          {recentsLoading ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 44 }}>
-              <Loader2 size={16} color={C.blue} style={{ animation: 'spin 0.8s linear infinite' }} />
-              <span style={{ fontSize: 13, color: C.inkMute }}>Loading recents...</span>
-            </div>
-          ) : recents.length === 0 ? (
-            <p style={{ fontSize: 13, color: C.inkMute, margin: 0, fontStyle: 'italic', lineHeight: 1.5 }}>
-              Nothing yet — capture or record something to get started.
-            </p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {recents.map(item => {
-                const isScan = item.type === 'scan';
-                const isVoice = item.type === 'voice' || item.type === 'draft';
-                const Icon = isScan ? Camera : isVoice ? Mic : FileText;
-                
-                return (
-                  <motion.button
-                    key={item.id}
-                    whileTap={{ scale: 0.985, background: '#F3F1EC' }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    onClick={() => fetchSession(item.id)}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 16,
-                      padding: '12px 14px',
-                      background: '#FFFFFF',
-                      border: `1px solid ${C.border}`,
-                      borderRadius: 8,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      fontFamily: UI,
-                    }}
-                  >
-                    <div style={{ width: 32, height: 32, borderRadius: 6, background: C.blueSub, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Icon size={16} color={C.blue} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 14, fontWeight: 700, color: C.ink, margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {item.title}
-                      </p>
-                      <p style={{ fontSize: 11, color: C.inkMute, margin: 0 }}>
-                        {new Date(item.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        {item.type === 'draft' && <span style={{ color: C.red, marginLeft: 8, fontWeight: 600 }}>Draft</span>}
-                      </p>
-                    </div>
-                    <ChevronRight size={14} color={C.warmMid} />
-                  </motion.button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Secondary Action CTA: New Draft */}
-        <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 24, textAlign: 'center' }}>
-          <motion.button
-            whileTap={{ scale: 0.95, opacity: 0.75 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-            onClick={() => router.push('/draft')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: C.blue,
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: 'pointer',
-              fontFamily: UI,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
-            <Sparkles size={14} color={C.blue} />
-            <span>Start a New Document Draft</span>
-          </motion.button>
-        </div>
-
-        {/* Hidden File Input for Native Picker */}
-        <input
-          id="file-upload"
-          type="file"
-          style={{ display: 'none' }}
-          multiple
-          accept="image/*,application/pdf"
-          onChange={handleInput}
-        />
-
-      </div>
-      {!showScanner && !showDictate && <BottomNav />}
-    </>
-  );
 }
 
 export default function AppPage() {
-  return (
-    <Suspense fallback={<div style={{ height: 200 }} />}>
-      <AppPageContent />
-    </Suspense>
-  );
+    return (
+        <Suspense fallback={<div style={{ padding: '100px 20px', textAlign: 'center', color: '#1C1917' }}>Loading...</div>}>
+            <AppPageInner />
+        </Suspense>
+    );
 }
+

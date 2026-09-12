@@ -1,12 +1,10 @@
-/* eslint-disable */
+﻿/* eslint-disable */
 // @ts-nocheck
 'use client';
-import dynamic from 'next/dynamic';
-const RichEditor = dynamic(() => import('./rich-editor'), { ssr: false });
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Copy, Check, RotateCcw, FileText, FileDown, ChevronUp, Mail, Pen, X, File, Image as ImageIcon, Bookmark, Mic, Loader2 } from 'lucide-react';
+import { Copy, Check, RotateCcw, FileText, FileDown, ChevronUp, Mail, Pen, X, File } from 'lucide-react';
 
-/* â”€â”€ Inline SVGs â”€â”€ */
+/* ÔöÇÔöÇ Inline SVGs ÔöÇÔöÇ */
 const IconPaystack = ({ size = 16 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><path d="M4 17h6v4H4v-4zM14 17h6v4h-6v-4zM4 10h6v4H4v-4zM14 10h6v4h-6v-4zM4 3h6v4H4V3z" /></svg>
 );
@@ -17,7 +15,7 @@ const IconPayPal = ({ size = 16 }) => (
     </svg>
 );
 
-/* â”€â”€ Source document filmstrip viewer â”€â”€ */
+/* ÔöÇÔöÇ Source document filmstrip viewer ÔöÇÔöÇ */
 const FilmstripViewer = ({ images }) => {
     const [selected, setSelected] = useState(0);
     const [imgError, setImgError] = useState({});
@@ -144,7 +142,7 @@ const FilmstripViewer = ({ images }) => {
 };
 
 
-/* â”€â”€ Format picker modal for Inbox â”€â”€ */
+/* ÔöÇÔöÇ Format picker modal for Inbox ÔöÇÔöÇ */
 function InboxModal({ onClose, onSend }) {
     const [selected, setSelected] = useState({ docx: true, pdf: false });
 
@@ -262,7 +260,7 @@ function InboxModal({ onClose, onSend }) {
     );
 }
 
-/* â”€â”€ Download helper (works on mobile too) â”€â”€ */
+/* ÔöÇÔöÇ Download helper (works on mobile too) ÔöÇÔöÇ */
 async function downloadFile(endpoint, text, filename, fallbackMsg) {
     try {
         const res = await fetch(endpoint, {
@@ -291,24 +289,13 @@ async function downloadFile(endpoint, text, filename, fallbackMsg) {
     }
 }
 
-/* â”€â”€ Main component â”€â”€ */
-export default function OutputBox({ text, sessionId, images = [], audioUrl = null, onReset }) {
+/* ÔöÇÔöÇ Main component ÔöÇÔöÇ */
+export default function OutputBox({ text, sessionId, images = [], onReset }) {
     const [value, setValue] = useState(text);
     const [copied, setCopied] = useState(false);
     const [showScrollTop, setShowScrollTop] = useState(false);
     const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
     const [isEditing, setIsEditing] = useState(false);
-    const [activeTab, setActiveTab] = useState<'split' | 'original' | 'result'>('split');
-    const [hasReviewed, _setHasReviewed] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('inkto_reviewed_' + sessionId) === 'true';
-        }
-        return false;
-    });
-    const setHasReviewed = (val: boolean) => {
-        _setHasReviewed(val);
-        if (val) localStorage.setItem('inkto_reviewed_' + sessionId, 'true');
-    };
 
     const [email, setEmail] = useState(() => localStorage.getItem('inkto_last_email') || '');
     const [sendingEmail, setSendingEmail] = useState(false);
@@ -316,176 +303,11 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     const [emailFocused, setEmailFocused] = useState(false);
     const [showInboxModal, setShowInboxModal] = useState(false);
 
-    const [isConvertingVoice, setIsConvertingVoice] = useState(false);
-    const [voiceProgressStep, setVoiceProgressStep] = useState(1);
-    const [voiceError, setVoiceError] = useState(null);
-
     const textareaRef = useRef(null);
     const debounceTimer = useRef(null);
     const [deferredValue, setDeferredValue] = useState(text);
 
-    const handleConvertVoice = async () => {
-        if (!audioUrl) {
-            alert("No audio URL found for this recording.");
-            return;
-        }
-        setIsConvertingVoice(true);
-        setVoiceProgressStep(1);
-        setVoiceError(null);
-
-        const t1 = setTimeout(() => setVoiceProgressStep(2), 800);
-        const t2 = setTimeout(() => setVoiceProgressStep(3), 2000);
-        const t3 = setTimeout(() => setVoiceProgressStep(4), 3800);
-
-        try {
-            const res = await fetch('https://inkto.jointaccount.org/api/transcribe-past', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: sessionId, fileUrl: audioUrl, title: 'Voice Dictation' })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Conversion failed');
-            
-            clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
-            setVoiceProgressStep(4);
-            await new Promise(r => setTimeout(r, 600));
-
-            setValue(data.text);
-            setIsConvertingVoice(false);
-        } catch (e: any) {
-            clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
-            setVoiceError(e.message || 'ASR transcription failed.');
-            setIsConvertingVoice(false);
-        }
-    };
-
-    const renderRawAudioDashboard = () => {
-        if (isConvertingVoice) {
-            return (
-                <div style={{ padding: '40px', background: '#FAFAF9', borderRadius: '12px', border: '1px solid #E4E2DC', margin: '20px 0', textAlign: 'left' }}>
-                    <p style={{ fontWeight: '700', fontSize: '15px', color: '#1C1917', textAlign: 'center', marginBottom: '20px' }}>
-                        Transcribing voice recording…
-                    </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '320px', margin: '0 auto' }}>
-                        {/* Step 1 */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
-                            {voiceProgressStep > 1 ? (
-                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>✓</div>
-                            ) : (
-                                <Loader2 size={16} className="animate-spin text-primary shrink-0" />
-                            )}
-                            <span style={{ fontWeight: voiceProgressStep >= 1 ? '600' : 'normal', color: voiceProgressStep >= 1 ? '#1C1917' : '#78716C' }}>
-                                Packaging audio file
-                            </span>
-                        </div>
-                        {/* Step 2 */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
-                            {voiceProgressStep > 2 ? (
-                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>✓</div>
-                            ) : voiceProgressStep === 2 ? (
-                                <Loader2 size={16} className="animate-spin text-primary shrink-0" />
-                            ) : (
-                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '1.5px solid #D6D3D1', shrink: 0 }} />
-                            )}
-                            <span style={{ fontWeight: voiceProgressStep >= 2 ? '600' : 'normal', color: voiceProgressStep >= 2 ? '#1C1917' : '#78716C' }}>
-                                Connecting to speech engines
-                            </span>
-                        </div>
-                        {/* Step 3 */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
-                            {voiceProgressStep > 3 ? (
-                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 'bold', shrink: 0 }}>✓</div>
-                            ) : voiceProgressStep === 3 ? (
-                                <Loader2 size={16} className="animate-spin text-primary shrink-0" />
-                            ) : (
-                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '1.5px solid #D6D3D1', shrink: 0 }} />
-                            )}
-                            <span style={{ fontWeight: voiceProgressStep >= 3 ? '600' : 'normal', color: voiceProgressStep >= 3 ? '#1C1917' : '#78716C' }}>
-                                Analyzing vocabulary & dialect
-                            </span>
-                        </div>
-                        {/* Step 4 */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
-                            {voiceProgressStep === 4 ? (
-                                <Loader2 size={16} className="animate-spin text-primary shrink-0" />
-                            ) : (
-                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: '1.5px solid #D6D3D1', shrink: 0 }} />
-                            )}
-                            <span style={{ fontWeight: voiceProgressStep >= 4 ? '600' : 'normal', color: voiceProgressStep >= 4 ? '#1C1917' : '#78716C' }}>
-                                Generating legal transcription
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        return (
-            <div style={{ padding: '36px 24px', background: '#FAFAF9', borderRadius: '16px', border: '1px solid #E4E2DC', margin: '20px 0', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Mic size={24} color="#D97706" />
-                </div>
-                <div>
-                    <h4 style={{ fontWeight: '700', fontSize: '16px', color: '#1C1917', margin: '0 0 6px 0' }}>Raw Voice Dictation</h4>
-                    <p style={{ fontSize: '13px', color: '#78716C', margin: 0, maxWidth: '280px', lineHeight: 1.5 }}>
-                        You saved this voice recording. You can listen to the audio below or convert it to editable text now.
-                    </p>
-                </div>
-
-                {audioUrl && (
-                    <audio src={audioUrl} controls style={{ width: '100%', maxWidth: '320px', marginTop: '8px' }} />
-                )}
-
-                {voiceError && (
-                    <p style={{ fontSize: '12px', fontWeight: '600', color: '#DC2626', margin: 0 }}>
-                        {voiceError}
-                    </p>
-                )}
-
-                <button
-                    onClick={handleConvertVoice}
-                    style={{
-                        padding: '12px 24px', background: '#2563EB', color: '#fff',
-                        border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '700',
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-                        boxShadow: '0 4px 12px rgba(37,99,235,0.18)', transition: 'all 0.2s',
-                        fontFamily: 'inherit'
-                    }}
-                >
-                    <FileText size={16} /> Convert to Editable Text
-                </button>
-            </div>
-        );
-    };
-
-    const isNoText = value.startsWith('[No handwritten text found') || 
-                     value.startsWith('[No text present') || 
-                     value.startsWith('[Raw voice dictation') || 
-                     value.startsWith('[No legible text');
-
-    const handleSaveTemplate = async () => {
-        const title = prompt('Enter a title for this custom template:');
-        if (!title || !title.trim()) return;
-        try {
-            const token = localStorage.getItem('inkto_session');
-            const headers = { 'Content-Type': 'application/json' };
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-                headers['X-Inkto-Auth'] = token;
-            }
-            const res = await fetch('https://inkto.jointaccount.org/api/user-templates', {
-                method: 'POST',
-                headers,
-                credentials: 'include',
-                body: JSON.stringify({ title, content: value })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Save template failed');
-            alert('Saved to "My Templates" in the Templates tab!');
-        } catch (e) {
-            alert(e.message || 'Failed to save template. Please try again.');
-        }
-    };
+    const isNoText = value.startsWith('[No handwritten text found');
 
     useEffect(() => {
         const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
@@ -503,10 +325,9 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     useEffect(() => () => clearTimeout(debounceTimer.current), []);
 
     const stats = useMemo(() => {
-        if (isNoText) return { words: 0 };
         const words = deferredValue.trim().split(/\s+/).filter(Boolean).length;
         return { words };
-    }, [deferredValue, isNoText]);
+    }, [deferredValue]);
 
     const handleCopy = async () => {
         try { await navigator.clipboard.writeText(value); }
@@ -534,10 +355,6 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     const validateEmail = (e) => e && e.includes('@') && e.includes('.');
 
     const handleSendEmail = async (formats = { docx: true, pdf: false }) => {
-        if (!hasReviewed) {
-            alert("Please review and confirm the AI transcript first.");
-            return;
-        }
         if (!validateEmail(email)) {
             setEmailStatus({ type: 'error', msg: 'Enter a valid email address.' });
             return;
@@ -546,7 +363,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         setEmailStatus(null);
         localStorage.setItem('inkto_last_email', email);
         try {
-            const res = await fetch('https://inkto.jointaccount.org/api/send-email', {
+            const res = await fetch('/api/send-email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: value, recipientEmail: email, sessionId, formats }),
@@ -562,18 +379,18 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     };
 
     const handleSaveHistory = async () => {
+        if (!validateEmail(email)) {
+            setEmailStatus({ type: 'error', msg: 'Enter a valid email address.' });
+            return;
+        }
         setSendingEmail(true);
         setEmailStatus(null);
+        localStorage.setItem('inkto_last_email', email);
         try {
-            const token = localStorage.getItem('inkto_session');
-            const userEmail = email || (typeof window !== 'undefined' ? localStorage.getItem('inkto_user_email') : '');
-            const headers = { 'Content-Type': 'application/json' };
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-            const res = await fetch('https://inkto.jointaccount.org/api/save-history', {
+            const res = await fetch('/api/save-history', {
                 method: 'POST',
-                headers,
-                credentials: 'include',
-                body: JSON.stringify({ email: userEmail, sessionId }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, sessionId }),
             });
             const ct = res.headers.get('content-type') || '';
             const data = ct.includes('json') ? await res.json() : { error: await res.text() };
@@ -586,7 +403,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
 
     const scrollToTop = () => textareaRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
 
-    /* â”€â”€ Email row â”€â”€ */
+    /* ÔöÇÔöÇ Email row ÔöÇÔöÇ */
     const emailRow = (
         <div style={{
             background: '#fff', border: '1px solid #E4E2DC',
@@ -631,14 +448,14 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                             }
                             setShowInboxModal(true);
                         }}
-                        disabled={sendingEmail || !hasReviewed}
+                        disabled={sendingEmail}
                         style={{
                             padding: '9px 14px',
                             background: '#2563EB', color: '#fff',
                             border: 'none', borderRadius: '8px',
                             fontSize: '13px', fontWeight: '700',
-                            cursor: (sendingEmail || !hasReviewed) ? 'not-allowed' : 'pointer',
-                            opacity: (sendingEmail || !hasReviewed) ? 0.5 : 1,
+                            cursor: sendingEmail ? 'wait' : 'pointer',
+                            opacity: sendingEmail ? 0.5 : 1,
                             whiteSpace: 'nowrap', fontFamily: 'inherit',
                         }}
                     >
@@ -646,14 +463,14 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                     </button>
                     <button
                         onClick={handleSaveHistory}
-                        disabled={sendingEmail || !hasReviewed}
+                        disabled={sendingEmail}
                         style={{
                             padding: '9px 14px',
                             background: '#1C1917', color: '#fff',
                             border: 'none', borderRadius: '8px',
                             fontSize: '13px', fontWeight: '700',
-                            cursor: (sendingEmail || !hasReviewed) ? 'not-allowed' : 'pointer',
-                            opacity: (sendingEmail || !hasReviewed) ? 0.5 : 1,
+                            cursor: sendingEmail ? 'wait' : 'pointer',
+                            opacity: sendingEmail ? 0.5 : 1,
                             whiteSpace: 'nowrap', fontFamily: 'inherit',
                         }}
                     >
@@ -669,7 +486,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 
-    /* â”€â”€ Toolbar â”€â”€ */
+    /* ÔöÇÔöÇ Toolbar ÔöÇÔöÇ */
     const toolbar = (
         <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -704,44 +521,23 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                 )}
 
                 {/* DOCX */}
-                <button onClick={handleDownloadDocx} disabled={!hasReviewed} title="Download Word document" style={{
+                <button onClick={handleDownloadDocx} title="Download Word document" style={{
                     display: 'flex', alignItems: 'center', gap: '5px',
                     padding: '6px 10px', background: '#EFF6FF', border: 'none', borderRadius: '7px',
-                    fontSize: '12px', fontWeight: '600', color: '#1D4ED8',
-                    cursor: hasReviewed ? 'pointer' : 'not-allowed',
-                    opacity: hasReviewed ? 1 : 0.4,
-                    whiteSpace: 'nowrap', flexShrink: 0, fontFamily: 'inherit',
+                    fontSize: '12px', fontWeight: '600', color: '#1D4ED8', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, fontFamily: 'inherit',
                 }}>
                     <FileDown size={12} color="#1D4ED8" />
                     {isDesktop ? 'Word' : '.doc'}
                 </button>
 
                 {/* PDF */}
-                <button onClick={handleDownloadPdf} disabled={!hasReviewed} title="Download PDF" style={{
+                <button onClick={handleDownloadPdf} title="Download PDF" style={{
                     display: 'flex', alignItems: 'center', gap: '5px',
                     padding: '6px 10px', background: '#FEF2F2', border: 'none', borderRadius: '7px',
-                    fontSize: '12px', fontWeight: '600', color: '#DC2626',
-                    cursor: hasReviewed ? 'pointer' : 'not-allowed',
-                    opacity: hasReviewed ? 1 : 0.4,
-                    whiteSpace: 'nowrap', flexShrink: 0, fontFamily: 'inherit',
+                    fontSize: '12px', fontWeight: '600', color: '#DC2626', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, fontFamily: 'inherit',
                 }}>
                     <File size={12} color="#DC2626" />
                     {isDesktop ? 'PDF' : 'PDF'}
-                </button>
-
-                {/* Save as Template */}
-                <button onClick={handleSaveTemplate} title="Save as custom template" style={{
-                    display: 'flex', alignItems: 'center', gap: isDesktop ? '6px' : '0',
-                    padding: isDesktop ? '6px 12px' : '0',
-                    width: isDesktop ? 'auto' : '32px', height: '32px',
-                    justifyContent: 'center', flexShrink: 0,
-                    background: '#F5F4F0',
-                    color: '#57534E',
-                    border: 'none', borderRadius: '7px', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit',
-                    fontSize: '12px', fontWeight: '700', whiteSpace: 'nowrap',
-                }}>
-                    <Bookmark size={14} color="#57534E" />
-                    {isDesktop && <span>Save Template</span>}
                 </button>
 
                 {/* Copy */}
@@ -762,7 +558,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 
-    /* ── Tip banner ── */
+    /* ÔöÇÔöÇ Tip banner ÔöÇÔöÇ */
     const tipBanner = (
         <div style={{ marginTop: '8px', marginBottom: '14px', background: '#FFFBEB', border: '1px solid #FEF3C7', borderRadius: '10px', padding: '16px', textAlign: 'center' }}>
             <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#92400E', lineHeight: '1.5', fontWeight: '500' }}>
@@ -779,7 +575,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 
-    /* â”€â”€ Shared textarea styles â”€â”€ */
+    /* ÔöÇÔöÇ Shared textarea styles ÔöÇÔöÇ */
     const textareaStyleMobile = {
         display: 'block', width: '100%', height: isNoText ? 'auto' : '380px',
         minHeight: isNoText ? '80px' : undefined,
@@ -795,14 +591,14 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
     const textareaStyleDesktop = {
         ...textareaStyleMobile,
         height: isNoText ? 'auto' : undefined,
-        minHeight: isNoText ? '80px' : '65vh',
+        minHeight: isNoText ? '80px' : '60vh',
         padding: '40px 48px',
         fontSize: isNoText ? '15px' : '18px',
         lineHeight: '2.1',
         resize: isNoText ? 'none' : 'vertical',
     };
 
-    /* -- Status badge -- */
+    /* ÔöÇÔöÇ Status badge ÔöÇÔöÇ */
     const statusBadge = (
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
             <div style={{
@@ -810,7 +606,7 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
                 background: isNoText ? '#F59E0B' : '#15803D', color: '#fff',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '800',
             }}>
-                {isNoText ? '!' : <Check size={13} strokeWidth={3} />}
+                {isNoText ? '!' : 'Ô£ô'}
             </div>
             <span style={{ fontSize: '13px', fontWeight: '700', color: '#44403C' }}>
                 {isNoText ? 'No text found' : 'Transcription complete'}
@@ -820,166 +616,55 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         </div>
     );
 
-    /* ── Tab toggle ── */
-    const tabToggle = images.length > 0 && (
-        <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '12px 24px',
-            borderBottom: '1px solid #E4E2DC',
-            background: '#FAFAF9',
-            borderRadius: 12,
-            border: '1px solid #E4E2DC',
-            flexShrink: 0
-        }}>
-            <div style={{ display: 'flex', background: '#F5F4F0', borderRadius: 8, padding: 3, gap: 2, border: '1px solid #E4E2DC' }}>
-                {(['split', 'original', 'result'] as const).map(tab => (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        style={{
-                            padding: '6px 16px',
-                            borderRadius: 6,
-                            border: 'none',
-                            background: activeTab === tab ? '#FFFFFF' : 'transparent',
-                            color: activeTab === tab ? '#0B0D12' : '#78716C',
-                            fontWeight: 700,
-                            fontSize: 12,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            cursor: 'pointer',
-                            boxShadow: activeTab === tab ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                            transition: 'all 0.15s',
-                            fontFamily: 'inherit',
-                        }}
-                    >
-                        {tab}
-                    </button>
-                ))}
-            </div>
-        </div>
-    );
-
-    /* ── AI Review Gate banner ── */
-    const reviewBanner = !hasReviewed && !value.startsWith('[Raw voice dictation') && (
-        <div style={{
-            border: '1.5px solid #DC2626',
-            background: '#FEF2F2',
-            borderRadius: 10,
-            padding: '12px 18px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
-            flexWrap: 'wrap',
-            boxSizing: 'border-box',
-            marginBottom: 16
-        }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 13, color: '#991B1B', fontWeight: 700 }}>
-                    ⚠️ AI-generated — review carefully before use
-                </span>
-            </div>
-            <button
-                onClick={() => setHasReviewed(true)}
-                style={{
-                    background: '#DC2626',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    borderRadius: 6,
-                    padding: '6px 14px',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                    boxShadow: '0 2px 8px rgba(220,38,38,0.25)',
-                    transition: 'background 0.15s'
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = '#B91C1C'}
-                onMouseLeave={e => e.currentTarget.style.background = '#DC2626'}
-            >
-                I've Reviewed
-            </button>
-        </div>
-    );
-
-    /* ── Desktop layout ── */
+    /* ÔöÇÔöÇ Desktop layout ÔöÇÔöÇ */
     if (isDesktop) {
         return (
-            <div style={{ display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.4s ease', gap: 16 }}>
-                {tabToggle}
-                {reviewBanner}
-                
-                <div className="desktop-split" style={{ display: 'flex', height: 'calc(100vh - 180px)', overflow: 'hidden' }}>
-                    {images.length > 0 && (activeTab === 'split' || activeTab === 'original') && (
-                        <div className="left-pane" style={{
-                            background: '#FAFAF9',
-                            borderRight: '1px solid #E4E2DC',
-                            overflow: 'hidden',
-                            padding: 0,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            width: activeTab === 'original' ? '100%' : '50%'
-                        }}>
-                            <div style={{ padding: '12px 16px', borderBottom: '1px solid #E4E2DC', background: '#fff', flexShrink: 0 }}>
-                                <span style={{ fontSize: '12px', fontWeight: '700', color: '#78716C', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Source Documents</span>
-                            </div>
-                            <div style={{ flex: 1, overflow: 'hidden' }}>
-                                <FilmstripViewer images={images} />
+            <div style={{ animation: 'fadeIn 0.4s ease' }} className="desktop-split">
+                {images.length > 0 && (
+                    <div className="left-pane" style={{ background: '#FAFAF9', borderRight: '1px solid #E4E2DC', overflow: 'hidden', padding: 0, display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ padding: '12px 16px', borderBottom: '1px solid #E4E2DC', background: '#fff', flexShrink: 0 }}>
+                            <span style={{ fontSize: '12px', fontWeight: '700', color: '#78716C', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Source Documents</span>
+                        </div>
+                        <div style={{ flex: 1, overflow: 'hidden' }}>
+                            <FilmstripViewer images={images} />
+                        </div>
+                    </div>
+                )}
+
+                <div className="right-pane" style={{ padding: '24px', overflowY: 'auto' }}>
+                    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                        {statusBadge}
+                        {!isNoText && emailRow}
+
+                        <div style={{ background: '#fff', border: '1px solid #E4E2DC', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: '10px' }}>
+                            {toolbar}
+                            <div style={{ position: 'relative' }}>
+                                <textarea
+                                    ref={textareaRef}
+                                    value={value}
+                                    onChange={handleChange}
+                                    onScroll={e => setShowScrollTop(e.target.scrollTop > 160)}
+                                    spellCheck={false}
+                                    readOnly={!isEditing || isNoText}
+                                    onClick={() => { if (!isEditing && !isNoText) { setIsEditing(true); setTimeout(() => textareaRef.current?.focus(), 50); } }}
+                                    style={textareaStyleDesktop}
+                                />
+                                {showScrollTop && (
+                                    <button onClick={scrollToTop} style={{ position: 'absolute', bottom: '16px', right: '16px', width: '36px', height: '36px', background: 'rgba(28,25,23,0.65)', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+                                        <ChevronUp size={16} color="white" />
+                                    </button>
+                                )}
                             </div>
                         </div>
-                    )}
 
-                    {(activeTab === 'split' || activeTab === 'result') && (
-                        <div className="right-pane" style={{
-                            width: activeTab === 'result' ? '100%' : '50%',
-                            padding: '24px',
-                            overflowY: 'auto'
-                        }}>
-                            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                                {statusBadge}
-                                {!isNoText && emailRow}
+                        {!isNoText && tipBanner}
 
-                                <div style={{ background: '#fff', border: '1px solid #E4E2DC', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: '10px' }}>
-                                    {toolbar}
-                                    <div style={{ position: 'relative' }}>
-                                        {value.startsWith('[Raw voice dictation') ? (
-                                            renderRawAudioDashboard()
-                                        ) : (
-                                            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                                                {audioUrl && (
-                                                    <div style={{ padding: '16px 24px', borderBottom: '1px solid #E4E2DC', background: '#FAFAF9' }}>
-                                                        <div style={{ fontSize: '12px', fontWeight: '700', color: '#78716C', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Source Audio</div>
-                                                        <audio src={audioUrl} controls style={{ width: '100%', maxWidth: '400px', height: '36px' }} />
-                                                    </div>
-                                                )}
-                                                <RichEditor
-                                                    content={value}
-                                                    onChange={handleChange}
-                                                    readOnly={!isEditing || isNoText}
-                                                    style={textareaStyleDesktop}
-                                                />
-                                            </div>
-                                        )}
-                                        {showScrollTop && !value.startsWith('[Raw voice dictation') && (
-                                            <button onClick={scrollToTop} style={{ position: 'absolute', bottom: '16px', right: '16px', width: '36px', height: '36px', background: 'rgba(28,25,23,0.65)', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-                                                <ChevronUp size={16} color="white" />
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {!isNoText && tipBanner}
-
-                                <button onClick={onReset} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '13px', background: '#FAFAF9', border: '1px solid #E4E2DC', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: '#78716C', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit' }}
-                                    onMouseEnter={e => { e.currentTarget.style.background = '#F0EFEB'; e.currentTarget.style.color = '#44403C'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.background = '#FAFAF9'; e.currentTarget.style.color = '#78716C'; }}>
-                                    <RotateCcw size={13} /> New document
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                        <button onClick={onReset} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '13px', background: '#FAFAF9', border: '1px solid #E4E2DC', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: '#78716C', cursor: 'pointer', transition: 'all 0.2s', fontFamily: 'inherit' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#F0EFEB'; e.currentTarget.style.color = '#44403C'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = '#FAFAF9'; e.currentTarget.style.color = '#78716C'; }}>
+                            <RotateCcw size={13} /> New document
+                        </button>
+                    </div>
                 </div>
 
                 {showInboxModal && <InboxModal onClose={() => setShowInboxModal(false)} onSend={handleSendEmail} />}
@@ -987,78 +672,44 @@ export default function OutputBox({ text, sessionId, images = [], audioUrl = nul
         );
     }
 
-    /* ── Mobile layout ── */
+    /* ÔöÇÔöÇ Mobile layout ÔöÇÔöÇ */
     return (
-        <div style={{ animation: 'fadeIn 0.4s ease', display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: -4 }}>
-                <button onClick={onReset} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: '#1D4ED8', fontWeight: 600, fontSize: 14, cursor: 'pointer', padding: '8px 0' }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-                    Back
-                </button>
+        <div style={{ animation: 'fadeIn 0.4s ease' }}>
+            {statusBadge}
+            {!isNoText && emailRow}
+
+            <div style={{ background: '#fff', border: '1px solid #E4E2DC', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: '10px' }}>
+                {toolbar}
+                <div style={{ position: 'relative' }}>
+                    <textarea
+                        ref={textareaRef}
+                        value={value}
+                        onChange={handleChange}
+                        onScroll={e => setShowScrollTop(e.target.scrollTop > 160)}
+                        spellCheck={false}
+                        readOnly={!isEditing || isNoText}
+                        onClick={() => { if (!isEditing && !isNoText) { setIsEditing(true); setTimeout(() => textareaRef.current?.focus(), 50); } }}
+                        style={textareaStyleMobile}
+                    />
+                    {showScrollTop && (
+                        <button onClick={scrollToTop} style={{ position: 'absolute', bottom: '12px', right: '12px', width: '32px', height: '32px', background: 'rgba(28,25,23,0.65)', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+                            <ChevronUp size={15} color="white" />
+                        </button>
+                    )}
+                </div>
             </div>
-            {tabToggle}
-            {reviewBanner}
 
-            {images.length > 0 && (activeTab === 'split' || activeTab === 'original') && (
-                <div style={{
-                    height: activeTab === 'original' ? 'calc(100vh - 200px)' : '260px',
-                    border: '1px solid #E4E2DC',
-                    borderRadius: 12,
-                    overflow: 'hidden',
-                    background: '#FAFAF9'
-                }}>
-                    <FilmstripViewer images={images} />
-                </div>
-            )}
+            {!isNoText && tipBanner}
 
-            {(activeTab === 'split' || activeTab === 'result') && (
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    {statusBadge}
-                    {!isNoText && emailRow}
-
-                    <div style={{ background: '#fff', border: '1px solid #E4E2DC', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', marginBottom: '10px' }}>
-                        {toolbar}
-                        <div style={{ position: 'relative' }}>
-                            {value.startsWith('[Raw voice dictation') ? (
-                                renderRawAudioDashboard()
-                            ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                    {audioUrl && (
-                                        <div style={{ padding: '16px', borderBottom: '1px solid #E4E2DC', background: '#FAFAF9' }}>
-                                            <div style={{ fontSize: '11px', fontWeight: '700', color: '#78716C', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Source Audio</div>
-                                            <audio src={audioUrl} controls style={{ width: '100%', height: '36px' }} />
-                                        </div>
-                                    )}
-                                    <RichEditor
-                                        content={value}
-                                        onChange={handleChange}
-                                        readOnly={!isEditing || isNoText}
-                                        style={textareaStyleMobile}
-                                    />
-                                </div>
-                            )}
-                            {showScrollTop && !value.startsWith('[Raw voice dictation') && (
-                                <button onClick={scrollToTop} style={{ position: 'absolute', bottom: '12px', right: '12px', width: '32px', height: '32px', background: 'rgba(28,25,23,0.65)', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-                                    <ChevronUp size={15} color="white" />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-
-                    {!isNoText && tipBanner}
-
-                    <button onClick={onReset} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '13px', background: '#FAFAF9', border: '1px solid #E4E2DC', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: '#78716C', cursor: 'pointer', transition: 'all 0.2s', marginBottom: '32px', fontFamily: 'inherit' }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#F0EFEB'; e.currentTarget.style.color = '#44403C'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = '#FAFAF9'; e.currentTarget.style.color = '#78716C'; }}>
-                        <RotateCcw size={13} /> New document
-                    </button>
-                </div>
-            )}
+            <button onClick={onReset} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '13px', background: '#FAFAF9', border: '1px solid #E4E2DC', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: '#78716C', cursor: 'pointer', transition: 'all 0.2s', marginBottom: '32px', fontFamily: 'inherit' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#F0EFEB'; e.currentTarget.style.color = '#44403C'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#FAFAF9'; e.currentTarget.style.color = '#78716C'; }}>
+                <RotateCcw size={13} /> New document
+            </button>
 
             {showInboxModal && <InboxModal onClose={() => setShowInboxModal(false)} onSend={handleSendEmail} />}
         </div>
     );
 }
-
 
 

@@ -5,7 +5,6 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { HelpCircle, History as HistoryIcon, ArrowRight } from 'lucide-react';
 import { useTranscribe } from '@/hooks/useTranscribe';
-import { useAuth } from '@/contexts/auth-context';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import ErrorMessage from '@/components/error-message';
@@ -189,18 +188,11 @@ function AppPageInner() {
         sessionId, sessionImages, batchProgress, 
         addFiles, removeFile, transcribe, fetchSession, reset 
     } = useTranscribe();
-    const { user, loading } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
     const docId = searchParams.get('doc');
     const [customPrompt, setCustomPrompt] = useState('');
     const [promptFocused, setPromptFocused] = useState(false);
-
-    useEffect(() => {
-        if (!loading && !user) {
-            router.replace('/login');
-        }
-    }, [loading, user, router]);
 
     useEffect(() => {
         if (docId) fetchSession(docId);

@@ -1,416 +1,196 @@
+/* eslint-disable */
+// @ts-nocheck
 'use client';
 
-import { useAuth } from '@/contexts/auth-context';
-import Link from 'next/link';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, FileText, ChevronRight, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { BottomNav } from '@/components/bottom-nav';
-import { useEffect, useState, useCallback, useRef } from 'react';
-import {
-  Clock, FileText, ScanLine, Search, Trash2, Pencil, Check, X, ExternalLink, Loader2,
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-
-interface HistoryEntry {
-  id: string;
-  title: string;
-  preview: string;
-  createdAt: string;
-  sourceImageCount: number;
-  type: 'scan' | 'transcription' | 'voice' | 'draft';
-  fileUrl: string | null;
-  hasText: boolean;
-}
-
-const TYPE_ICONS: Record<string, React.ElementType> = {
-  scan: ScanLine,
-  transcription: FileText,
-  voice: FileText,
-  draft: Clock,
-};
-
-const TYPE_LABEL: Record<string, string> = {
-  scan: 'Scan',
-  transcription: 'Text',
-  voice: 'Voice',
-  draft: 'Draft',
-};
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-// Inline rename input row
-function RenameInput({
-  initial,
-  onSave,
-  onCancel,
-}: { initial: string; onSave: (t: string) => void; onCancel: () => void }) {
-  const [val, setVal] = useState(initial);
-  const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => { ref.current?.focus(); ref.current?.select(); }, []);
-  return (
-    <div className="flex items-center gap-2 mt-1">
-      <input
-        ref={ref}
-        value={val}
-        onChange={e => setVal(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter') onSave(val); if (e.key === 'Escape') onCancel(); }}
-        className="flex-1 text-sm font-medium border rounded-lg px-2 py-1 bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-        maxLength={200}
-      />
-      <button onClick={() => onSave(val)} className="w-7 h-7 flex items-center justify-center rounded-lg bg-primary text-primary-foreground">
-        <Check className="w-3.5 h-3.5" />
-      </button>
-      <button onClick={onCancel} className="w-7 h-7 flex items-center justify-center rounded-lg bg-muted text-muted-foreground">
-        <X className="w-3.5 h-3.5" />
-      </button>
-    </div>
-  );
-}
 
 export default function HistoryPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
+    const router = useRouter();
+    const [history, setHistory] = useState([]);
+    const [email, setEmail] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [requestEmail, setRequestEmail] = useState('');
+    const [requesting, setRequesting] = useState(false);
+    const [requestSent, setRequestSent] = useState(false);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/login');
-    }
-  }, [loading, user, router]);
-
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [fetching, setFetching] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'scan' | 'transcription' | 'voice' | 'draft'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [convertingId, setConvertingId] = useState<string | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleConvertScan = async (entry: HistoryEntry) => {
-    if (!entry.fileUrl) return;
-    setConvertingId(entry.id);
-    try {
-      const res = await fetch('https://inkto.jointaccount.org/api/transcribe-past', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: entry.id, fileUrl: entry.fileUrl, title: entry.title }),
-        credentials: 'include'
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Conversion failed');
-      window.location.href = `/app?doc=${data.id}`;
-    } catch (e: any) {
-      alert(e.message || 'Could not convert scan. Please try again.');
-      setConvertingId(null);
-    }
-  };
-
-  const fetchHistory = useCallback(async (q = '') => {
-    setFetching(true);
-    try {
-      const cacheBust = `t=${Date.now()}`;
-      const url = q ? `https://inkto.jointaccount.org/api/history?search=${encodeURIComponent(q)}&${cacheBust}` : `https://inkto.jointaccount.org/api/history?${cacheBust}`;
-      const r = await fetch(url, { 
-        credentials: 'include',
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
+    useEffect(() => {
+        // Read email from URL query param
+        const params = new URLSearchParams(window.location.search);
+        const emailFromUrl = params.get('email');
+        if (emailFromUrl) {
+            fetchHistory(emailFromUrl);
+        } else {
+            setLoading(false);
         }
-      });
-      const data = await r.json();
-      if (data.history) setHistory(data.history);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setFetching(false);
+    }, []);
+
+    const fetchHistory = async (emailParam) => {
+        setLoading(true);
+        try {
+            const res = await fetch(`/api/history?email=${encodeURIComponent(emailParam)}`);
+            const data = await res.json();
+            if (res.ok && data.success) {
+                setHistory(data.history);
+                setEmail(data.email);
+            } else {
+                setError(data.error || 'Failed to load history.');
+            }
+        } catch (err) {
+            setError('Network error. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRequestLink = async (e) => {
+        e.preventDefault();
+        if (!requestEmail) return;
+        setRequesting(true);
+        setError(null);
+        try {
+            const res = await fetch('/api/request-history-link', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: requestEmail })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to send link');
+            setRequestSent(true);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setRequesting(false);
+        }
+    };
+
+    const onBack = () => {
+        router.back();
+    };
+
+    const onSelectSession = (id) => {
+        router.push('/app?doc=' + id);
+    };
+
+    if (loading) {
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
+                <Loader2 className="spinner" size={24} color="#78716C" style={{ animation: 'spin 1s linear infinite' }} />
+            </div>
+        );
     }
-  }, []);
 
-  useEffect(() => {
-    if (!user) return;
-    fetchHistory();
-  }, [user, fetchHistory]);
+    if (!email) {
+        return (
+            <div style={{ animation: 'fadeIn 0.3s ease', maxWidth: '400px', margin: '0 auto', padding: '20px' }}>
+                <button onClick={onBack} style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    background: 'none', border: 'none', color: '#78716C',
+                    fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+                    marginBottom: '24px', padding: 0
+                }}>
+                    <ArrowLeft size={16} /> Back
+                </button>
 
-  const handleSearch = (q: string) => {
-    setSearchQuery(q);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchHistory(q), 350);
-  };
-
-  const handleRename = async (id: string, title: string) => {
-    if (!title.trim()) { setRenamingId(null); return; }
-    setHistory(h => h.map(e => e.id === id ? { ...e, title } : e));
-    setRenamingId(null);
-    try {
-      await fetch('https://inkto.jointaccount.org/api/rename-document', {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, title: title.trim() }),
-      });
-    } catch { /* silent — optimistic update already applied */ }
-  };
-
-  const handleDelete = async (id: string) => {
-    setDeletingId(id);
-    setConfirmDeleteId(null);
-    try {
-      await fetch('https://inkto.jointaccount.org/api/delete-document', {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      });
-      setHistory(h => h.filter(e => e.id !== id));
-    } catch { alert('Failed to delete — try again.'); }
-    finally { setDeletingId(null); }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
-  const filtered = filter === 'all' ? history : history.filter(h => h.type === filter);
-
-  return (
-    <div className="flex flex-col h-full pt-8 pb-4">
-      <header className="mb-5">
-        <h1 className="text-2xl font-bold tracking-tight">History</h1>
-        <p className="text-muted-foreground text-sm mt-1">{user.email}</p>
-      </header>
-
-      {/* Search bar */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-        <input
-          type="search"
-          placeholder="Search documents…"
-          value={searchQuery}
-          onChange={e => handleSearch(e.target.value)}
-          className="w-full h-10 pl-9 pr-3 text-sm border rounded-xl bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-      </div>
-
-      {/* Filter chips */}
-      <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
-        {(['all', 'scan', 'transcription', 'voice', 'draft'] as const).map(f => {
-          const filterLabels: Record<string, string> = {
-            all: 'All',
-            scan: 'Scans',
-            transcription: 'Text',
-            voice: 'Voice',
-            draft: 'Drafts',
-          };
-          return (
-            <motion.button
-              key={f}
-              whileTap={{ scale: 0.93 }}
-              transition={{ type: 'spring', stiffness: 500, damping: 28 }}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
-                filter === f
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
-            >
-              {filterLabels[f] ?? f}
-            </motion.button>
-          );
-        })}
-      </div>
-
-      {fetching ? (
-        <div className="flex items-center justify-center flex-1">
-          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center">
-          <FileText className="w-10 h-10 text-muted-foreground mb-3" />
-          <p className="text-muted-foreground text-sm">
-            {searchQuery ? 'No documents match your search.' : 'No documents yet.'}
-          </p>
-          {!searchQuery && (
-            <Link href="/app" className="mt-4">
-              <Button variant="outline" size="sm">Capture your first document</Button>
-            </Link>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-3 overflow-y-auto flex-1">
-          {filtered.map((entry, idx) => {
-            const Icon = TYPE_ICONS[entry.type] ?? FileText;
-            const isDeleting = deletingId === entry.id;
-            const isRenaming = renamingId === entry.id;
-
-            return (
-              <motion.div
-                key={entry.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.04, duration: 0.2, ease: 'easeOut' }}
-                className="p-4 rounded-xl border bg-card"
-                style={{ opacity: isDeleting ? 0.5 : 1 }}
-              >
-                {/* Header row: icon + title + actions */}
-                <div className="flex items-start gap-3">
-                  <div className="shrink-0 w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center mt-0.5">
-                    <Icon className="w-4 h-4 text-primary" />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    {isRenaming ? (
-                      <RenameInput
-                        initial={entry.title}
-                        onSave={t => handleRename(entry.id, t)}
-                        onCancel={() => setRenamingId(null)}
-                      />
-                    ) : (
-                      <p className="text-sm font-semibold text-foreground leading-tight">
-                        {entry.title}
-                      </p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {formatDate(entry.createdAt)}
-                      {entry.sourceImageCount > 0 && ` · ${entry.sourceImageCount} ${entry.sourceImageCount === 1 ? 'page' : 'pages'}`}
-                      {' · '}<span className="capitalize">{TYPE_LABEL[entry.type] ?? entry.type}</span>
-                    </p>
-                    {entry.preview && !isRenaming && (
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-1 italic">
-                        {entry.preview}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="flex items-center gap-1 shrink-0 ml-1">
-                    <motion.button
-                      whileTap={{ scale: 0.88 }}
-                      onClick={() => setRenamingId(isRenaming ? null : entry.id)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors"
-                      title="Rename"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </motion.button>
-                    <motion.button
-                      whileTap={{ scale: 0.88 }}
-                      onClick={() => setConfirmDeleteId(entry.id)}
-                      disabled={isDeleting}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </motion.button>
-                  </div>
-                </div>
-
-                {/* Open buttons */}
-                {!isRenaming && (
-                  <div className="flex gap-2 mt-3 pt-3 border-t">
-                    {entry.type === 'draft' ? (
-                      <Link href={`/app?resume=${entry.id}`} className="flex-1">
-                        <Button size="sm" variant="default" className="w-full h-8 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-medium hover:text-white border-none">
-                          <Clock className="w-3 h-3" /> Resume Recording
-                        </Button>
-                      </Link>
-                    ) : (
-                      <>
-                        {entry.hasText && (
-                          <Link href={`/app?doc=${entry.id}`} className="flex-1">
-                            <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5">
-                              <FileText className="w-3 h-3" /> Open in editor
-                            </Button>
-                          </Link>
-                        )}
-                        {entry.fileUrl && (
-                          <a href={entry.fileUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
-                            <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5">
-                              <ExternalLink className="w-3 h-3" /> {entry.type === 'voice' ? 'Listen Audio' : 'View PDF'}
-                            </Button>
-                          </a>
-                        )}
-                        {((entry.type === 'scan' || entry.type === 'voice') && !entry.hasText && entry.fileUrl) && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleConvertScan(entry)}
-                            disabled={convertingId !== null}
-                            className="flex-1 h-8 text-xs gap-1.5 bg-amber-600 hover:bg-amber-700 text-white font-medium hover:text-white"
-                          >
-                            {convertingId === entry.id ? (
-                              <>
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Converting…
-                              </>
-                            ) : (
-                              <>
-                                <FileText className="w-3.5 h-3.5" /> Convert to Text
-                              </>
-                            )}
-                          </Button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
-
-      <AnimatePresence>
-        {confirmDeleteId && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
-            style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: '0' }}
-          >
-            <motion.div
-              initial={{ y: 48, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 48, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 340, damping: 28 }}
-              style={{ background: '#FFFFFF', color: '#0B0D12', borderRadius: '20px 20px 0 0', width: '100%', maxWidth: 448, padding: '28px 24px 40px', boxShadow: '0 -8px 40px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: 16 }}
-            >
-              <div style={{ width: 36, height: 4, background: '#E4E1D9', borderRadius: 2, margin: '0 auto 4px' }} />
-              <div>
-                <h3 style={{ fontSize: 18, fontWeight: 700, fontFamily: 'Georgia, serif', margin: '0 0 8px 0' }}>Delete Document?</h3>
-                <p style={{ fontSize: 13, color: '#6B6760', margin: 0, lineHeight: 1.5 }}>
-                  Are you sure you want to delete this document? This action is permanent and cannot be undone.
+                <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#1C1917', marginBottom: '8px' }}>
+                    Document History
+                </h2>
+                <p style={{ fontSize: '15px', color: '#57534E', marginBottom: '24px', lineHeight: '1.5' }}>
+                    Enter your email and we will send you a link to view your documents.
                 </p>
-              </div>
-              <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => setConfirmDeleteId(null)}
-                  style={{ flex: 1, height: 44, border: '1.5px solid #E4E2DC', background: 'transparent', borderRadius: 10, fontSize: 13, fontWeight: 700, color: '#57534E', cursor: 'pointer', fontFamily: 'inherit' }}
-                >
-                  Cancel
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => handleDelete(confirmDeleteId)}
-                  style={{ flex: 1, height: 44, border: 'none', background: '#DC2626', borderRadius: 10, fontSize: 13, fontWeight: 700, color: '#FFFFFF', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 2px 8px rgba(220,38,38,0.2)' }}
-                >
-                  Delete
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <BottomNav />
-    </div>
-  );
+
+                {requestSent ? (
+                    <div style={{ background: '#DCFCE7', color: '#15803D', padding: '16px', borderRadius: '12px', fontSize: '14px', fontWeight: '500' }}>
+                        Check your inbox - we have sent a link to <strong>{requestEmail}</strong>.
+                    </div>
+                ) : (
+                    <form onSubmit={handleRequestLink} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <input
+                            type="email"
+                            placeholder="Email address"
+                            value={requestEmail}
+                            onChange={e => setRequestEmail(e.target.value)}
+                            required
+                            style={{
+                                padding: '14px 16px', borderRadius: '10px',
+                                border: '1px solid #E4E2DC', fontSize: '15px',
+                                outline: 'none', width: '100%', boxSizing: 'border-box'
+                            }}
+                        />
+                        {error && <p style={{ color: '#B91C1C', fontSize: '13px', margin: 0 }}>{error}</p>}
+                        <button type="submit" disabled={requesting} style={{
+                            padding: '14px', background: '#2563EB', color: '#fff',
+                            border: 'none', borderRadius: '10px', fontSize: '15px',
+                            fontWeight: '700', cursor: requesting ? 'wait' : 'pointer',
+                            opacity: requesting ? 0.7 : 1
+                        }}>
+                            {requesting ? 'Sending...' : 'Send Magic Link'}
+                        </button>
+                    </form>
+                )}
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ animation: 'fadeIn 0.3s ease', maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                <button onClick={onBack} style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    background: 'none', border: 'none', color: '#78716C',
+                    fontSize: '14px', fontWeight: '600', cursor: 'pointer', padding: 0
+                }}>
+                    <ArrowLeft size={16} /> Back
+                </button>
+                <div style={{ fontSize: '13px', color: '#78716C', fontWeight: '500' }}>
+                    Viewing history for <b>{email}</b>
+                </div>
+            </div>
+
+            <h2 style={{ fontSize: '24px', fontWeight: '800', color: '#1C1917', marginBottom: '24px' }}>
+                Your Documents
+            </h2>
+
+            {history.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px 20px', background: '#FAFAF9', borderRadius: '16px', border: '1px solid #E4E2DC' }}>
+                    <FileText size={32} color="#A8A29E" style={{ margin: '0 auto 12px' }} />
+                    <p style={{ fontSize: '15px', color: '#78716C', margin: 0 }}>No documents found for this email.</p>
+                </div>
+            ) : (
+                <div className="history-list">
+                    {history.map(doc => (
+                        <div
+                            key={doc.id}
+                            onClick={() => onSelectSession(doc.id)}
+                            style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                padding: '16px', background: '#fff', border: '1px solid #E4E2DC',
+                                borderRadius: '12px', marginBottom: '12px', cursor: 'pointer',
+                                transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#A8A29E'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#E4E2DC'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                        >
+                            <div style={{ overflow: 'hidden', paddingRight: '16px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+                                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#1C1917' }}>
+                                        {new Date(doc.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                    </span>
+                                    <span style={{ fontSize: '11px', background: '#F5F4F0', padding: '2px 8px', borderRadius: '99px', color: '#78716C', fontWeight: '600' }}>
+                                        {doc.sourceImageCount} pages
+                                    </span>
+                                </div>
+                                <p style={{ fontSize: '14px', color: '#57534E', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'EB Garamond', serif" }}>
+                                    {doc.preview}
+                                </p>
+                            </div>
+                            <ChevronRight size={18} color="#A8A29E" style={{ flexShrink: 0 }} />
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
 }

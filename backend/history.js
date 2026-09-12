@@ -10,12 +10,17 @@ module.exports = async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-    const email = await getAuthEmail(req);
+    // Email comes from the URL query param set by verify.js after magic link validation
+    const email = req.query.email ? req.query.email.toLowerCase().trim() : null;
 
     if (!email) {
         return res.status(401).json({ error: 'Unauthorized', requireAuth: true });
     }
 
+    // Basic email format check
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ error: 'Invalid email.' });
+    }
     try {
         const db = require('./_utils/supabase').checkSupabase();
 

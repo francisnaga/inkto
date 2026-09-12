@@ -10,7 +10,6 @@ const NAV = [
   { name: 'Home',      href: '/app',       Icon: Home },
   { name: 'Templates', href: '/templates', Icon: FileText },
   { name: 'History',   href: '/history',   Icon: Clock },
-  { name: 'Account',   href: '/account',   Icon: User },
 ];
 
 /* Design tokens (inline — kept in sync with globals.css) */
@@ -32,7 +31,7 @@ export function BottomNav() {
   }, [pathname]);
 
   // Strictly show ONLY on the 4 primary app tabs
-  const allowedTabs = ['/app', '/templates', '/history', '/account'];
+  const allowedTabs = ['/app', '/templates', '/history'];
   const shouldShow = allowedTabs.some(tab => pathname === tab || (tab !== '/app' && pathname?.startsWith(tab)));
   if (!shouldShow) return null;
 

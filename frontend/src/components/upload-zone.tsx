@@ -5,14 +5,12 @@
 import React, { useRef, useState } from 'react';
 import { Camera, Upload, FileText, AlertCircle } from 'lucide-react';
 import { convertPdfToImages } from '@/lib/pdfHelper';
-import { ScannerContainer } from '@/components/scanner/ScannerContainer';
 
 export default function UploadZone({ onFilesSelected }: { onFilesSelected: (files: File[]) => void }) {
     const [isDragActive, setIsDragActive] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [processingMsg, setProcessingMsg] = useState('');
     const [rejectedFiles, setRejectedFiles] = useState<string[]>([]);
-    const [showScanner, setShowScanner] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -59,18 +57,6 @@ export default function UploadZone({ onFilesSelected }: { onFilesSelected: (file
     const handleDrop      = (e: React.DragEvent) => { e.preventDefault(); setIsDragActive(false); if (e.dataTransfer.files?.length) processFiles(Array.from(e.dataTransfer.files)); };
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => { if (e.target.files?.length) processFiles(Array.from(e.target.files)); e.target.value = ''; };
 
-    if (showScanner) {
-        return (
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: '#000' }}>
-                <ScannerContainer 
-                    onScanComplete={(pages) => { setShowScanner(false); onFilesSelected(pages); }}
-                    onConvertToText={(pages) => { setShowScanner(false); onFilesSelected(pages); }}
-                    onClose={() => setShowScanner(false)} 
-                />
-            </div>
-        );
-    }
-
     return (
         <div style={{ animation: 'fadeIn 0.35s ease' }}>
 
@@ -112,47 +98,55 @@ export default function UploadZone({ onFilesSelected }: { onFilesSelected: (file
                     textAlign: 'center',
                     transition: 'all 0.2s ease',
                     cursor: isProcessing ? 'default' : 'pointer',
-                    position: 'relative',
-                    overflow: 'hidden'
+                    transform: isDragActive ? 'scale(1.01)' : 'scale(1)',
                 }}
             >
                 {isProcessing ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '20px 0' }}>
-                        <div style={{ width: '40px', height: '40px', border: '3px solid #E5E7EB', borderTopColor: '#3B82F6', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <span style={{ fontSize: '15px', fontWeight: 700, color: '#1F2937' }}>Processing document</span>
-                            <span style={{ fontSize: '13px', color: '#6B7280' }}>{processingMsg}</span>
-                        </div>
+                    <div>
+                        <div style={{
+                            width: '44px', height: '44px', borderRadius: '50%',
+                            border: '3px solid #E4E2DC', borderTopColor: '#1D4ED8',
+                            animation: 'spin 0.8s linear infinite',
+                            margin: '0 auto 16px'
+                        }} />
+                        <p style={{ fontSize: '14px', color: '#78716C', fontWeight: 500, margin: 0 }}>
+                            {processingMsg}
+                        </p>
                     </div>
                 ) : (
                     <>
                         <div style={{
-                            width: '56px', height: '56px', background: '#F3F4F6',
-                            borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            margin: '0 auto 20px', color: '#6B7280'
+                            width: '56px', height: '56px', margin: '0 auto 18px',
+                            background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)',
+                            borderRadius: '14px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            border: '1px solid #BFDBFE'
                         }}>
-                            <FileText size={28} />
+                            <FileText size={24} color="#1D4ED8" />
                         </div>
-                        <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#111827', margin: '0 0 10px', letterSpacing: '-0.3px' }}>
-                            Choose a file or drag & drop it here
-                        </h3>
-                        <p style={{ fontSize: '14px', color: '#6B7280', margin: '0 0 24px', lineHeight: 1.5, maxWidth: '320px', marginLeft: 'auto', marginRight: 'auto' }}>
-                            Supports <strong style={{ color: '#4B5563' }}>JPEG, PNG, and PDF</strong> files up to 25MB.
+
+                        <p style={{ fontSize: '16px', fontWeight: 700, color: '#1C1917', marginBottom: '6px' }}>
+                            {isDragActive ? 'Release to upload' : 'Drop files or tap to upload'}
+                        </p>
+                        <p style={{ fontSize: '13px', color: '#A8A29E', marginBottom: '28px' }}>
+                            Photos, scanned PDFs · JPG, PNG, PDF, HEIC · up to 25 MB
                         </p>
 
-                        <div style={{ display: 'flex', gap: '12px', marginTop: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                            <button
-                                disabled={isProcessing}
-                                onClick={(e) => { e.stopPropagation(); setShowScanner(true); }}
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                <button
+                                onClick={e => { 
+                                    e.stopPropagation(); 
+                                    cameraInputRef.current?.click(); 
+                                }}
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: '9px',
                                     padding: '12px 24px',
-                                    background: '#1D4ED8', color: '#fff',
+                                    background: '#1C1917', color: '#fff',
                                     border: 'none', borderRadius: '10px',
                                     fontSize: '14px', fontWeight: 700,
                                     cursor: 'pointer',
-                                    transition: 'transform 0.15s, box-shadow 0.15s',
                                     boxShadow: '0 2px 8px rgba(0,0,0,0.16)',
+                                    transition: 'transform 0.15s, box-shadow 0.15s',
                                     minWidth: '148px', justifyContent: 'center'
                                 }}
                                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 18px rgba(0,0,0,0.22)'; }}

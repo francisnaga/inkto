@@ -206,15 +206,13 @@ module.exports = async function handler(req, res) {
     const cookies = parseCookie(req.headers.cookie || '');
     const userEmail = await require('./_utils/auth').getAuthEmail(req);
 
-    if (!userEmail) {
-        return res.status(401).json({ error: 'Please sign in to convert documents.', requireAuth: true });
-    }
-
+    // If user is not signed in, they will be rate-limited by IP instead.
+    
     // ---- Free-tier daily limit: 5 conversions/day (server-side per Rule 6) ----
     // This is only enforced for non-finalize calls (actual AI calls, not the save step)
     const isFinalize = req.headers['content-type']?.includes('application/json') && req.body?.action === 'finalize';
 
-    if (!isFinalize) {
+    if (!isFinalize && userEmail) {
         try {
             const db = require('./_utils/supabase').checkSupabase();
 
@@ -274,21 +272,23 @@ module.exports = async function handler(req, res) {
             const firstLine = lines.length > 0 ? lines[0].replace(/^--- Page \d+ ---\s*/i, '').substring(0, 80) : 'Legal Transcription';
             const autoTitle = firstLine.trim() || 'Legal Transcription';
 
-            const { data, error: dbErr } = await db.from('documents').upsert([{
-                id: sessionId,
-                email: userEmail.toLowerCase(),
-                transcript_text: text,
-                source_image_count: Number(totalFilesCount) || 1,
-                title: autoTitle,
-                type: 'transcription'
-            }], { onConflict: 'id' });
+            if (userEmail) {
+                const { data, error: dbErr } = await db.from('documents').upsert([{
+                    id: sessionId,
+                    email: userEmail.toLowerCase(),
+                    transcript_text: text,
+                    source_image_count: Number(totalFilesCount) || 1,
+                    title: autoTitle,
+                    type: 'transcription'
+                }], { onConflict: 'id' });
 
-            if (dbErr) {
-                console.error('Supabase finalize insert error:', dbErr.message);
-                return res.status(500).json({ error: dbErr.message });
+                if (dbErr) {
+                    console.error('Supabase finalize insert error:', dbErr.message);
+                    return res.status(500).json({ error: dbErr.message });
+                }
             }
 
-            return res.json({ success: true, sessionId, message: 'Document saved to history' });
+            return res.json({ success: true, sessionId, message: 'Document saved' });
         } catch (err) {
             console.error('Finalize error:', err.message);
             return res.status(500).json({ error: err.message });

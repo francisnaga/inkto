@@ -162,7 +162,7 @@ const FAQS = [
 import { useRouter } from 'next/navigation';
 export default function LandingPage() {
     const router = useRouter();
-    const onGetStarted = () => router.push('/app');
+    const onGetStarted = () => { window.location.href = '/app'; };
     const [ctaHover, setCtaHover] = useState(false);
 
     return (

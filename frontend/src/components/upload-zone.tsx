@@ -137,7 +137,7 @@ export default function UploadZone({ onFilesSelected }: { onFilesSelected: (file
                                 <button
                                 onClick={e => { 
                                     e.stopPropagation(); 
-                                    alert("Please download the mobile app to use the native document scanner."); 
+                                    cameraInputRef.current?.click(); 
                                 }}
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: '9px',

@@ -159,10 +159,8 @@ const FAQS = [
 ];
 
 /* Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Main component Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 export default function LandingPage() {
-    const router = useRouter();
-    const onGetStarted = () => router.push('/app');
     const [ctaHover, setCtaHover] = useState(false);
 
     return (
@@ -256,10 +254,10 @@ export default function LandingPage() {
                     <Logo size={26} />
                     <span style={{ fontWeight: 800, fontSize: '17px', letterSpacing: '-0.4px', color: T.ink }}>Inkto</span>
                 </div>
-                <button className="lp-btn-primary" onClick={onGetStarted}
-                    style={{ padding: '8px 18px', fontSize: '13px', borderRadius: '9px' }}>
+                <Link href="/app" className="lp-btn-primary"
+                    style={{ padding: '8px 18px', fontSize: '13px', borderRadius: '9px', textDecoration: 'none' }}>
                     Try it free
-                </button>
+                </Link>
             </nav>
 
             {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Hero Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */}
@@ -343,15 +341,16 @@ export default function LandingPage() {
                 </div>
 
                 {/* CTA */}
-                <button className="lp-btn-primary" onClick={onGetStarted}
+                <Link href="/app" className="lp-btn-primary"
                     style={{
                         boxShadow: ctaHover ? '0 14px 36px rgba(0,0,0,0.28)' : '0 6px 20px rgba(0,0,0,0.18)',
+                        textDecoration: 'none'
                     }}
                     onMouseEnter={() => setCtaHover(true)}
                     onMouseLeave={() => setCtaHover(false)}
                 >
                     Start transcribing <Ic.Arrow s={16} c="#fff" />
-                </button>
+                </Link>
                 <p style={{ marginTop: '14px', fontSize: '12px', color: T.ink4, fontWeight: 500 }}>
                     Free. No sign up required. Works directly in your browser.
                 </p>
@@ -543,9 +542,9 @@ export default function LandingPage() {
                 <p style={{ color: T.ink3, marginBottom: '32px', fontSize: '15px', maxWidth: '340px', margin: '0 auto 32px' }}>
                     No sign up required. Just upload a photo and get clean text in seconds.
                 </p>
-                <button className="lp-btn-accent" onClick={onGetStarted}>
+                <Link href="/app" className="lp-btn-accent" style={{ textDecoration: 'none' }}>
                     Start transcribing <Ic.Arrow s={16} c="#fff" />
-                </button>
+                </Link>
             </section>
 
             {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ FAQ Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */}

@@ -1,8 +1,4 @@
-/* eslint-disable */
-// @ts-nocheck
-'use client';
-
-import React from 'react';
+﻿import React from 'react';
 import { AlertTriangle, Coffee } from 'lucide-react';
 
 const IconPaystack = ({ size = 16 }) => (
@@ -18,13 +14,7 @@ const IconPayPal = ({ size = 16 }) => (
     </svg>
 );
 
-interface ErrorMessageProps {
-    message: string | null;
-    onRetry: () => void;
-    onCancel: () => void;
-}
-
-export default function ErrorMessage({ message, onRetry, onCancel }: ErrorMessageProps) {
+export default function ErrorMessage({ message, onRetry, onCancel }) {
     if (!message) return null;
     
     return (
@@ -49,7 +39,7 @@ export default function ErrorMessage({ message, onRetry, onCancel }: ErrorMessag
                 <AlertTriangle size={24} />
             </div>
             <div>
-                <div style={{ fontWeight: 600, fontSize: '16px', color: '#111827', marginBottom: '4px' }}>
+                <div style={{ fontWeight: '600', fontSize: '16px', color: '#111827', marginBottom: '4px' }}>
                     Transcription Failed
                 </div>
                 <div style={{ fontSize: '14px', color: '#6B7280', maxWidth: '300px', margin: '0 auto' }}>
@@ -65,7 +55,7 @@ export default function ErrorMessage({ message, onRetry, onCancel }: ErrorMessag
                         border: '1px solid #E5E7EB',
                         borderRadius: '10px',
                         fontSize: '14px',
-                        fontWeight: 600,
+                        fontWeight: '600',
                         color: '#6B7280',
                         cursor: 'pointer'
                     }}
@@ -80,13 +70,13 @@ export default function ErrorMessage({ message, onRetry, onCancel }: ErrorMessag
                         border: 'none',
                         borderRadius: '10px',
                         fontSize: '14px',
-                        fontWeight: 600,
+                        fontWeight: '600',
                         color: '#fff',
                         cursor: 'pointer',
                         transition: 'opacity 0.2s'
                     }}
-                    onMouseOver={(e) => (e.target as HTMLButtonElement).style.opacity = '0.9'}
-                    onMouseOut={(e) => (e.target as HTMLButtonElement).style.opacity = '1'}
+                    onMouseOver={(e) => e.target.style.opacity = '0.9'}
+                    onMouseOut={(e) => e.target.style.opacity = '1'}
                 >
                     Try Again
                 </button>
@@ -103,7 +93,7 @@ export default function ErrorMessage({ message, onRetry, onCancel }: ErrorMessag
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '8px' }}>
                     <Coffee size={16} color="#475569" />
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         Help us scale
                     </span>
                 </div>
@@ -118,7 +108,7 @@ export default function ErrorMessage({ message, onRetry, onCancel }: ErrorMessag
                             display: 'flex', alignItems: 'center', gap: '6px',
                             padding: '8px 14px', borderRadius: '8px',
                             background: '#09A5DB', color: '#fff',
-                            textDecoration: 'none', fontSize: '13px', fontWeight: 600,
+                            textDecoration: 'none', fontSize: '13px', fontWeight: '600',
                             transition: 'opacity 0.2s', boxShadow: '0 2px 8px rgba(9, 165, 219, 0.2)'
                         }}
                         onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
@@ -133,7 +123,7 @@ export default function ErrorMessage({ message, onRetry, onCancel }: ErrorMessag
                             display: 'flex', alignItems: 'center', gap: '6px',
                             padding: '8px 14px', borderRadius: '8px',
                             background: '#003087', color: '#fff',
-                            textDecoration: 'none', fontSize: '13px', fontWeight: 600,
+                            textDecoration: 'none', fontSize: '13px', fontWeight: '600',
                             transition: 'opacity 0.2s', boxShadow: '0 2px 8px rgba(0, 48, 135, 0.2)'
                         }}
                         onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}

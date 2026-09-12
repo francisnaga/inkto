@@ -1,10 +1,6 @@
-/* eslint-disable */
-// @ts-nocheck
-'use client';
+﻿import React, { useState } from 'react';
 
-import React, { useState } from 'react';
-
-/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Design tokens (mirror index.css :root) Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */
+/* ÔöÇÔöÇÔöÇ Design tokens (mirror index.css :root) ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
 const T = {
     bg:      '#F5F4F0',
     surface: '#FFFFFF',
@@ -18,21 +14,21 @@ const T = {
     slate:   '#0F172A',
 };
 
-/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Inline SVG icons Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */
+/* ÔöÇÔöÇÔöÇ Inline SVG icons ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
 const Ic = {
-    Arrow:   (p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>,
-    Check:   (p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>,
-    Camera:  (p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>,
-    File:    (p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>,
-    Mail:    (p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>,
-    Zap:     (p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
-    Shield:  (p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
-    Clock:   (p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
-    Chevron: (p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'#94A3B8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,transform:p.open?'rotate(180deg)':'rotate(0deg)',transition:'transform 0.25s ease'}}><path d="m6 9 6 6 6-6"/></svg>,
-    Github:  (p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>,
-    Twitter: (p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>,
-    Paystack:(p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="currentColor"><path d="M4 17h6v4H4v-4zM14 17h6v4h-6v-4zM4 10h6v4H4v-4zM14 10h6v4h-6v-4zM4 3h6v4H4V3z"/></svg>,
-    PayPal:  (p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="currentColor"><path d="M7.077 16.26l1.3-8.24c.1-.64.65-1.12 1.3-1.12h4.55c2.4 0 3.9 1.15 3.9 3.4 0 2.44-1.5 4.38-4 4.38h-2.02c-.52 0-.96.38-1.04.9l-.6 3.75c-.04.25-.26.43-.51.43H7.43c-.35 0-.6-.33-.53-.66l.17-.84z"/><path fillOpacity="0.5" d="M10.77 8.26l-1.3 8.24c-.1.64-.65 1.12-1.3 1.12H5.63c-.35 0-.6.33-.53.66l1.7-10.84c.1-.64.65-1.12 1.3-1.12h4.55c1.47 0 2.57.43 3.24 1.16-.48-.7-1.33-1.16-2.52-1.16H8.82c-.65 0-1.2.48-1.3 1.12L6.22 15.26h2.52c.52 0 .96-.38 1.04-.9l.99-6.1z"/></svg>,
+    Arrow:   (p) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>,
+    Check:   (p) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>,
+    Camera:  (p) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>,
+    File:    (p) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>,
+    Mail:    (p) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>,
+    Zap:     (p) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+    Shield:  (p) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+    Clock:   (p) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+    Chevron: (p) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'#94A3B8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0,transform:p.open?'rotate(180deg)':'rotate(0deg)',transition:'transform 0.25s ease'}}><path d="m6 9 6 6 6-6"/></svg>,
+    Github:  (p) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>,
+    Twitter: (p) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>,
+    Paystack:(p) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="currentColor"><path d="M4 17h6v4H4v-4zM14 17h6v4h-6v-4zM4 10h6v4H4v-4zM14 10h6v4h-6v-4zM4 3h6v4H4V3z"/></svg>,
+    PayPal:  (p) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="currentColor"><path d="M7.077 16.26l1.3-8.24c.1-.64.65-1.12 1.3-1.12h4.55c2.4 0 3.9 1.15 3.9 3.4 0 2.44-1.5 4.38-4 4.38h-2.02c-.52 0-.96.38-1.04.9l-.6 3.75c-.04.25-.26.43-.51.43H7.43c-.35 0-.6-.33-.53-.66l.17-.84z"/><path fillOpacity="0.5" d="M10.77 8.26l-1.3 8.24c-.1.64-.65 1.12-1.3 1.12H5.63c-.35 0-.6.33-.53.66l1.7-10.84c.1-.64.65-1.12 1.3-1.12h4.55c1.47 0 2.57.43 3.24 1.16-.48-.7-1.33-1.16-2.52-1.16H8.82c-.65 0-1.2.48-1.3 1.12L6.22 15.26h2.52c.52 0 .96-.38 1.04-.9l.99-6.1z"/></svg>,
 };
 
 /* Logo SVG */
@@ -48,8 +44,8 @@ const Logo = ({ size = 24 }) => (
     </svg>
 );
 
-/* Image with skeleton placeholder Ã”Ã‡Ã¶ prevents layout shift while loading */
-function Img({ src, alt, style }: any) {
+/* Image with skeleton placeholder ÔÇö prevents layout shift while loading */
+function Img({ src, alt, style }) {
     const [loaded, setLoaded] = useState(false);
     return (
         <div style={{ position: 'relative', ...style }}>
@@ -81,7 +77,7 @@ function Img({ src, alt, style }: any) {
 }
 
 /* Pill label */
-function Pill({ children, dark = false }: any) {
+function Pill({ children, dark }) {
     return (
         <span style={{
             display: 'inline-flex', alignItems: 'center',
@@ -97,7 +93,7 @@ function Pill({ children, dark = false }: any) {
 }
 
 /* FAQ accordion item */
-function FAQItem({ q, a }: any) {
+function FAQItem({ q, a }) {
     const [open, setOpen] = useState(false);
     return (
         <div style={{
@@ -126,8 +122,8 @@ function FAQItem({ q, a }: any) {
 }
 
 /* Section wrapper for consistent vertical rhythm */
-const Section = ({ children, style, id }: any) => (
-    <section id={id} style={{
+const Section = ({ children, style }) => (
+    <section style={{
         maxWidth: '900px', margin: '0 auto',
         padding: '0 clamp(20px, 5vw, 48px)',
         ...style,
@@ -146,7 +142,7 @@ const FEATURES = [
 const STEPS = [
     { n: '1', Icon: Ic.Camera, title: 'Photograph the document', desc: 'Take a photo on your phone or upload a scanned PDF. Handles up to 30 pages at once. Optimised for affidavits, sworn statements, and handwritten legal filings.' },
     { n: '2', Icon: Ic.Zap, title: 'Read and transcribe', desc: 'The system reads the handwriting, strips crossed-out text, inserts caret additions correctly, and formats everything cleanly. A second AI pass verifies numbers and proper nouns.' },
-    { n: '3', Icon: Ic.File, title: 'Copy, download, or email', desc: 'Copy the text directly, download a Word document, or email the transcript. History is saved to your email and available indefinitely Ã”Ã‡Ã¶ log in with that email at any time.' },
+    { n: '3', Icon: Ic.File, title: 'Copy, download, or email', desc: 'Copy the text directly, download a Word document, or email the transcript. History is saved to your email and available indefinitely ÔÇö log in with that email at any time.' },
 ];
 
 const FAQS = [
@@ -158,17 +154,14 @@ const FAQS = [
     { q: 'Is my document data private?', a: 'Yes. Unsaved documents are automatically deleted after 7 days for your privacy. Documents you explicitly save or email are kept securely in your history until you delete them. No account is required, and your documents are never used for training models.' },
 ];
 
-/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Main component Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */
-import { useRouter } from 'next/navigation';
-export default function LandingPage() {
-    const router = useRouter();
-    const onGetStarted = () => router.push('/app');
+/* ÔöÇÔöÇÔöÇ Main component ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */
+export default function LandingPage({ onGetStarted }) {
     const [ctaHover, setCtaHover] = useState(false);
 
     return (
         <div style={{ minHeight: '100vh', background: T.bg, fontFamily: "'Inter', -apple-system, sans-serif", color: T.ink }}>
 
-            {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Global page-level styles (only layout & animations, no font imports) */}
+            {/* ÔöÇÔöÇ Global page-level styles (only layout & animations, no font imports) */}
             <style>{`
                 .lp-hero-grid {
                     display: grid;
@@ -243,7 +236,7 @@ export default function LandingPage() {
                 .lp-footer-link:hover { color: ${T.ink3}; }
             `}</style>
 
-            {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Navbar Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */}
+            {/* ÔöÇÔöÇ Navbar ÔöÇÔöÇ */}
             <nav style={{
                 position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -262,7 +255,7 @@ export default function LandingPage() {
                 </button>
             </nav>
 
-            {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Hero Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */}
+            {/* ÔöÇÔöÇ Hero ÔöÇÔöÇ */}
             <section style={{
                 maxWidth: '960px', margin: '0 auto',
                 padding: 'clamp(120px, 14vw, 144px) clamp(20px, 5vw, 48px) 64px',
@@ -292,7 +285,7 @@ export default function LandingPage() {
                     Snap a photo of any handwritten document and Inkto converts it to clean, editable text.
                 </p>
 
-                {/* Before Ã”Ã¥Ã† After demo */}
+                {/* Before ÔåÆ After demo */}
                 <div className="lp-hero-grid">
                     {/* BEFORE */}
                     <div style={{
@@ -357,7 +350,7 @@ export default function LandingPage() {
                 </p>
             </section>
 
-            {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Features Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */}
+            {/* ÔöÇÔöÇ Features ÔöÇÔöÇ */}
             <Section style={{ marginBottom: '80px' }}>
                 {/* Two demo cards */}
                 <div className="lp-feat-grid">
@@ -451,7 +444,7 @@ export default function LandingPage() {
                 </div>
             </Section>
 
-            {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ How it works Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */}
+            {/* ÔöÇÔöÇ How it works ÔöÇÔöÇ */}
             <Section style={{ marginBottom: '96px' }}>
                 <div style={{ textAlign: 'center', marginBottom: '44px' }}>
                     <h2 style={{
@@ -485,7 +478,7 @@ export default function LandingPage() {
                 </div>
             </Section>
 
-            {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Cross-device callout Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */}
+            {/* ÔöÇÔöÇ Cross-device callout ÔöÇÔöÇ */}
             <Section style={{ marginBottom: '96px' }}>
                 <div style={{
                     background: T.slate, borderRadius: '20px',
@@ -493,7 +486,7 @@ export default function LandingPage() {
                     color: '#fff',
                 }}>
                     <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
-                        {['Â­Æ’Ã´Â¦ Scan on phone', 'Â­Æ’Ã†+ Edit on laptop', 'Â­Æ’Ã´Ã© Save to history'].map(t => (
+                        {['­ƒô▒ Scan on phone', '­ƒÆ╗ Edit on laptop', '­ƒôé Save to history'].map(t => (
                             <span key={t} style={{
                                 background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
                                 borderRadius: '99px', padding: '5px 14px',
@@ -526,7 +519,7 @@ export default function LandingPage() {
                 </div>
             </Section>
 
-            {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Final CTA Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */}
+            {/* ÔöÇÔöÇ Final CTA ÔöÇÔöÇ */}
             <section style={{
                 textAlign: 'center',
                 padding: 'clamp(56px, 8vw, 96px) clamp(20px, 5vw, 48px)',
@@ -548,7 +541,7 @@ export default function LandingPage() {
                 </button>
             </section>
 
-            {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ FAQ Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */}
+            {/* ÔöÇÔöÇ FAQ ÔöÇÔöÇ */}
             <Section style={{ marginTop: '72px', marginBottom: '72px' }} id="faq">
                 <h2 style={{
                     fontSize: 'clamp(20px, 3vw, 28px)', fontWeight: '900',
@@ -559,7 +552,7 @@ export default function LandingPage() {
                 {FAQS.map((f, i) => <FAQItem key={i} q={f.q} a={f.a} />)}
             </Section>
 
-            {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Footer Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */}
+            {/* ÔöÇÔöÇ Footer ÔöÇÔöÇ */}
             <footer style={{
                 borderTop: `1px solid ${T.border}`,
                 padding: '24px clamp(20px, 5vw, 56px)',

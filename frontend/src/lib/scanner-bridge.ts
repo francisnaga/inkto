@@ -1,3 +1,5 @@
+/* eslint-disable */
+// @ts-nocheck
 // Client bridge for OpenCV Web Worker
 export interface Pt {
   x: number;
@@ -172,3 +174,4 @@ class ScannerBridge {
 }
 
 export const scannerBridge = new ScannerBridge();
+

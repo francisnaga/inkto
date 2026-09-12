@@ -5,7 +5,6 @@
 import React, { useRef, useState } from 'react';
 import { Camera, Upload, FileText, AlertCircle } from 'lucide-react';
 import { convertPdfToImages } from '@/lib/pdfHelper';
-import { compressImage } from '@/lib/imageCompressor';
 
 export default function UploadZone({ onFilesSelected }: { onFilesSelected: (files: File[]) => void }) {
     const [isDragActive, setIsDragActive] = useState(false);
@@ -33,9 +32,9 @@ export default function UploadZone({ onFilesSelected }: { onFilesSelected: (file
                     const images = await convertPdfToImages(file, (current: number, total: number) => {
                         setProcessingMsg(`Converting PDF: page ${current} of ${total}…`);
                     });
-                    for (const img of images) finalFiles.push((await compressImage(img).catch(() => img)) as any);
+                    for (const img of images) finalFiles.push(img as any);
                 } else {
-                    finalFiles.push((await compressImage(file).catch(() => file)) as any);
+                    finalFiles.push(file as any);
                 }
             } catch (err) {
                 console.error("File processing error:", err);

@@ -3,7 +3,6 @@
 'use client';
 import { useState } from 'react';
 import { nanoid } from 'nanoid';
-import { compressImage } from '../lib/imageCompressor';
 
 const PAGE_CONCURRENCY = 3;
 
@@ -109,17 +108,8 @@ export function useTranscribe() {
                 const file = files[index];
                 const pageNumber = index + 1;
                 
-                // Compress the image before uploading to reduce Serverless function timeout risk
                 let uploadFile = file;
-                const isImage = file.type?.startsWith('image/');
-                if (isImage) {
-                    try {
-                        uploadFile = await compressImage(file);
-                    } catch (e) {
-                        console.warn('Compression failed, using original image:', e);
-                    }
-                }
-
+                
                 const formData = new FormData();
                 formData.append('files', uploadFile);
 

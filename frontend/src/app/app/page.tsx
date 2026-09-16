@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { HelpCircle, History as HistoryIcon, ArrowRight } from 'lucide-react';
+import { InktoLogo } from '@/components/inkto-logo';
 import { useTranscribe } from '@/hooks/useTranscribe';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -202,13 +203,7 @@ function AppPageInner() {
                     onClick={() => { reset(); router.push('/'); }} 
                     style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                 >
-                    <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20 75 C 20 50, 40 30, 50 20 C 60 30, 80 50, 80 75 C 80 90, 65 95, 50 95 C 35 95, 20 90, 20 75 Z" fill="#2563EB"/>
-                        <path d="M35 70 C 35 55, 45 45, 50 40 C 55 45, 65 55, 65 70 C 65 80, 55 85, 50 85 C 45 85, 35 80, 35 70 Z" fill="#60A5FA"/>
-                        <circle cx="50" cy="75" r="5" fill="#EFF6FF"/>
-                        <path d="M50 20 L50 40" stroke="#BFDBFE" strokeWidth="3" strokeLinecap="round"/>
-                        <path d="M42 35 C 45 28, 55 28, 58 35" stroke="#93C5FD" strokeWidth="2" strokeLinecap="round" fill="none"/>
-                    </svg>
+                    <InktoLogo size={28} />
                     <span style={{ fontSize: '22px', fontWeight: '800', letterSpacing: '-0.5px', color: '#111827', marginLeft: '10px' }}>Inkto</span>
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>

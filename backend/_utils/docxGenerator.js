@@ -4,7 +4,39 @@ const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, Border
  * Converts plain text into a proper .docx binary buffer.
  * Parses structured text for numbered lists and tables.
  */
+function createTextRuns(text) {
+    const runs = [];
+    const regex = /(\d+)(st|nd|rd|th)\b/gi;
+    let lastIndex = 0;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+        if (match.index > lastIndex) {
+            runs.push(new TextRun({ text: text.substring(lastIndex, match.index), font: 'Georgia', size: 24 }));
+        }
+        runs.push(new TextRun({ text: match[1], font: 'Georgia', size: 24 }));
+        // Ensure the suffix is converted to lowercase for aesthetics
+        runs.push(new TextRun({ text: match[2].toLowerCase(), font: 'Georgia', size: 24, superScript: true }));
+        lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < text.length) {
+        runs.push(new TextRun({ text: text.substring(lastIndex), font: 'Georgia', size: 24 }));
+    }
+    if (runs.length === 0) {
+        runs.push(new TextRun({ text: text || '', font: 'Georgia', size: 24 }));
+    }
+    return runs;
+}
+
+function cleanLatexOrdinals(text) {
+    if (!text) return text;
+    // Strip LaTeX formatting for ordinals (e.g. $10^{\text{th}}$ or $10^{th}$)
+    return text
+        .replace(/\$?(\d+)\^\{\\text\{([a-zA-Z]{2})\}\}\$?/gi, '$1$2')
+        .replace(/\$?(\d+)\^\{([a-zA-Z]{2})\}\$?/gi, '$1$2');
+}
+
 async function generateDocx(text) {
+    text = cleanLatexOrdinals(text);
     const lines = (text || '').split(/\r?\n/).filter(line => line.trim() !== '');
     const elements = [];
 
@@ -26,11 +58,11 @@ async function generateDocx(text) {
                     return new TableRow({
                         children: [
                             new TableCell({
-                                children: [new Paragraph({ children: [new TextRun({ text: row.left, font: 'Georgia', size: 24 })] })],
+                                children: [new Paragraph({ children: createTextRuns(row.left) })],
                                 width: { size: 60, type: WidthType.PERCENTAGE }
                             }),
                             new TableCell({
-                                children: [new Paragraph({ children: [new TextRun({ text: row.right, font: 'Georgia', size: 24 })] })],
+                                children: [new Paragraph({ children: createTextRuns(row.right) })],
                                 width: { size: 40, type: WidthType.PERCENTAGE }
                             })
                         ]
@@ -63,7 +95,7 @@ async function generateDocx(text) {
         const listMatch = line.match(/^(\d+)\.\s+(.*)/);
         if (listMatch) {
             elements.push(new Paragraph({
-                children: [new TextRun({ text: listMatch[2], font: 'Georgia', size: 24 })],
+                children: createTextRuns(listMatch[2]),
                 numbering: { reference: "default-numbering", level: 0 },
                 spacing: { after: 120, line: 360 }
             }));
@@ -74,7 +106,7 @@ async function generateDocx(text) {
         const letterMatch = line.match(/^([a-zA-Z])\.\s+(.*)/);
         if (letterMatch) {
             elements.push(new Paragraph({
-                children: [new TextRun({ text: letterMatch[2], font: 'Georgia', size: 24 })],
+                children: createTextRuns(letterMatch[2]),
                 numbering: { reference: "default-lettering", level: 0 },
                 spacing: { after: 120, line: 360 }
             }));
@@ -83,7 +115,7 @@ async function generateDocx(text) {
 
         // 4. Default paragraph
         elements.push(new Paragraph({
-            children: [new TextRun({ text: line, font: 'Georgia', size: 24 })],
+            children: createTextRuns(line),
             spacing: { after: 200, line: 360 }
         }));
     }

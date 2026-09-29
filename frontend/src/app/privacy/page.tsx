@@ -12,13 +12,14 @@ export default function PrivacyPolicy() {
     { id: 'ai-processing', title: '4. AI Processing & Third-Party' },
     { id: 'data-storage', title: '5. Data Storage & Security' },
     { id: 'data-sharing', title: '6. Data Sharing' },
-    { id: 'your-rights', title: '7. Your Rights' },
-    { id: 'permissions', title: '8. Permissions We Request' },
-    { id: 'children-privacy', title: '9. Children Privacy' },
-    { id: 'data-retention', title: '10. Data Retention' },
-    { id: 'international-transfers', title: '11. International Transfers' },
-    { id: 'changes', title: '12. Changes to This Policy' },
-    { id: 'contact-us', title: '13. Contact Us' },
+    { id: 'data-deletion-policy', title: '7. Data Deletion Policy' },
+    { id: 'your-rights', title: '8. Your Rights' },
+    { id: 'permissions', title: '9. Permissions We Request' },
+    { id: 'children-privacy', title: '10. Children Privacy' },
+    { id: 'data-retention', title: '11. Data Retention' },
+    { id: 'international-transfers', title: '12. International Data Transfers' },
+    { id: 'changes', title: '13. Changes to This Policy' },
+    { id: 'contact-us', title: '14. Contact Us' },
   ];
 
   const scrollTo = (id: string) => {
@@ -277,7 +278,7 @@ export default function PrivacyPolicy() {
             <ul>
               <li>Full name</li>
               <li>Email address</li>
-              <li>Password (stored in encrypted form — we never see your plaintext password)</li>
+              <li>Secure one-time password (OTP) codes used for authentication</li>
               <li>Profile information you optionally provide</li>
             </ul>
 
@@ -363,9 +364,9 @@ export default function PrivacyPolicy() {
             <h2>4. AI Processing and Third-Party Services</h2>
             <p>Inkto uses Google Gemini AI to process and transcribe your content. When you initiate a transcription:</p>
             <ul>
-              <li>Your audio or document images are securely transmitted to Google's AI infrastructure</li>
+              <li>Your audio or document images are securely transmitted to Google AI infrastructure</li>
               <li>Google processes the content solely to generate the transcription text</li>
-              <li><strong>Google's use of this data is governed by Google's Privacy Policy and their API usage terms, which prohibit using your content to train their models</strong></li>
+              <li><strong>Google use of this data is governed by Google Privacy Policy and their API usage terms, which prohibit using your content to train their models</strong></li>
             </ul>
             <p>Your files are stored on Cloudflare R2 (cloud object storage). We use Firebase Authentication (Google) for secure login.</p>
           </section>
@@ -392,9 +393,20 @@ export default function PrivacyPolicy() {
               <li><strong>Business transfer:</strong> if Inkto is acquired, your data may transfer with equivalent protections</li>
             </ul>
           </section>
+          
+          <section id="data-deletion-policy">
+            <h2>7. Data Deletion Policy</h2>
+            <p>Google Play requires us to provide a clear way for you to delete your data. You can request the complete deletion of your account and all associated data (including transcriptions and files) at any time.</p>
+            <p><strong>How to delete your data:</strong></p>
+            <ul>
+              <li><strong>Inside the App:</strong> Go to Settings &gt; Account &gt; "Delete Account". This will immediately schedule your account and all data for deletion.</li>
+              <li><strong>Via Email (Without the App):</strong> If you no longer have access to the app, you can email us at <a href="mailto:privacy@inkto.app">privacy@inkto.app</a> from the email address associated with your account. Include the subject line "Data Deletion Request". We will process your request within 7 business days.</li>
+            </ul>
+            <p>When you request deletion, we permanently remove your audio files, document images, transcriptions, and profile information from our active databases.</p>
+          </section>
 
           <section id="your-rights">
-            <h2>7. Your Rights</h2>
+            <h2>8. Your Rights</h2>
             <p>You have the right to:</p>
             <ul>
               <li>Access your personal data</li>
@@ -407,7 +419,7 @@ export default function PrivacyPolicy() {
           </section>
 
           <section id="permissions">
-            <h2>8. Permissions We Request</h2>
+            <h2>9. Permissions We Request</h2>
             <div className="table-container">
               <table className="privacy-table">
                 <thead>
@@ -443,12 +455,12 @@ export default function PrivacyPolicy() {
           </section>
 
           <section id="children-privacy">
-            <h2>9. Children's Privacy</h2>
+            <h2>10. Children Privacy</h2>
             <p>Inkto is designed for professional legal use and is not intended for persons under 18. We do not knowingly collect data from children.</p>
           </section>
 
           <section id="data-retention">
-            <h2>10. Data Retention</h2>
+            <h2>11. Data Retention</h2>
             <ul>
               <li><strong>Transcription data:</strong> retained until you delete it or close your account</li>
               <li><strong>Audio and document files:</strong> retained until deleted or account closed</li>
@@ -458,17 +470,17 @@ export default function PrivacyPolicy() {
           </section>
 
           <section id="international-transfers">
-            <h2>11. International Data Transfers</h2>
+            <h2>12. International Data Transfers</h2>
             <p>Your data may be processed outside Nigeria, including the United States and the EU, where our service providers operate. We ensure appropriate safeguards are in place for international transfers.</p>
           </section>
 
           <section id="changes">
-            <h2>12. Changes to This Policy</h2>
+            <h2>13. Changes to This Policy</h2>
             <p>We will notify you of material changes via email or in-app notification and update the date at the top of this page.</p>
           </section>
 
           <section id="contact-us">
-            <h2>13. Contact Us</h2>
+            <h2>14. Contact Us</h2>
             <p>Inkto Email: <a href="mailto:privacy@inkto.app">privacy@inkto.app</a></p>
             <p>Support: <a href="mailto:support@inkto.app">support@inkto.app</a></p>
             <p style={{ marginTop: '32px', paddingTop: '32px', borderTop: '1px solid #F3F4F6', fontSize: '14px', color: '#6B7280' }}>

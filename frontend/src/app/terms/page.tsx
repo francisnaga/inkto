@@ -7,7 +7,7 @@ import Link from 'next/link';
 export default function TermsPage() {
   const sections = [
     { id: 'acceptable-use', title: '1. Acceptable Use & AI Disclaimer' },
-    { id: 'subscriptions', title: '2. Subscriptions & Payments' },
+    { id: 'credits-payments', title: '2. Credits & Payments' },
     { id: 'user-accounts', title: '3. User Accounts' },
     { id: 'limitation-liability', title: '4. Limitation of Liability' },
   ];
@@ -229,15 +229,15 @@ export default function TermsPage() {
             </p>
           </section>
 
-          <section id="subscriptions">
-            <h2>2. Subscriptions & Payments</h2>
+          <section id="credits-payments">
+            <h2>2. Credits & Payments</h2>
             <p>
-              Paid features (such as voice dictation and unlimited text conversions) require a monthly or annual subscription. Billing is processed securely via Paystack.
+              Paid features (such as generating transcriptions from large audio files or lengthy documents) require Inkto Credits. You can purchase credits as needed. Billing is processed securely via Paystack.
             </p>
             <ul>
-              <li><strong>Billing Cycle:</strong> Subscriptions are billed in advance on a recurring basis and renew automatically unless canceled.</li>
-              <li><strong>Cancellation:</strong> You can cancel your subscription at any time from your Account screen. Your access to paid features will continue until the end of the current billing period.</li>
-              <li><strong>Refunds:</strong> All payments are non-refundable except as required by applicable consumer protection laws in Nigeria.</li>
+              <li><strong>Purchasing Credits:</strong> Credits are purchased on a pay-as-you-go basis. They are added to your account balance immediately upon successful payment.</li>
+              <li><strong>Usage:</strong> Credits are deducted from your balance based on the volume or length of the transcription requested.</li>
+              <li><strong>Refunds:</strong> All credit purchases are non-refundable except as required by applicable consumer protection laws in Nigeria.</li>
             </ul>
           </section>
 

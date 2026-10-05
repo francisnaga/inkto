@@ -244,9 +244,6 @@ export default function PrivacyPolicy() {
             <div style={{ width: '1px', height: '24px', background: '#E5E7EB' }}></div>
             <div className="header-title" style={{ color: '#4B5563', fontSize: '15px' }}>Privacy Policy</div>
           </div>
-          <Link href="/" style={{ fontSize: '14px', color: '#6B7280', textDecoration: 'none', fontWeight: 500 }}>
-            ← Back to App
-          </Link>
         </div>
       </header>
 

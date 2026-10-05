@@ -236,11 +236,17 @@ export default function PrivacyPolicy() {
       {/* Header */}
       <header className="privacy-header">
         <div className="header-content">
-          <Link href="/" className="header-logo">
-            <InktoLogo size={24} />
-            <span>Inkto</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <Link href="/" className="header-logo">
+              <InktoLogo size={24} />
+              <span>Inkto</span>
+            </Link>
+            <div style={{ width: '1px', height: '24px', background: '#E5E7EB' }}></div>
+            <div className="header-title" style={{ color: '#4B5563', fontSize: '15px' }}>Privacy Policy</div>
+          </div>
+          <Link href="/" style={{ fontSize: '14px', color: '#6B7280', textDecoration: 'none', fontWeight: 500 }}>
+            ← Back to App
           </Link>
-          <div className="header-title">Privacy Policy</div>
         </div>
       </header>
 

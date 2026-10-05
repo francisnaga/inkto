@@ -11,7 +11,7 @@ interface Props {
   color?: string;
 }
 
-export function InktoLogo({ size = 26, animate = false, color = '#24467A' }: Props) {
+export function InktoLogo({ size = 26, animate = false, color = '#2563EB' }: Props) {
   return (
     <svg
       width={size}

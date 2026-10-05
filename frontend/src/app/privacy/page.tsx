@@ -278,7 +278,7 @@ export default function PrivacyPolicy() {
             <ul>
               <li>Full name</li>
               <li>Email address</li>
-              <li>Secure one-time password (OTP) codes used for authentication</li>
+              <li>Google Sign-In authentication data or secure one-time password (OTP) codes</li>
               <li>Profile information you optionally provide</li>
             </ul>
 
@@ -312,7 +312,7 @@ export default function PrivacyPolicy() {
             <div className="info-box">We do not collect advertising identifiers or sell your data to advertisers.</div>
 
             <h3>2.6 Payment Information</h3>
-            <p>If you purchase Inkto Credits, payment is processed by our payment provider (Paystack). We do not store your card number or banking details. We only receive a confirmation of payment success and the credit amount to add to your account.</p>
+            <p>If you purchase Inkto Credits, payment is processed securely through Google Play Billing. We do not store your card number or banking details. We only receive a confirmation of payment success and the credit amount to add to your account.</p>
           </section>
 
           <section id="how-we-use">
@@ -388,7 +388,7 @@ export default function PrivacyPolicy() {
             <ul>
               <li><strong>AI service providers (Google Gemini):</strong> to perform transcription</li>
               <li><strong>Cloud infrastructure (Cloudflare):</strong> to store your files securely</li>
-              <li><strong>Payment processor (Paystack):</strong> to process credit purchases</li>
+              <li><strong>Payment processor (Google Play):</strong> to process credit purchases</li>
               <li><strong>Legal requirement:</strong> if required by law, court order, or governmental authority</li>
               <li><strong>Business transfer:</strong> if Inkto is acquired, your data may transfer with equivalent protections</li>
             </ul>

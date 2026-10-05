@@ -232,7 +232,7 @@ export default function TermsPage() {
           <section id="credits-payments">
             <h2>2. Credits & Payments</h2>
             <p>
-              Paid features (such as generating transcriptions from large audio files or lengthy documents) require Inkto Credits. You can purchase credits as needed. Billing is processed securely via Paystack.
+              Paid features (such as generating transcriptions from large audio files or lengthy documents) require Inkto Credits. You can purchase credits as needed. Billing is processed securely via Google Play.
             </p>
             <ul>
               <li><strong>Purchasing Credits:</strong> Credits are purchased on a pay-as-you-go basis. They are added to your account balance immediately upon successful payment.</li>
@@ -244,7 +244,7 @@ export default function TermsPage() {
           <section id="user-accounts">
             <h2>3. User Accounts</h2>
             <p>
-              Accounts are created and authenticated using a One-Time Password (OTP) sent to your email address. You are responsible for maintaining the security of your account and the device used to access it.
+              Accounts are created and authenticated using either Google Sign-In or a One-Time Password (OTP) sent to your email address. You are responsible for maintaining the security of your account and the device used to access it.
             </p>
           </section>
 

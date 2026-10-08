@@ -48,9 +48,16 @@ const Logo = ({ size = 24 }) => (
     </svg>
 );
 
-/* Image with skeleton placeholder Ã”Ã‡Ã¶ prevents layout shift while loading */
 function Img({ src, alt, style }: any) {
     const [loaded, setLoaded] = useState(false);
+    const imgRef = React.useRef<HTMLImageElement>(null);
+
+    React.useEffect(() => {
+        if (imgRef.current?.complete) {
+            setLoaded(true);
+        }
+    }, [src]);
+
     return (
         <div style={{ position: 'relative', ...style }}>
             {!loaded && (
@@ -63,6 +70,7 @@ function Img({ src, alt, style }: any) {
                 }} />
             )}
             <img
+                ref={imgRef}
                 src={src}
                 alt={alt}
                 loading="eager"

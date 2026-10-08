@@ -9,7 +9,10 @@ import { useTranscribe } from '@/hooks/useTranscribe';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import ErrorMessage from '@/components/error-message';
-const UploadZone    = dynamic(() => import('@/components/upload-zone'), { ssr: false });
+const UploadZone    = dynamic(() => import('@/components/upload-zone'), { 
+    ssr: false,
+    loading: () => <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F9FAFB', borderRadius: 16, border: '2px dashed #E5E7EB', color: '#9CA3AF' }}>Loading interface...</div>
+});
 const ThumbnailGrid = dynamic(() => import('@/components/thumbnail-grid'), { ssr: false });
 const OutputBox     = dynamic(() => import('@/components/output-box'), { ssr: false });
 const DictateModal  = dynamic(() => import('@/components/dictate-modal'), { ssr: false });

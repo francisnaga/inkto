@@ -105,9 +105,10 @@ export default function CameraModal({ onCapture, onClose }: CameraModalProps) {
 
     return (
         <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            position: 'fixed', top: 0, left: 0, right: 0, height: '100dvh',
             background: '#000', zIndex: 99999,
-            display: 'flex', flexDirection: 'column'
+            display: 'flex', flexDirection: 'column',
+            paddingBottom: 'env(safe-area-inset-bottom)'
         }}>
             {/* Top Bar */}
             <div style={{

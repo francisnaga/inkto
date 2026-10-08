@@ -16,7 +16,7 @@ async function test() {
     
     try {
         const response = await gemini.models.generateContent({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-3.8-flash',
             contents: [{
                 role: 'user',
                 parts: [

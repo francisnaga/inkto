@@ -224,7 +224,7 @@ function cleanSinglePageText(text) {
 
 // Call Gemini REST API directly — bypasses SDK OAuth bugs
 async function callGemini(apiKey, parts, timeoutMs, systemPrompt = SYSTEM_PROMPT, isAudio = false) {
-    const model = isAudio ? 'gemini-1.5-flash' : 'gemini-1.5-flash';
+    const model = isAudio ? 'gemini-3.5-flash-lite' : 'gemini-3.8-flash';
     
     try {
         const controller = new AbortController();

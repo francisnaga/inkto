@@ -122,7 +122,7 @@ module.exports = async function handler(req, res) {
                     ` : ''}
 
                     <p style="margin: 0; font-size: 14px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 24px;">
-                        This is an automated message. Please do not reply directly to this email.
+                        This is an automated message. Developed by Francis Naga &middot; Questions? Contact <a href="mailto:hello@francisnaga.site" style="color: #2563eb; text-decoration: none;">hello@francisnaga.site</a>
                     </p>
                 </div>
             </div>

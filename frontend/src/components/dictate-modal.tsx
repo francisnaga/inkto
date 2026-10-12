@@ -260,7 +260,7 @@ export default function DictateModal({ onClose, onTranscribeComplete, draftId, i
 
         <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px 0', letterSpacing: '-0.3px' }}>Voice Dictation</h3>
         <p style={{ fontSize: 13, color: '#78716C', textAlign: 'center', margin: '0 0 24px 0', lineHeight: 1.5 }}>
-          Record meetings, notes, or court proceedings. Pause, save, or transcribe with Gemini.
+          Record meetings, notes, or court proceedings. Pause, save, or transcribe with AI.
         </p>
 
         {!isOnline && (

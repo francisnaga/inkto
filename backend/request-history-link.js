@@ -64,8 +64,11 @@ module.exports = async function handler(req, res) {
                     <a href="${verifyUrl}" style="display: inline-block; background-color: #111827; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-size: 14px; font-weight: 600; margin-bottom: 24px;">
                         View history
                     </a>
-                    <p style="margin: 0; font-size: 12px; color: #6b7280;">
+                    <p style="margin: 0 0 12px; font-size: 12px; color: #6b7280;">
                         This link expires in 15 minutes. If you did not request this, you can ignore it.
+                    </p>
+                    <p style="margin: 0; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 16px;">
+                        Developed by Francis Naga &middot; Questions? Contact <a href="mailto:hello@francisnaga.site" style="color: #2563eb; text-decoration: none;">hello@francisnaga.site</a>
                     </p>
                 </div>
             </div>

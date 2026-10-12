@@ -569,19 +569,27 @@ export default function LandingPage() {
             {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Footer Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */}
             <footer style={{
                 borderTop: `1px solid ${T.border}`,
-                padding: '24px clamp(20px, 5vw, 56px)',
+                padding: '28px clamp(20px, 5vw, 56px)',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                flexWrap: 'wrap', gap: '12px',
+                flexWrap: 'wrap', gap: '16px',
                 fontSize: '12px', color: T.ink4, background: T.bg,
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     <Logo size={18} />
                     <span style={{ fontWeight: '700', color: T.ink3 }}>Inkto</span>
                     <span>&copy; {new Date().getFullYear()}</span>
+                    <span>&middot;</span>
+                    <span>Developed by <a href="mailto:hello@francisnaga.site" style={{ color: T.accent, textDecoration: 'none', fontWeight: 600 }}>Francis Naga</a></span>
                 </div>
-                <span style={{ color: T.ink4, fontSize: '11px', flex: '1 1 100%', marginTop: '2px' }}>
-                    Handwriting OCR &middot; Affidavit Transcription &middot; Legal Document Converter &middot; Scan to Word
-                </span>
+
+                <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <Link href="/terms" style={{ color: T.ink3, textDecoration: 'none' }}>Terms</Link>
+                    <span>&middot;</span>
+                    <Link href="/privacy" style={{ color: T.ink3, textDecoration: 'none' }}>Privacy</Link>
+                    <span>&middot;</span>
+                    <Link href="/accuracy" style={{ color: T.ink3, textDecoration: 'none' }}>AI Accuracy</Link>
+                </div>
+
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <a href="https://paystack.shop/pay/4h04eqpye7" target="_blank" rel="noopener noreferrer"
                         style={{
@@ -599,10 +607,14 @@ export default function LandingPage() {
                         }}>
                         <Ic.PayPal s={13} /> Tip USD
                     </a>
-                    <a href="mailto:efobifrancis53@gmail.com" className="lp-footer-link"><Ic.Mail s={15} /></a>
+                    <a href="mailto:hello@francisnaga.site" title="Contact Developer (Francis Naga)" className="lp-footer-link"><Ic.Mail s={15} /></a>
                     <a href="https://x.com/inktotext" target="_blank" rel="noopener noreferrer" className="lp-footer-link"><Ic.Twitter s={15} /></a>
                     <a href="https://github.com/francisnaga" target="_blank" rel="noopener noreferrer" className="lp-footer-link"><Ic.Github s={15} /></a>
                 </div>
+
+                <span style={{ color: T.ink4, fontSize: '11px', flex: '1 1 100%', marginTop: '4px' }}>
+                    Handwriting OCR &middot; Affidavit Transcription &middot; Legal Document Converter &middot; Scan to Word
+                </span>
             </footer>
         </div>
     );

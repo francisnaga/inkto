@@ -365,13 +365,13 @@ export default function PrivacyPolicy() {
 
           <section id="ai-processing">
             <h2>4. AI Processing and Third-Party Services</h2>
-            <p>Inkto uses Google Gemini AI to process and transcribe your content. When you initiate a transcription:</p>
+            <p>Inkto uses specialized, enterprise-grade AI infrastructure to process and transcribe your content. When you initiate a transcription:</p>
             <ul>
-              <li>Your audio or document images are securely transmitted to Google AI infrastructure</li>
-              <li>Google processes the content solely to generate the transcription text</li>
-              <li><strong>Google use of this data is governed by Google Privacy Policy and their API usage terms, which prohibit using your content to train their models</strong></li>
+              <li>Your audio or document images are securely transmitted to isolated cloud processing infrastructure</li>
+              <li>The AI infrastructure processes the content solely to generate the transcription text</li>
+              <li><strong>Data handling is strictly governed by enterprise API usage terms, which prohibit using your content or documents to train machine learning models</strong></li>
             </ul>
-            <p>Your files are stored on Cloudflare R2 (cloud object storage). We use Firebase Authentication (Google) for secure login.</p>
+            <p>Your files are stored on Cloudflare R2 (cloud object storage). We use Firebase Authentication for secure login.</p>
           </section>
 
           <section id="data-storage">
@@ -389,7 +389,7 @@ export default function PrivacyPolicy() {
             <h2>6. Data Sharing</h2>
             <p>We do not sell, rent, or trade your personal information. We share data only in these limited circumstances:</p>
             <ul>
-              <li><strong>AI service providers (Google Gemini):</strong> to perform transcription</li>
+              <li><strong>AI service providers:</strong> to perform automated transcription under strict confidentiality and zero-model-training terms</li>
               <li><strong>Cloud infrastructure (Cloudflare):</strong> to store your files securely</li>
               <li><strong>Payment processor (Google Play):</strong> to process credit purchases</li>
               <li><strong>Legal requirement:</strong> if required by law, court order, or governmental authority</li>
@@ -403,7 +403,7 @@ export default function PrivacyPolicy() {
             <p><strong>How to delete your data:</strong></p>
             <ul>
               <li><strong>Inside the App:</strong> Go to Settings &gt; Account &gt; "Delete Account". This will immediately schedule your account and all data for deletion.</li>
-              <li><strong>Via Email (Without the App):</strong> If you no longer have access to the app, you can email us at <a href="mailto:privacy@inkto.app">privacy@inkto.app</a> from the email address associated with your account. Include the subject line "Data Deletion Request". We will process your request within 7 business days.</li>
+              <li><strong>Via Email (Without the App):</strong> If you no longer have access to the app, you can email us at <a href="mailto:hello@francisnaga.site">hello@francisnaga.site</a> from the email address associated with your account. Include the subject line "Data Deletion Request". We will process your request within 7 business days.</li>
             </ul>
             <p>When you request deletion, we permanently remove your audio files, document images, transcriptions, and profile information from our active databases.</p>
           </section>
@@ -418,7 +418,7 @@ export default function PrivacyPolicy() {
               <li>Export your transcriptions in PDF, DOCX, or TXT format</li>
               <li>Withdraw consent by stopping use and requesting deletion</li>
             </ul>
-            <p>Contact: <a href="mailto:privacy@inkto.app">privacy@inkto.app</a></p>
+            <p>Contact: <a href="mailto:hello@francisnaga.site">hello@francisnaga.site</a></p>
           </section>
 
           <section id="permissions">
@@ -483,9 +483,10 @@ export default function PrivacyPolicy() {
           </section>
 
           <section id="contact-us">
-            <h2>14. Contact Us</h2>
-            <p>Inkto Email: <a href="mailto:privacy@inkto.app">privacy@inkto.app</a></p>
-            <p>Support: <a href="mailto:support@inkto.app">support@inkto.app</a></p>
+            <h2>14. Contact & Developer Credits</h2>
+            <p>Lead Developer: Francis Naga (<a href="mailto:hello@francisnaga.site">hello@francisnaga.site</a>)</p>
+            <p>Support & Inquiries: <a href="mailto:hello@francisnaga.site">hello@francisnaga.site</a></p>
+            <p>Developer Portfolio: <a href="https://francisnaga.site" target="_blank" rel="noopener noreferrer">https://francisnaga.site</a></p>
             <p style={{ marginTop: '32px', paddingTop: '32px', borderTop: '1px solid #F3F4F6', fontSize: '14px', color: '#6B7280' }}>
               This Privacy Policy complies with the Nigeria Data Protection Regulation (NDPR) and, where applicable, the EU General Data Protection Regulation (GDPR).
             </p>
@@ -496,11 +497,13 @@ export default function PrivacyPolicy() {
       {/* Footer */}
       <footer className="privacy-footer">
         <div className="footer-links">
-          <a href="mailto:privacy@inkto.app">privacy@inkto.app</a>
+          <Link href="/terms">Terms of Service</Link>
           <span className="footer-dot"></span>
-          <a href="mailto:support@inkto.app">support@inkto.app</a>
+          <Link href="/accuracy">AI Accuracy Policy</Link>
+          <span className="footer-dot"></span>
+          <a href="mailto:hello@francisnaga.site">hello@francisnaga.site</a>
         </div>
-        <p>&copy; {new Date().getFullYear()} Inkto. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} Inkto &middot; Developed by Francis Naga. All rights reserved.</p>
       </footer>
     </div>
   );

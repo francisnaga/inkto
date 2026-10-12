@@ -10,6 +10,7 @@ export default function TermsPage() {
     { id: 'credits-payments', title: '2. Credits & Payments' },
     { id: 'user-accounts', title: '3. User Accounts' },
     { id: 'limitation-liability', title: '4. Limitation of Liability' },
+    { id: 'contact', title: '5. Contact & Developer Credits' },
   ];
 
   const scrollTo = (id: string) => {
@@ -257,17 +258,32 @@ export default function TermsPage() {
               To the maximum extent permitted by law, Inkto and its operators shall not be liable for any direct, indirect, incidental, or consequential damages resulting from the use of, or inability to use, our service, including but not limited to any legal errors, missed deadlines, or formatting anomalies in transcribed or generated legal documents.
             </p>
           </section>
+
+          <section id="contact">
+            <h2>5. Contact & Developer Credits</h2>
+            <p>
+              For legal inquiries, support requests, or terms clarifications, please reach out to our engineering lead:
+            </p>
+            <p>
+              <strong>Developer & Creator:</strong> Francis Naga (<a href="mailto:hello@francisnaga.site">hello@francisnaga.site</a>)
+            </p>
+            <p>
+              <strong>Portfolio:</strong> <a href="https://francisnaga.site" target="_blank" rel="noopener noreferrer">https://francisnaga.site</a>
+            </p>
+          </section>
         </main>
       </div>
 
       {/* Footer */}
       <footer className="policy-footer">
         <div className="footer-links">
-          <a href="mailto:privacy@inkto.app">privacy@inkto.app</a>
+          <Link href="/privacy">Privacy Policy</Link>
           <span className="footer-dot"></span>
-          <a href="mailto:support@inkto.app">support@inkto.app</a>
+          <Link href="/accuracy">AI Accuracy Policy</Link>
+          <span className="footer-dot"></span>
+          <a href="mailto:hello@francisnaga.site">hello@francisnaga.site</a>
         </div>
-        <p>&copy; {new Date().getFullYear()} Inkto. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} Inkto &middot; Developed by Francis Naga. All rights reserved.</p>
       </footer>
     </div>
   );

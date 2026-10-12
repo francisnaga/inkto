@@ -66,39 +66,66 @@ export default function AccuracyPolicyPage() {
           display: flex;
           align-items: center;
           justify-content: space-between;
+          gap: 16px;
         }
         .header-brand-group {
           display: flex;
           align-items: center;
-          gap: 16px;
-        }
-        .header-divider {
-          width: 1px;
-          height: 22px;
-          background: #E5E7EB;
-          flex-shrink: 0;
+          gap: 12px;
+          min-width: 0;
+          flex-shrink: 1;
         }
         .header-logo {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 10px;
           text-decoration: none;
           color: #111827;
           font-weight: 700;
-          font-size: 18px;
+          font-size: 17px;
           letter-spacing: -0.025em;
+          flex-shrink: 0;
+        }
+        .header-divider {
+          width: 1px;
+          height: 18px;
+          background: #E5E7EB;
+          flex-shrink: 0;
         }
         .header-title {
-          font-size: 15px;
+          font-size: 14px;
           font-weight: 500;
           color: #4B5563;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
-        @media (max-width: 480px) {
+        @media (max-width: 640px) {
+          .header-content {
+            padding: 0 16px;
+            gap: 16px;
+          }
           .header-brand-group {
+            gap: 8px;
+          }
+          .header-logo {
+            font-size: 16px;
+            gap: 8px;
+          }
+          .header-divider {
+            height: 15px;
+          }
+          .header-title {
+            font-size: 13px;
+          }
+        }
+        @media (max-width: 440px) {
+          .header-content {
+            padding: 0 12px;
             gap: 12px;
           }
           .header-title {
-            font-size: 14px;
+            font-size: 12px;
           }
         }
         .policy-main {
@@ -165,22 +192,20 @@ export default function AccuracyPolicyPage() {
           margin-bottom: 32px;
         }
         .info-box-warning {
-          background: #FEF3C7;
-          border: 1px solid #F59E0B;
+          background: #FFFBEB;
+          border-left: 3px solid #D97706;
           color: #92400E;
-          padding: 16px 20px;
-          border-radius: 12px;
+          padding: 14px 18px;
           font-size: 14px;
           line-height: 1.6;
-          margin-bottom: 40px;
+          margin-bottom: 36px;
           font-weight: 500;
         }
         .info-box-blue {
-          background: #EFF6FF;
-          border: 1px solid #BFDBFE;
-          color: #1E40AF;
-          padding: 16px 20px;
-          border-radius: 12px;
+          background: #F9FAFB;
+          border-left: 3px solid #2563EB;
+          color: #374151;
+          padding: 14px 18px;
           font-size: 14px;
           line-height: 1.6;
           margin: 24px 0;
@@ -224,22 +249,22 @@ export default function AccuracyPolicyPage() {
         .policy-content a:hover {
           color: #1D4ED8;
         }
-        .card-box {
-          background: #F9FAFB;
-          border: 1px solid #E5E7EB;
-          border-radius: 12px;
-          padding: 20px;
-          margin-bottom: 16px;
+        .verification-item {
+          margin-bottom: 18px;
+          padding-left: 14px;
+          border-left: 2px solid #E5E7EB;
         }
-        .card-box h3 {
-          margin-top: 0;
+        .verification-item h3 {
+          margin: 0 0 4px 0;
           font-size: 15px;
-          font-weight: 700;
+          font-weight: 600;
           color: #111827;
         }
-        .card-box p {
-          margin-bottom: 0;
+        .verification-item p {
+          margin: 0;
           font-size: 14px;
+          line-height: 1.6;
+          color: #4B5563;
         }
         .policy-footer {
           border-top: 1px solid #F3F4F6;
@@ -277,7 +302,7 @@ export default function AccuracyPolicyPage() {
         <div className="header-content">
           <div className="header-brand-group">
             <Link href="/" className="header-logo">
-              <InktoLogo size={24} />
+              <InktoLogo size={22} />
               <span>Inkto</span>
             </Link>
             <div className="header-divider"></div>
@@ -328,22 +353,22 @@ export default function AccuracyPolicyPage() {
             </p>
             <p>Specifically, practitioners must verify:</p>
 
-            <div className="card-box">
-              <h3>Court Pleadings & Affidavits</h3>
+            <div className="verification-item">
+              <h3>Court Pleadings &amp; Affidavits</h3>
               <p>
                 Confirm suit numbers, parties&apos; names, dates, case citations (such as NWLR volumes and page numbers), and sworn numbered paragraphs against the physical exhibit or case file before filing.
               </p>
             </div>
 
-            <div className="card-box">
-              <h3>Contracts, Deeds & Financial Agreements</h3>
+            <div className="verification-item">
+              <h3>Contracts, Deeds &amp; Financial Agreements</h3>
               <p>
                 Verify figures, monetary sums, survey coordinates, property descriptions, boundary beacons, and covenant terms.
               </p>
             </div>
 
-            <div className="card-box">
-              <h3>Audio Recordings & Court Proceedings</h3>
+            <div className="verification-item">
+              <h3>Audio Recordings &amp; Court Proceedings</h3>
               <p>
                 Cross-check speaker assignments (Judge, Counsel, Witness, Speaker 1, Speaker 2) and inaudible segments (<code>[inaudible]</code>) against original court records or personal contemporaneous bench notes.
               </p>

@@ -66,21 +66,67 @@ export default function TermsPage() {
           display: flex;
           align-items: center;
           justify-content: space-between;
+          gap: 16px;
+        }
+        .header-brand-group {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+          flex-shrink: 1;
         }
         .header-logo {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 10px;
           text-decoration: none;
           color: #111827;
           font-weight: 700;
-          font-size: 18px;
+          font-size: 17px;
           letter-spacing: -0.025em;
+          flex-shrink: 0;
+        }
+        .header-divider {
+          width: 1px;
+          height: 18px;
+          background: #E5E7EB;
+          flex-shrink: 0;
         }
         .header-title {
           font-size: 14px;
           font-weight: 500;
-          color: #6B7280;
+          color: #4B5563;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        @media (max-width: 640px) {
+          .header-content {
+            padding: 0 16px;
+            gap: 16px;
+          }
+          .header-brand-group {
+            gap: 8px;
+          }
+          .header-logo {
+            font-size: 16px;
+            gap: 8px;
+          }
+          .header-divider {
+            height: 15px;
+          }
+          .header-title {
+            font-size: 13px;
+          }
+        }
+        @media (max-width: 440px) {
+          .header-content {
+            padding: 0 12px;
+            gap: 12px;
+          }
+          .header-title {
+            font-size: 12px;
+          }
         }
         .policy-main {
           max-width: 1152px;
@@ -178,12 +224,12 @@ export default function TermsPage() {
         .info-box-warning {
           font-size: 14px;
           color: #92400E;
-          background: #FEF3C7;
-          padding: 16px;
-          border-radius: 8px;
-          border: 1px solid #FDE68A;
+          background: #FFFBEB;
+          padding: 14px 18px;
+          border-left: 3px solid #D97706;
           margin-bottom: 32px;
           font-weight: 500;
+          line-height: 1.6;
         }
         .policy-footer {
           border-top: 1px solid #F3F4F6;
@@ -212,13 +258,13 @@ export default function TermsPage() {
       {/* Header */}
       <header className="policy-header">
         <div className="header-content">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className="header-brand-group">
             <Link href="/" className="header-logo">
-              <InktoLogo size={24} />
+              <InktoLogo size={22} />
               <span>Inkto</span>
             </Link>
-            <div style={{ width: '1px', height: '24px', background: '#E5E7EB' }}></div>
-            <div className="header-title" style={{ color: '#4B5563', fontSize: '15px' }}>Terms of Service</div>
+            <div className="header-divider"></div>
+            <div className="header-title">Terms of Service</div>
           </div>
           <MobileHeaderTocButton 
             count={sections.length} 

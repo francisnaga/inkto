@@ -69,17 +69,16 @@ export function PolicyNav({
           position: relative;
           display: flex;
           align-items: flex-start;
-          padding: 8px 12px 8px 20px;
+          padding: 7px 12px 7px 18px;
           background: transparent;
           border: none;
-          border-radius: 8px;
           cursor: pointer;
           text-align: left;
           width: 100%;
           font-size: 13.5px;
           line-height: 1.45;
           color: #4B5563;
-          transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+          transition: color 0.15s ease;
         }
 
         /* Horizontal branch connector elbow */
@@ -87,11 +86,10 @@ export function PolicyNav({
           content: '';
           position: absolute;
           left: -9px;
-          top: 17px;
+          top: 16px;
           width: 18px;
           height: 1.5px;
           background: #E5E7EB;
-          transition: all 0.15s ease;
         }
 
         /* Branch junction dot / node */
@@ -99,46 +97,33 @@ export function PolicyNav({
           content: '';
           position: absolute;
           left: -11px;
-          top: 14px;
-          width: 7px;
-          height: 7px;
+          top: 13px;
+          width: 6px;
+          height: 6px;
           border-radius: 50%;
-          background: #FFFFFF;
-          border: 2px solid #9CA3AF;
-          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          background: #D1D5DB;
+          transition: background 0.15s ease;
         }
 
         .branch-node:hover {
-          color: #1D4ED8;
-          background: #F8FAFC;
-        }
-
-        .branch-node:hover::before {
-          background: #93C5FD;
+          color: #111827;
         }
 
         .branch-node:hover::after {
-          border-color: #2563EB;
-          background: #DBEAFE;
-          transform: scale(1.2);
+          background: #9CA3AF;
         }
 
         .branch-node.active {
-          color: #1E40AF;
+          color: #111827;
           font-weight: 600;
-          background: #EFF6FF;
         }
 
         .branch-node.active::before {
-          background: #2563EB;
-          height: 2px;
+          background: #111827;
         }
 
         .branch-node.active::after {
-          border-color: #2563EB;
           background: #2563EB;
-          box-shadow: 0 0 0 3px #BFDBFE;
-          transform: scale(1.25);
         }
 
         /* Desktop Sidebar Container */
@@ -201,51 +186,23 @@ export function PolicyNav({
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: #F3F4F6;
+            background: #F9FAFB;
             color: #1F2937;
             border: 1px solid #E5E7EB;
-            border-radius: 9999px;
-            padding: 5px 12px;
-            font-size: 12.5px;
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-size: 12px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.15s ease;
+            flex-shrink: 0;
+            white-space: nowrap;
+            transition: background 0.15s ease;
           }
           .mobile-toc-toggle:hover {
-            background: #E5E7EB;
+            background: #F3F4F6;
           }
           .mobile-toc-toggle:active {
-            transform: scale(0.96);
-          }
-        }
-
-        /* ================= Mobile Floating Action Pill ================= */
-        .mobile-floating-pill {
-          display: none;
-        }
-
-        @media (max-width: 768px) {
-          .mobile-floating-pill {
-            position: fixed;
-            bottom: 22px;
-            right: 18px;
-            z-index: 45;
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            background: #111827;
-            color: #FFFFFF;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 9999px;
-            padding: 9px 16px;
-            font-size: 13px;
-            font-weight: 600;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22), 0 2px 6px rgba(0, 0, 0, 0.08);
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-          }
-          .mobile-floating-pill:active {
-            transform: scale(0.95);
+            transform: scale(0.97);
           }
         }
 
@@ -395,21 +352,6 @@ export function PolicyNav({
         </div>
       </aside>
 
-      {/* Mobile Floating Trigger */}
-      <button
-        className="mobile-floating-pill"
-        onClick={() => setMobileOpen(true)}
-        aria-label="View section outline"
-      >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="6" y1="3" x2="6" y2="15"/>
-          <circle cx="18" cy="6" r="3"/>
-          <circle cx="6" cy="18" r="3"/>
-          <path d="M18 9a9 9 0 0 1-9 9"/>
-        </svg>
-        <span>Contents</span>
-      </button>
-
       {/* Mobile Drawer Backdrop */}
       <div
         className={`drawer-overlay ${mobileOpen ? 'open' : ''}`}
@@ -485,20 +427,20 @@ export function MobileHeaderTocButton({
       onClick={onClick}
       aria-label="Open document contents"
     >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="6" y1="3" x2="6" y2="15"/>
         <circle cx="18" cy="6" r="3"/>
         <circle cx="6" cy="18" r="3"/>
         <path d="M18 9a9 9 0 0 1-9 9"/>
       </svg>
-      <span>Outline</span>
+      <span>Contents</span>
       <span style={{
         background: '#E5E7EB',
         color: '#4B5563',
         fontSize: '11px',
-        fontWeight: 700,
-        padding: '1px 6px',
-        borderRadius: '9999px',
+        fontWeight: 600,
+        padding: '1px 5px',
+        borderRadius: '4px',
         marginLeft: '2px'
       }}>{count}</span>
     </button>

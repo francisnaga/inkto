@@ -75,21 +75,67 @@ export default function PrivacyPolicy() {
           display: flex;
           align-items: center;
           justify-content: space-between;
+          gap: 16px;
+        }
+        .header-brand-group {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
+          flex-shrink: 1;
         }
         .header-logo {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 10px;
           text-decoration: none;
           color: #111827;
           font-weight: 700;
-          font-size: 18px;
+          font-size: 17px;
           letter-spacing: -0.025em;
+          flex-shrink: 0;
+        }
+        .header-divider {
+          width: 1px;
+          height: 18px;
+          background: #E5E7EB;
+          flex-shrink: 0;
         }
         .header-title {
           font-size: 14px;
           font-weight: 500;
-          color: #6B7280;
+          color: #4B5563;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        @media (max-width: 640px) {
+          .header-content {
+            padding: 0 16px;
+            gap: 16px;
+          }
+          .header-brand-group {
+            gap: 8px;
+          }
+          .header-logo {
+            font-size: 16px;
+            gap: 8px;
+          }
+          .header-divider {
+            height: 15px;
+          }
+          .header-title {
+            font-size: 13px;
+          }
+        }
+        @media (max-width: 440px) {
+          .header-content {
+            padding: 0 12px;
+            gap: 12px;
+          }
+          .header-title {
+            font-size: 12px;
+          }
         }
         .privacy-main {
           max-width: 1152px;
@@ -257,13 +303,13 @@ export default function PrivacyPolicy() {
       {/* Header */}
       <header className="privacy-header">
         <div className="header-content">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className="header-brand-group">
             <Link href="/" className="header-logo">
-              <InktoLogo size={24} />
+              <InktoLogo size={22} />
               <span>Inkto</span>
             </Link>
-            <div style={{ width: '1px', height: '24px', background: '#E5E7EB' }}></div>
-            <div className="header-title" style={{ color: '#4B5563', fontSize: '15px' }}>Privacy Policy</div>
+            <div className="header-divider"></div>
+            <div className="header-title">Privacy Policy</div>
           </div>
           <MobileHeaderTocButton 
             count={sections.length} 
@@ -378,7 +424,7 @@ export default function PrivacyPolicy() {
                 </tbody>
               </table>
             </div>
-            <div className="info-box" style={{ background: '#EFF6FF', borderColor: '#BFDBFE', color: '#1E40AF' }}>
+            <div className="info-box" style={{ background: '#F9FAFB', borderLeft: '3px solid #2563EB', color: '#374151', borderTop: 'none', borderRight: 'none', borderBottom: 'none', padding: '14px 18px' }}>
               We do not use your legal documents or audio recordings for advertising purposes.
             </div>
           </section>

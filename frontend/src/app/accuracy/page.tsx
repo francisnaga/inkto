@@ -46,6 +46,17 @@ export default function AccuracyPolicyPage() {
           align-items: center;
           justify-content: space-between;
         }
+        .header-brand-group {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+        .header-divider {
+          width: 1px;
+          height: 22px;
+          background: #E5E7EB;
+          flex-shrink: 0;
+        }
         .header-logo {
           display: flex;
           align-items: center;
@@ -57,9 +68,17 @@ export default function AccuracyPolicyPage() {
           letter-spacing: -0.025em;
         }
         .header-title {
-          font-size: 14px;
+          font-size: 15px;
           font-weight: 500;
-          color: #6B7280;
+          color: #4B5563;
+        }
+        @media (max-width: 480px) {
+          .header-brand-group {
+            gap: 12px;
+          }
+          .header-title {
+            font-size: 14px;
+          }
         }
         .policy-main {
           max-width: 1152px;
@@ -235,11 +254,14 @@ export default function AccuracyPolicyPage() {
       {/* Header */}
       <header className="policy-header">
         <div className="header-content">
-          <Link href="/" className="header-logo">
-            <InktoLogo size={28} />
-            <span>Inkto</span>
-          </Link>
-          <div className="header-title">AI Accuracy & Verification Policy</div>
+          <div className="header-brand-group">
+            <Link href="/" className="header-logo">
+              <InktoLogo size={24} />
+              <span>Inkto</span>
+            </Link>
+            <div className="header-divider"></div>
+            <div className="header-title">AI Accuracy Policy</div>
+          </div>
         </div>
       </header>
 

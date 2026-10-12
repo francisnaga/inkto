@@ -1,8 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { InktoLogo } from '@/components/inkto-logo';
 import Link from 'next/link';
+import { DeveloperCard } from '@/components/developer-card';
+import { PolicyNav, MobileHeaderTocButton } from '@/components/policy-nav';
 
 export default function TermsPage() {
   const sections = [
@@ -13,10 +15,29 @@ export default function TermsPage() {
     { id: 'contact', title: '5. Contact & Developer Credits' },
   ];
 
+  const [activeSection, setActiveSection] = useState(sections[0].id);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPos = window.scrollY + 140;
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const el = document.getElementById(sections[i].id);
+        if (el && el.offsetTop <= scrollPos) {
+          setActiveSection(sections[i].id);
+          break;
+        }
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
-      window.scrollTo({ top: el.offsetTop - 100, behavior: 'smooth' });
+      window.scrollTo({ top: el.offsetTop - 90, behavior: 'smooth' });
     }
   };
 
@@ -199,23 +220,22 @@ export default function TermsPage() {
             <div style={{ width: '1px', height: '24px', background: '#E5E7EB' }}></div>
             <div className="header-title" style={{ color: '#4B5563', fontSize: '15px' }}>Terms of Service</div>
           </div>
+          <MobileHeaderTocButton 
+            count={sections.length} 
+            onClick={() => setMobileNavOpen(true)} 
+          />
         </div>
       </header>
 
       <div className="policy-main">
-        {/* Sticky Nav (Desktop) */}
-        <aside className="policy-sidebar">
-          <div className="sidebar-inner">
-            <h3 className="sidebar-title">Contents</h3>
-            <nav className="sidebar-nav">
-              {sections.map((s) => (
-                <button key={s.id} onClick={() => scrollTo(s.id)}>
-                  {s.title}
-                </button>
-              ))}
-            </nav>
-          </div>
-        </aside>
+        {/* Tree Branch Navigation (Desktop & Mobile Drawer) */}
+        <PolicyNav 
+          sections={sections}
+          activeSection={activeSection}
+          onSelectSection={scrollTo}
+          mobileOpen={mobileNavOpen}
+          setMobileOpen={setMobileNavOpen}
+        />
 
         {/* Content */}
         <main className="policy-content">
@@ -264,12 +284,7 @@ export default function TermsPage() {
             <p>
               For legal inquiries, support requests, or terms clarifications, please reach out to our engineering lead:
             </p>
-            <p>
-              <strong>Developer & Creator:</strong> Francis Naga (<a href="mailto:hello@francisnaga.site">hello@francisnaga.site</a>)
-            </p>
-            <p>
-              <strong>Portfolio:</strong> <a href="https://francisnaga.site" target="_blank" rel="noopener noreferrer">https://francisnaga.site</a>
-            </p>
+            <DeveloperCard />
           </section>
         </main>
       </div>

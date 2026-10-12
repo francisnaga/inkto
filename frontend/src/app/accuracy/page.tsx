@@ -1,8 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { InktoLogo } from '@/components/inkto-logo';
 import Link from 'next/link';
+import { DeveloperCard } from '@/components/developer-card';
+import { PolicyNav, MobileHeaderTocButton } from '@/components/policy-nav';
 
 export default function AccuracyPolicyPage() {
   const sections = [
@@ -13,10 +15,29 @@ export default function AccuracyPolicyPage() {
     { id: 'contact-support', title: '5. Contact, Support & Developer Credits' },
   ];
 
+  const [activeSection, setActiveSection] = useState(sections[0].id);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPos = window.scrollY + 140;
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const el = document.getElementById(sections[i].id);
+        if (el && el.offsetTop <= scrollPos) {
+          setActiveSection(sections[i].id);
+          break;
+        }
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
-      window.scrollTo({ top: el.offsetTop - 100, behavior: 'smooth' });
+      window.scrollTo({ top: el.offsetTop - 90, behavior: 'smooth' });
     }
   };
 
@@ -262,23 +283,22 @@ export default function AccuracyPolicyPage() {
             <div className="header-divider"></div>
             <div className="header-title">AI Accuracy Policy</div>
           </div>
+          <MobileHeaderTocButton 
+            count={sections.length} 
+            onClick={() => setMobileNavOpen(true)} 
+          />
         </div>
       </header>
 
       <div className="policy-main">
-        {/* Sticky Nav (Desktop) */}
-        <aside className="policy-sidebar">
-          <div className="sidebar-inner">
-            <h3 className="sidebar-title">Contents</h3>
-            <nav className="sidebar-nav">
-              {sections.map((s) => (
-                <button key={s.id} onClick={() => scrollTo(s.id)}>
-                  {s.title}
-                </button>
-              ))}
-            </nav>
-          </div>
-        </aside>
+        {/* Tree Branch Navigation (Desktop & Mobile Drawer) */}
+        <PolicyNav 
+          sections={sections}
+          activeSection={activeSection}
+          onSelectSection={scrollTo}
+          mobileOpen={mobileNavOpen}
+          setMobileOpen={setMobileNavOpen}
+        />
 
         {/* Content */}
         <main className="policy-content">
@@ -370,20 +390,7 @@ export default function AccuracyPolicyPage() {
             <p>
               If you encounter persistent transcription difficulties or have questions regarding our data processing and accuracy standards, please contact our engineering and developer lead:
             </p>
-            <div className="card-box" style={{ background: '#F8FAFC', borderColor: '#E2E8F0' }}>
-              <p style={{ margin: '0 0 8px 0', fontSize: '15px' }}>
-                <strong>Lead Developer & Creator:</strong> Francis Naga
-              </p>
-              <p style={{ margin: '0 0 8px 0', fontSize: '15px' }}>
-                <strong>Email:</strong> <a href="mailto:hello@francisnaga.site">hello@francisnaga.site</a>
-              </p>
-              <p style={{ margin: '0 0 8px 0', fontSize: '15px' }}>
-                <strong>Official Web:</strong> <a href="https://inkto.jointaccount.org" target="_blank" rel="noopener noreferrer">https://inkto.jointaccount.org</a>
-              </p>
-              <p style={{ margin: 0, fontSize: '15px' }}>
-                <strong>Developer Site:</strong> <a href="https://francisnaga.site" target="_blank" rel="noopener noreferrer">https://francisnaga.site</a>
-              </p>
-            </div>
+            <DeveloperCard />
           </section>
         </main>
       </div>

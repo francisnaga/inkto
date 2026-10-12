@@ -1,8 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { InktoLogo } from '@/components/inkto-logo';
 import Link from 'next/link';
+import { DeveloperCard } from '@/components/developer-card';
+import { PolicyNav, MobileHeaderTocButton } from '@/components/policy-nav';
 
 export default function PrivacyPolicy() {
   const sections = [
@@ -22,10 +24,29 @@ export default function PrivacyPolicy() {
     { id: 'contact-us', title: '14. Contact Us' },
   ];
 
+  const [activeSection, setActiveSection] = useState(sections[0].id);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPos = window.scrollY + 140;
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const el = document.getElementById(sections[i].id);
+        if (el && el.offsetTop <= scrollPos) {
+          setActiveSection(sections[i].id);
+          break;
+        }
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
-      window.scrollTo({ top: el.offsetTop - 100, behavior: 'smooth' });
+      window.scrollTo({ top: el.offsetTop - 90, behavior: 'smooth' });
     }
   };
 
@@ -244,23 +265,22 @@ export default function PrivacyPolicy() {
             <div style={{ width: '1px', height: '24px', background: '#E5E7EB' }}></div>
             <div className="header-title" style={{ color: '#4B5563', fontSize: '15px' }}>Privacy Policy</div>
           </div>
+          <MobileHeaderTocButton 
+            count={sections.length} 
+            onClick={() => setMobileNavOpen(true)} 
+          />
         </div>
       </header>
 
       <div className="privacy-main">
-        {/* Sticky Nav (Desktop) */}
-        <aside className="privacy-sidebar">
-          <div className="sidebar-inner">
-            <h3 className="sidebar-title">Contents</h3>
-            <nav className="sidebar-nav">
-              {sections.map((s) => (
-                <button key={s.id} onClick={() => scrollTo(s.id)}>
-                  {s.title}
-                </button>
-              ))}
-            </nav>
-          </div>
-        </aside>
+        {/* Tree Branch Navigation (Desktop & Mobile Drawer) */}
+        <PolicyNav 
+          sections={sections}
+          activeSection={activeSection}
+          onSelectSection={scrollTo}
+          mobileOpen={mobileNavOpen}
+          setMobileOpen={setMobileNavOpen}
+        />
 
         {/* Content */}
         <main className="privacy-content">
@@ -484,10 +504,8 @@ export default function PrivacyPolicy() {
 
           <section id="contact-us">
             <h2>14. Contact & Developer Credits</h2>
-            <p>Lead Developer: Francis Naga (<a href="mailto:hello@francisnaga.site">hello@francisnaga.site</a>)</p>
-            <p>Support & Inquiries: <a href="mailto:hello@francisnaga.site">hello@francisnaga.site</a></p>
-            <p>Developer Portfolio: <a href="https://francisnaga.site" target="_blank" rel="noopener noreferrer">https://francisnaga.site</a></p>
-            <p style={{ marginTop: '32px', paddingTop: '32px', borderTop: '1px solid #F3F4F6', fontSize: '14px', color: '#6B7280' }}>
+            <DeveloperCard />
+            <p style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #F3F4F6', fontSize: '14px', color: '#6B7280' }}>
               This Privacy Policy complies with the Nigeria Data Protection Regulation (NDPR) and, where applicable, the EU General Data Protection Regulation (GDPR).
             </p>
           </section>

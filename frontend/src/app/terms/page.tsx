@@ -277,9 +277,9 @@ export default function TermsPage() {
       {/* Footer */}
       <footer className="policy-footer">
         <div className="footer-links">
-          <Link href="/privacy">Privacy Policy</Link>
+          <Link href="/privacy.html">Privacy Policy</Link>
           <span className="footer-dot"></span>
-          <Link href="/accuracy">AI Accuracy Policy</Link>
+          <Link href="/accuracy.html">AI Accuracy Policy</Link>
           <span className="footer-dot"></span>
           <a href="mailto:hello@francisnaga.site">hello@francisnaga.site</a>
         </div>

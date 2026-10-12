@@ -262,7 +262,7 @@ export default function AccuracyPolicyPage() {
         <main className="policy-content">
           <h1>AI Accuracy, Verification & Limitations Policy</h1>
           <div className="last-updated">
-            Last Updated: October 2026 &middot; Inkto Technologies (<a href="https://inkto.jointaccount.org/accuracy">inkto.jointaccount.org/accuracy</a>)
+            Last Updated: October 2026 &middot; Inkto Technologies (<a href="https://inkto.jointaccount.org/accuracy.html">inkto.jointaccount.org/accuracy.html</a>)
           </div>
 
           <div className="info-box-warning">
@@ -369,9 +369,9 @@ export default function AccuracyPolicyPage() {
       {/* Footer */}
       <footer className="policy-footer">
         <div className="footer-links">
-          <Link href="/terms">Terms of Service</Link>
+          <Link href="/terms.html">Terms of Service</Link>
           <span className="footer-dot"></span>
-          <Link href="/privacy">Privacy Policy</Link>
+          <Link href="/privacy.html">Privacy Policy</Link>
           <span className="footer-dot"></span>
           <a href="mailto:hello@francisnaga.site">hello@francisnaga.site</a>
         </div>

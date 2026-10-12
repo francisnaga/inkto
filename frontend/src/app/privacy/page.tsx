@@ -497,9 +497,9 @@ export default function PrivacyPolicy() {
       {/* Footer */}
       <footer className="privacy-footer">
         <div className="footer-links">
-          <Link href="/terms">Terms of Service</Link>
+          <Link href="/terms.html">Terms of Service</Link>
           <span className="footer-dot"></span>
-          <Link href="/accuracy">AI Accuracy Policy</Link>
+          <Link href="/accuracy.html">AI Accuracy Policy</Link>
           <span className="footer-dot"></span>
           <a href="mailto:hello@francisnaga.site">hello@francisnaga.site</a>
         </div>

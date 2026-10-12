@@ -583,11 +583,11 @@ export default function LandingPage() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <Link href="/terms" style={{ color: T.ink3, textDecoration: 'none' }}>Terms</Link>
+                    <Link href="/terms.html" style={{ color: T.ink3, textDecoration: 'none' }}>Terms</Link>
                     <span>&middot;</span>
-                    <Link href="/privacy" style={{ color: T.ink3, textDecoration: 'none' }}>Privacy</Link>
+                    <Link href="/privacy.html" style={{ color: T.ink3, textDecoration: 'none' }}>Privacy</Link>
                     <span>&middot;</span>
-                    <Link href="/accuracy" style={{ color: T.ink3, textDecoration: 'none' }}>AI Accuracy</Link>
+                    <Link href="/accuracy.html" style={{ color: T.ink3, textDecoration: 'none' }}>AI Accuracy</Link>
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>

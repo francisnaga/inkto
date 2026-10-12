@@ -1,1 +1,18 @@
-{"functions":{"api/[...slug].js":{"maxDuration":60}}}
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/accuracy", "destination": "/accuracy.html" },
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/terms", "destination": "/terms.html" },
+    { "source": "/app", "destination": "/app.html" },
+    { "source": "/draft", "destination": "/draft.html" },
+    { "source": "/history", "destination": "/history.html" },
+    { "source": "/verify", "destination": "/verify.html" }
+  ],
+  "functions": {
+    "api/[...slug].js": {
+      "maxDuration": 60
+    }
+  }
+}

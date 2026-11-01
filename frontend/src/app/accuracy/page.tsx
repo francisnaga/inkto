@@ -172,7 +172,7 @@ export default function AccuracyPolicyPage() {
           line-height: 1.4;
         }
         .sidebar-nav button:hover {
-          color: #2563EB;
+          color: #0060FF;
         }
         .policy-content {
           flex: 1;
@@ -203,7 +203,7 @@ export default function AccuracyPolicyPage() {
         }
         .info-box-blue {
           background: #F9FAFB;
-          border-left: 3px solid #2563EB;
+          border-left: 3px solid #0060FF;
           color: #374151;
           padding: 14px 18px;
           font-size: 14px;
@@ -243,7 +243,7 @@ export default function AccuracyPolicyPage() {
           margin-bottom: 10px;
         }
         .policy-content a {
-          color: #2563EB;
+          color: #0060FF;
           text-decoration: underline;
         }
         .policy-content a:hover {
@@ -287,7 +287,7 @@ export default function AccuracyPolicyPage() {
           transition: color 0.15s ease;
         }
         .footer-links a:hover {
-          color: #2563EB;
+          color: #0060FF;
         }
         .footer-dot {
           width: 3px;

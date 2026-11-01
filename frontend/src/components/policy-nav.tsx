@@ -123,7 +123,7 @@ export function PolicyNav({
         }
 
         .branch-node.active::after {
-          background: #2563EB;
+          background: #0060FF;
         }
 
         /* Desktop Sidebar Container */
@@ -314,7 +314,7 @@ export function PolicyNav({
         .drawer-top-btn {
           background: none;
           border: none;
-          color: #2563EB;
+          color: #0060FF;
           font-size: 12px;
           font-weight: 600;
           cursor: pointer;
@@ -363,7 +363,7 @@ export function PolicyNav({
       <div className={`drawer-sheet ${mobileOpen ? 'open' : ''}`}>
         <div className="drawer-top">
           <div className="drawer-title-group">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0060FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="6" y1="3" x2="6" y2="15"/>
               <circle cx="18" cy="6" r="3"/>
               <circle cx="6" cy="18" r="3"/>

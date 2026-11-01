@@ -171,7 +171,7 @@ export default function TermsPage() {
           transition: color 0.2s;
         }
         .sidebar-nav button:hover {
-          color: #2563EB;
+          color: #0060FF;
         }
         .policy-content {
           max-width: 700px;
@@ -215,7 +215,7 @@ export default function TermsPage() {
           margin-bottom: 8px;
         }
         .policy-content a {
-          color: #2563EB;
+          color: #0060FF;
           text-decoration: none;
         }
         .policy-content a:hover {

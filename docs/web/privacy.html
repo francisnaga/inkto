@@ -13,7 +13,7 @@
       --text: #F3F4F6;
       --text-muted: #9CA3AF;
       --accent: #E5E7EB;
-      --accent-highlight: #3B82F6;
+      --accent-highlight: #0060FF;
     }
     @media (prefers-color-scheme: light) {
       :root {
@@ -23,7 +23,7 @@
         --text: #111827;
         --text-muted: #6B7280;
         --accent: #111827;
-        --accent-highlight: #2563EB;
+        --accent-highlight: #0060FF;
       }
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -50,11 +50,12 @@
       width: 44px;
       height: 44px;
       border-radius: 10px;
-      background: #0E0F12;
+      background: #0060FF;
+      box-shadow: 0 4px 12px rgba(0, 96, 255, 0.35);
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid var(--border);
+      border: none;
     }
     .brand-logo svg {
       width: 24px;

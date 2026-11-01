@@ -7,7 +7,7 @@
   --inkto-border:       #22252B; /* Subtle card border */
   --inkto-text-primary: #F3F4F6; /* Crisp off-white text */
   --inkto-text-muted:   #9CA3AF; /* Muted grey secondary text */
-  --inkto-accent:       #3B82F6; /* Clean interactive blue */
+  --inkto-accent:       #0060FF; /* Official Google Play vibrant brand blue */
 
   /* Light Mode */
   --inkto-bg-light:     #FAFAF9; /* Warm off-white */
@@ -24,9 +24,9 @@
   --ink-2:        #44403C;
   --ink-3:        #78716C;
   --ink-4:        var(--inkto-text-muted, #9CA3AF);
-  --accent:       var(--inkto-accent, #3B82F6);
-  --accent-light: #EFF6FF;
-  --accent-mid:   #DBEAFE;
+  --accent:       var(--inkto-accent, #0060FF);
+  --accent-light: #EBF3FF;
+  --accent-mid:   #CFE2FE;
   --success:      #15803D;
   --success-light:#DCFCE7;
   --error:        #B91C1C;

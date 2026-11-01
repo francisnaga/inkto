@@ -15,8 +15,8 @@ const T = {
     ink2:       '#1F2937',
     ink3:       '#4B5563',
     ink4:       '#9CA3AF', /* Muted grey secondary text */
-    accent:     '#3B82F6', /* Clean interactive blue */
-    accentL:    '#EFF6FF',
+    accent:     '#0060FF', /* Vibrant Google Play brand blue */
+    accentL:    '#EBF3FF',
     slate:      '#0E0F12', /* Deep obsidian app background */
     cardDark:   '#141519', /* Elevated card surface */
     borderDark: '#22252B', /* Subtle card border */
@@ -50,8 +50,8 @@ const Ic = {
 };
 
 /* Official Logo SVG */
-const Logo = ({ size = 26 }: { size?: number }) => (
-    <InktoLogo size={size} variant="squircle" />
+const Logo = ({ size = 28 }: { size?: number }) => (
+    <InktoLogo size={size} variant="squircle" bg="#0060FF" style={{ filter: 'drop-shadow(0 3px 8px rgba(0, 96, 255, 0.32))' }} />
 );
 
 function Img({ src, alt, style }: any) {
@@ -233,12 +233,12 @@ export default function LandingPage() {
                     font-size: 15px; font-weight: 700;
                     cursor: pointer; letter-spacing: -0.2px;
                     font-family: inherit;
-                    box-shadow: 0 6px 24px rgba(59,130,246,0.35);
+                    box-shadow: 0 6px 24px rgba(0,96,255,0.35);
                     transition: transform 0.18s cubic-bezier(.4,0,.2,1), box-shadow 0.18s cubic-bezier(.4,0,.2,1);
                 }
                 .lp-btn-accent:hover {
                     transform: translateY(-2px);
-                    box-shadow: 0 14px 36px rgba(59,130,246,0.45);
+                    box-shadow: 0 14px 36px rgba(0,96,255,0.45);
                 }
                 .lp-step-card {
                     display: flex; gap: 20px; align-items: flex-start;

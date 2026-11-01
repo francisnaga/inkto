@@ -4,27 +4,30 @@ import React from 'react';
 
 /**
  * InktoLogo — Official Inkto brand mark.
- * Monochromatic geometric vector mark matching Android app drawables and docs/web assets.
+ * Monochromatic geometric vector mark matching Android app drawables and Google Play store icon.
  */
 
 interface Props {
   size?: number;
   animate?: boolean;
   color?: string;
-  variant?: 'mark' | 'squircle';
+  bg?: string;
+  variant?: 'squircle' | 'squircle-dark' | 'mark';
   className?: string;
   style?: React.CSSProperties;
 }
 
 export function InktoLogo({
-  size = 26,
+  size = 28,
   animate = false,
-  color = 'currentColor',
-  variant = 'mark',
+  color = '#0060FF',
+  bg,
+  variant = 'squircle',
   className,
   style,
 }: Props) {
-  if (variant === 'squircle') {
+  if (variant === 'squircle' || variant === 'squircle-dark') {
+    const squircleBg = bg || (variant === 'squircle-dark' ? '#0E0F12' : '#0060FF');
     return (
       <svg
         width={size}
@@ -42,8 +45,8 @@ export function InktoLogo({
           ...style,
         }}
       >
-        {/* Dark rounded squircle */}
-        <rect width="512" height="512" rx="114" fill="#0E0F12" />
+        {/* Vibrant Blue or Obsidian rounded squircle */}
+        <rect width="512" height="512" rx="114" fill={squircleBg} />
         {/* Centered Inkto Symbol */}
         <g transform="translate(256, 256) scale(0.38) translate(-512, -512)">
           <path
@@ -108,7 +111,7 @@ export function InktoAppIcon({ size = 32, className, style }: { size?: number; c
 
 /** Wordmark: official logo icon + bold "Inkto" text */
 export function InktoWordmark({
-  size = 26,
+  size = 28,
   animate = false,
   color = '#111827',
   variant = 'squircle',
@@ -116,7 +119,7 @@ export function InktoWordmark({
   size?: number;
   animate?: boolean;
   color?: string;
-  variant?: 'mark' | 'squircle';
+  variant?: 'mark' | 'squircle' | 'squircle-dark';
 }) {
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 9 }}>

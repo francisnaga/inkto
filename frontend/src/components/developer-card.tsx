@@ -66,7 +66,7 @@ export function DeveloperCard({
           word-break: break-all;
         }
         .dev-contact-value a {
-          color: #2563EB;
+          color: #0060FF;
           text-decoration: none;
           transition: color 0.15s ease;
         }

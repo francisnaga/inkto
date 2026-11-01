@@ -1,52 +1,135 @@
 'use client';
 
+import React from 'react';
+
 /**
- * InktoLogo — The original Inkto icon (August 21 brand mark).
- * Precision SVG featuring the pen-nib facet with horizontal document lines.
+ * InktoLogo — Official Inkto brand mark.
+ * Monochromatic geometric vector mark matching Android app drawables and docs/web assets.
  */
 
 interface Props {
   size?: number;
   animate?: boolean;
   color?: string;
+  variant?: 'mark' | 'squircle';
+  className?: string;
+  style?: React.CSSProperties;
 }
 
-export function InktoLogo({ size = 26, animate = false, color = '#2563EB' }: Props) {
+export function InktoLogo({
+  size = 26,
+  animate = false,
+  color = 'currentColor',
+  variant = 'mark',
+  className,
+  style,
+}: Props) {
+  if (variant === 'squircle') {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 512 512"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-label="Inkto"
+        className={className}
+        style={{
+          display: 'inline-block',
+          verticalAlign: 'middle',
+          flexShrink: 0,
+          ...(animate ? { animation: 'pulse 1.5s ease-in-out' } : {}),
+          ...style,
+        }}
+      >
+        {/* Dark rounded squircle */}
+        <rect width="512" height="512" rx="114" fill="#0E0F12" />
+        {/* Centered Inkto Symbol */}
+        <g transform="translate(256, 256) scale(0.38) translate(-512, -512)">
+          <path
+            d="M 402,426.5 L 402,661.5 L 622,801.5 L 622,566.5 Z"
+            fill="#FFFFFF"
+            stroke="#FFFFFF"
+            strokeWidth="32"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M 402,222.5 L 402,334.5 L 622,474.5 L 622,362.5 Z"
+            fill="#FFFFFF"
+            stroke="#FFFFFF"
+            strokeWidth="32"
+            strokeLinejoin="round"
+          />
+        </g>
+      </svg>
+    );
+  }
+
+  // Pure vector mark
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 100 100"
+      viewBox="0 0 1024 1024"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-label="Inkto"
-      style={animate ? { animation: 'pulse 1.5s ease-in-out' } : undefined}
+      className={className}
+      style={{
+        display: 'inline-block',
+        verticalAlign: 'middle',
+        flexShrink: 0,
+        ...(animate ? { animation: 'pulse 1.5s ease-in-out' } : {}),
+        ...style,
+      }}
     >
-      <path d="M16 50 L36 28 L54 38 L54 62 L36 72 Z" fill={color} />
-      <circle cx="30" cy="50" r="3.5" fill="white" />
-      <line x1="16" y1="50" x2="36" y2="50" stroke="white" strokeWidth="3" strokeLinecap="round" />
-      <line x1="36" y1="28" x2="36" y2="72" stroke="white" strokeWidth="2" strokeLinecap="round" />
-      <rect x="57" y="30" width="28" height="7" rx="3.5" fill={color} />
-      <rect x="57" y="46.5" width="26" height="7" rx="3.5" fill={color} />
-      <rect x="57" y="63" width="20" height="7" rx="3.5" fill={color} />
+      <path
+        d="M 402,426.5 L 402,661.5 L 622,801.5 L 622,566.5 Z"
+        fill={color}
+        stroke={color}
+        strokeWidth="28"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M 402,222.5 L 402,334.5 L 622,474.5 L 622,362.5 Z"
+        fill={color}
+        stroke={color}
+        strokeWidth="28"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 
-/** Wordmark: original logo icon + bold "Inkto" text */
-export function InktoWordmark({ size = 26, animate = false }: { size?: number; animate?: boolean }) {
+/** InktoAppIcon: Pre-configured squircle app icon */
+export function InktoAppIcon({ size = 32, className, style }: { size?: number; className?: string; style?: React.CSSProperties }) {
+  return <InktoLogo size={size} variant="squircle" className={className} style={style} />;
+}
+
+/** Wordmark: official logo icon + bold "Inkto" text */
+export function InktoWordmark({
+  size = 26,
+  animate = false,
+  color = '#111827',
+  variant = 'squircle',
+}: {
+  size?: number;
+  animate?: boolean;
+  color?: string;
+  variant?: 'mark' | 'squircle';
+}) {
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-      <InktoLogo size={size} animate={animate} />
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 9 }}>
+      <InktoLogo size={size} animate={animate} color={color} variant={variant} />
       <span
         style={{
           fontWeight: 800,
-          fontSize: Math.round(size * 0.68),
+          fontSize: Math.round(size * 0.72),
           letterSpacing: '-0.4px',
-          color: '#0B0D12',
+          color: color,
           lineHeight: 1,
           userSelect: 'none',
-          fontFamily: '-apple-system, "Segoe UI", Roboto, sans-serif',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         }}
       >
         Inkto

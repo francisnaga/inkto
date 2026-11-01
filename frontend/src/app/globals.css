@@ -1,15 +1,30 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap');
 
 :root {
-  --bg:           #F5F4F0;
-  --surface:      #FFFFFF;
-  --border:       #E4E2DC;
+  /* Brand Design Tokens (Inkto App & Web Aesthetic) */
+  --inkto-bg:           #0D0E11; /* Deep obsidian background */
+  --inkto-card:         #141519; /* Elevated card surface */
+  --inkto-border:       #22252B; /* Subtle card border */
+  --inkto-text-primary: #F3F4F6; /* Crisp off-white text */
+  --inkto-text-muted:   #9CA3AF; /* Muted grey secondary text */
+  --inkto-accent:       #3B82F6; /* Clean interactive blue */
+
+  /* Light Mode */
+  --inkto-bg-light:     #FAFAF9; /* Warm off-white */
+  --inkto-card-light:   #FFFFFF; /* Pure white card */
+  --inkto-border-light: #E5E7EB; /* Light grey border */
+  --inkto-text-light:   #111827; /* Deep charcoal text */
+
+  /* App Shell Variables */
+  --bg:           var(--inkto-bg-light, #FAFAF9);
+  --surface:      var(--inkto-card-light, #FFFFFF);
+  --border:       var(--inkto-border-light, #E5E7EB);
   --border-soft:  #EDECE8;
-  --ink:          #1C1917;
+  --ink:          var(--inkto-text-light, #111827);
   --ink-2:        #44403C;
   --ink-3:        #78716C;
-  --ink-4:        #A8A29E;
-  --accent:       #1D4ED8;
+  --ink-4:        var(--inkto-text-muted, #9CA3AF);
+  --accent:       var(--inkto-accent, #3B82F6);
   --accent-light: #EFF6FF;
   --accent-mid:   #DBEAFE;
   --success:      #15803D;
@@ -43,7 +58,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ÔöÇÔöÇ App Shell ÔöÇÔöÇ */
+/* App Shell */
 .app-container {
   max-width: 680px;
   margin: 0 auto;
@@ -76,13 +91,13 @@ h1 {
   color: var(--ink);
 }
 
-/* ÔöÇÔöÇ Desktop Split Pane ÔöÇÔöÇ */
+/* Desktop Split Pane */
 .desktop-split {
   display: flex;
   flex: 1;
   min-height: calc(100vh - 80px);
   gap: 0;
-  margin: 0 -20px; /* Bleed to edges on wide screens if needed */
+  margin: 0 -20px;
   background: var(--surface);
   border-top: 1px solid var(--border);
 }
@@ -107,8 +122,7 @@ h1 {
   flex-direction: column;
 }
 
-
-/* ÔöÇÔöÇ Animations ÔöÇÔöÇ */
+/* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -132,9 +146,9 @@ h1 {
 }
 
 @keyframes pulseRing {
-  0%   { box-shadow: 0 0 0 0 rgba(29,78,216,0.3); }
-  70%  { box-shadow: 0 0 0 10px rgba(29,78,216,0); }
-  100% { box-shadow: 0 0 0 0 rgba(29,78,216,0); }
+  0%   { box-shadow: 0 0 0 0 rgba(59,130,246,0.3); }
+  70%  { box-shadow: 0 0 0 10px rgba(59,130,246,0); }
+  100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
 }
 
 @keyframes shimmer {

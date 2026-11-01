@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+  <!-- Rounded squircle container -->
+  <rect width="512" height="512" rx="114" fill="#0E0F12" />
+  
+  <!-- Centered Inkto Symbol -->
+  <g transform="translate(256, 256) scale(0.38) translate(-512, -512)">
+    <path
+      d="M 402,426.5 L 402,661.5 L 622,801.5 L 622,566.5 Z"
+      fill="#FFFFFF"
+      stroke="#FFFFFF"
+      stroke-width="32"
+      stroke-linejoin="round"
+    />
+    <path
+      d="M 402,222.5 L 402,334.5 L 622,474.5 L 622,362.5 Z"
+      fill="#FFFFFF"
+      stroke="#FFFFFF"
+      stroke-width="32"
+      stroke-linejoin="round"
+    />
+  </g>
+</svg>

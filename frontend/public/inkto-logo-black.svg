@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" fill="none">
+  <!-- Inkto Monochromatic Brand Mark (Black for light mode) -->
+  <path
+    d="M 402,426.5 L 402,661.5 L 622,801.5 L 622,566.5 Z"
+    fill="#000000"
+    stroke="#000000"
+    stroke-width="28"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M 402,222.5 L 402,334.5 L 622,474.5 L 622,362.5 Z"
+    fill="#000000"
+    stroke="#000000"
+    stroke-width="28"
+    stroke-linejoin="round"
+  />
+</svg>

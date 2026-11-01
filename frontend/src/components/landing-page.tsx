@@ -3,22 +3,28 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
+import { InktoLogo } from './inkto-logo';
 
-/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Design tokens (mirror index.css :root) Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */
+/* ── Design tokens (matching Inkto app & web tokens) ── */
 const T = {
-    bg:      '#F5F4F0',
-    surface: '#FFFFFF',
-    border:  '#E4E2DC',
-    ink:     '#1C1917',
-    ink2:    '#44403C',
-    ink3:    '#78716C',
-    ink4:    '#A8A29E',
-    accent:  '#2563EB',
-    accentL: '#EFF6FF',
-    slate:   '#0F172A',
+    bg:         '#FAFAF9', /* Warm off-white */
+    surface:    '#FFFFFF', /* Pure white card */
+    border:     '#E5E7EB', /* Light grey border */
+    ink:        '#111827', /* Deep charcoal text */
+    ink2:       '#1F2937',
+    ink3:       '#4B5563',
+    ink4:       '#9CA3AF', /* Muted grey secondary text */
+    accent:     '#3B82F6', /* Clean interactive blue */
+    accentL:    '#EFF6FF',
+    slate:      '#0E0F12', /* Deep obsidian app background */
+    cardDark:   '#141519', /* Elevated card surface */
+    borderDark: '#22252B', /* Subtle card border */
 };
 
-/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Inline SVG icons Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */
+const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.inkto.app";
+
+/* ── Inline SVG icons ── */
 const Ic = {
     Arrow:   (p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>,
     Check:   (p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>,
@@ -33,19 +39,19 @@ const Ic = {
     Twitter: (p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>,
     Paystack:(p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="currentColor"><path d="M4 17h6v4H4v-4zM14 17h6v4h-6v-4zM4 10h6v4H4v-4zM14 10h6v4h-6v-4zM4 3h6v4H4V3z"/></svg>,
     PayPal:  (p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="currentColor"><path d="M7.077 16.26l1.3-8.24c.1-.64.65-1.12 1.3-1.12h4.55c2.4 0 3.9 1.15 3.9 3.4 0 2.44-1.5 4.38-4 4.38h-2.02c-.52 0-.96.38-1.04.9l-.6 3.75c-.04.25-.26.43-.51.43H7.43c-.35 0-.6-.33-.53-.66l.17-.84z"/><path fillOpacity="0.5" d="M10.77 8.26l-1.3 8.24c-.1.64-.65 1.12-1.3 1.12H5.63c-.35 0-.6.33-.53.66l1.7-10.84c.1-.64.65-1.12 1.3-1.12h4.55c1.47 0 2.57.43 3.24 1.16-.48-.7-1.33-1.16-2.52-1.16H8.82c-.65 0-1.2.48-1.3 1.12L6.22 15.26h2.52c.52 0 .96-.38 1.04-.9l.99-6.1z"/></svg>,
+    GooglePlay: (p: any) => (
+        <svg width={p.s||18} height={p.s||18} viewBox="0 0 512 512" style={{ flexShrink: 0 }}>
+            <path fill="#4285F4" d="M47.7 20.3C44.4 23.8 42.6 29 42.6 36v440c0 7 1.8 12.2 5.1 15.7l239.5-239.5L47.7 20.3z"/>
+            <path fill="#FBBC04" d="M380.1 332.8l-92.9-80.6-239.5 239.5c5.3 3.3 12.2 4.1 20 0l312.4-178.9z"/>
+            <path fill="#EA4335" d="M67.7 20.3c-7.8-4.1-14.7-3.3-20 0l239.5 239.5 92.9-80.6L67.7 20.3z"/>
+            <path fill="#34A853" d="M380.1 179.2L428.8 207c16.3 9.3 16.3 24.7 0 34l-48.7 27.8-19.4-19.4 19.4-60.2z"/>
+        </svg>
+    ),
 };
 
-/* Logo SVG */
-const Logo = ({ size = 24 }) => (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M16 50 L36 28 L54 38 L54 62 L36 72 Z" fill={T.accent}/>
-        <circle cx="30" cy="50" r="3.5" fill="white"/>
-        <line x1="16" y1="50" x2="36" y2="50" stroke="white" strokeWidth="3" strokeLinecap="round"/>
-        <line x1="36" y1="28" x2="36" y2="72" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-        <rect x="57" y="30" width="28" height="7" rx="3.5" fill={T.accent}/>
-        <rect x="57" y="46.5" width="26" height="7" rx="3.5" fill={T.accent}/>
-        <rect x="57" y="63" width="20" height="7" rx="3.5" fill={T.accent}/>
-    </svg>
+/* Official Logo SVG */
+const Logo = ({ size = 26 }: { size?: number }) => (
+    <InktoLogo size={size} variant="squircle" />
 );
 
 function Img({ src, alt, style }: any) {
@@ -121,7 +127,7 @@ function FAQItem({ q, a }: any) {
                     cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
                 }}
             >
-                <span style={{ fontSize: '15px', fontWeight: '700', color: T.slate, lineHeight: 1.4 }}>{q}</span>
+                <span style={{ fontSize: '15px', fontWeight: '700', color: T.ink, lineHeight: 1.4 }}>{q}</span>
                 <Ic.Chevron s={18} open={open} />
             </button>
             {open && (
@@ -154,27 +160,25 @@ const FEATURES = [
 const STEPS = [
     { n: '1', Icon: Ic.Camera, title: 'Photograph the document', desc: 'Take a photo on your phone or upload a scanned PDF. Handles up to 30 pages at once. Optimised for affidavits, sworn statements, and handwritten legal filings.' },
     { n: '2', Icon: Ic.Zap, title: 'Read and transcribe', desc: 'The system reads the handwriting, strips crossed-out text, inserts caret additions correctly, and formats everything cleanly. A second AI pass verifies numbers and proper nouns.' },
-    { n: '3', Icon: Ic.File, title: 'Copy, download, or email', desc: 'Copy the text directly, download a Word document, or email the transcript. History is saved to your email and available indefinitely Ã”Ã‡Ã¶ log in with that email at any time.' },
+    { n: '3', Icon: Ic.File, title: 'Copy, download, or email', desc: 'Copy the text directly, download a Word document, or email the transcript. History is saved to your email and available indefinitely — log in with that email at any time.' },
 ];
 
 const FAQS = [
     { q: 'How do I convert handwriting to text for free?', a: 'Upload a photo or scanned PDF of your handwritten document to Inkto. The system reads the handwriting and returns clean, editable text in seconds. Completely free and no sign up required.' },
     { q: 'Can Inkto transcribe legal documents and affidavits?', a: 'Yes. Inkto is built for legal documents including affidavits, sworn statements, court filings, and other handwritten legal texts. It removes crossed-out words, places caret insertions correctly, and runs a second pass to verify numbers and proper nouns.' },
+    { q: 'Is there an Android mobile app for Inkto?', a: 'Yes! Inkto is officially available for download on Google Play (https://play.google.com/store/apps/details?id=com.inkto.app) with hardware camera acceleration and real-time document perspective correction. You can also use the web app on any mobile or desktop browser.' },
     { q: 'What file formats does Inkto accept?', a: 'Inkto accepts JPEG, PNG, and PDF files. You can upload up to 30 pages at once. Output can be copied as plain text or downloaded as a Microsoft Word (.docx) file.' },
-    { q: 'Does Inkto work on mobile phones?', a: 'Yes. Inkto works in any mobile browser on Android and iPhone. Take a photo directly with your camera and upload it. You can also add Inkto to your home screen for quick access like a native app.' },
     { q: 'How accurate is the handwriting recognition?', a: 'Inkto uses a two-pass verification process. The first pass transcribes the handwriting. The second pass verifies numbers, dates, proper nouns, and legal terms against the original image for legal-grade accuracy.' },
     { q: 'Is my document data private?', a: 'Yes. Unsaved documents are automatically deleted after 7 days for your privacy. Documents you explicitly save or email are kept securely in your history until you delete them. No account is required, and your documents are never used for training models.' },
 ];
 
-/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Main component Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */
-import Link from 'next/link';
 export default function LandingPage() {
     const [ctaHover, setCtaHover] = useState(false);
 
     return (
         <div style={{ minHeight: '100vh', background: T.bg, fontFamily: "'Inter', -apple-system, sans-serif", color: T.ink }}>
 
-            {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Global page-level styles (only layout & animations, no font imports) */}
+            {/* Global page-level styles */}
             <style>{`
                 .lp-hero-grid {
                     display: grid;
@@ -209,10 +213,10 @@ export default function LandingPage() {
                 }
                 .lp-btn-primary {
                     display: inline-flex; align-items: center; gap: 8px;
-                    padding: 15px 30px;
+                    padding: 14px 28px;
                     background: ${T.slate}; color: #fff;
                     border: none; border-radius: 12px;
-                    font-size: 15px; font-weight: 800;
+                    font-size: 15px; font-weight: 700;
                     cursor: pointer; letter-spacing: -0.2px;
                     font-family: inherit;
                     transition: transform 0.18s cubic-bezier(.4,0,.2,1), box-shadow 0.18s cubic-bezier(.4,0,.2,1);
@@ -226,15 +230,15 @@ export default function LandingPage() {
                     padding: 15px 30px;
                     background: ${T.accent}; color: #fff;
                     border: none; border-radius: 12px;
-                    font-size: 15px; font-weight: 800;
+                    font-size: 15px; font-weight: 700;
                     cursor: pointer; letter-spacing: -0.2px;
                     font-family: inherit;
-                    box-shadow: 0 6px 24px rgba(37,99,235,0.35);
+                    box-shadow: 0 6px 24px rgba(59,130,246,0.35);
                     transition: transform 0.18s cubic-bezier(.4,0,.2,1), box-shadow 0.18s cubic-bezier(.4,0,.2,1);
                 }
                 .lp-btn-accent:hover {
                     transform: translateY(-2px);
-                    box-shadow: 0 14px 36px rgba(37,99,235,0.45);
+                    box-shadow: 0 14px 36px rgba(59,130,246,0.45);
                 }
                 .lp-step-card {
                     display: flex; gap: 20px; align-items: flex-start;
@@ -247,28 +251,67 @@ export default function LandingPage() {
                     text-decoration: none; transition: color 0.15s;
                 }
                 .lp-footer-link:hover { color: ${T.ink3}; }
+                .lp-btn-playstore {
+                    display: inline-flex; align-items: center; gap: 9px;
+                    padding: 13px 22px; border-radius: 12px;
+                    background: ${T.slate}; color: #FFFFFF;
+                    font-size: 14.5px; font-weight: 700; text-decoration: none;
+                    border: 1px solid ${T.borderDark};
+                    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+                    transition: transform 0.18s cubic-bezier(.4,0,.2,1), box-shadow 0.18s cubic-bezier(.4,0,.2,1);
+                }
+                .lp-btn-playstore:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 10px 28px rgba(0,0,0,0.22);
+                    border-color: rgba(255,255,255,0.25);
+                }
             `}</style>
 
-            {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Navbar Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */}
+            {/* ── Navbar ── */}
             <nav style={{
                 position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '0 clamp(20px, 5vw, 56px)', height: '60px',
-                background: 'rgba(245,244,240,0.88)',
+                padding: '0 clamp(20px, 5vw, 56px)', height: '64px',
+                background: 'rgba(250, 250, 249, 0.92)',
                 backdropFilter: 'blur(14px)',
                 borderBottom: `1px solid ${T.border}`,
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Logo size={26} />
-                    <span style={{ fontWeight: 800, fontSize: '17px', letterSpacing: '-0.4px', color: T.ink }}>Inkto</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Logo size={28} />
+                    <span style={{ fontWeight: 800, fontSize: '18px', letterSpacing: '-0.4px', color: T.ink }}>Inkto</span>
                 </div>
-                <Link href="/app" className="lp-btn-primary"
-                    style={{ padding: '8px 18px', fontSize: '13px', borderRadius: '9px', textDecoration: 'none' }}>
-                    Try it free
-                </Link>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <a
+                        href={PLAY_STORE_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '7px',
+                            padding: '7px 14px',
+                            fontSize: '12.5px',
+                            fontWeight: 600,
+                            borderRadius: '9px',
+                            color: T.ink2,
+                            background: T.surface,
+                            border: `1px solid ${T.border}`,
+                            textDecoration: 'none',
+                            transition: 'background 0.15s ease',
+                        }}
+                    >
+                        <Ic.GooglePlay s={15} />
+                        <span className="hidden sm:inline">Google Play</span>
+                    </a>
+                    <Link href="/app" className="lp-btn-primary"
+                        style={{ padding: '8px 18px', fontSize: '13px', borderRadius: '9px', textDecoration: 'none' }}>
+                        Open Web App
+                    </Link>
+                </div>
             </nav>
 
-            {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Hero Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */}
+            {/* ── Hero ── */}
             <section style={{
                 maxWidth: '960px', margin: '0 auto',
                 padding: 'clamp(120px, 14vw, 144px) clamp(20px, 5vw, 48px) 64px',
@@ -277,7 +320,7 @@ export default function LandingPage() {
                 <h1 style={{
                     fontSize: 'clamp(38px, 7vw, 66px)',
                     fontWeight: 900, lineHeight: 1.04,
-                    letterSpacing: '-2.5px', color: T.slate,
+                    letterSpacing: '-2.5px', color: T.ink,
                     marginBottom: '22px',
                 }}>
                     Handwritten docs,<br />
@@ -298,12 +341,12 @@ export default function LandingPage() {
                     Snap a photo of any handwritten document and Inkto converts it to clean, editable text.
                 </p>
 
-                {/* Before Ã”Ã¥Ã† After demo */}
+                {/* Before → After demo */}
                 <div className="lp-hero-grid">
                     {/* BEFORE */}
                     <div style={{
                         borderRadius: '16px', overflow: 'hidden',
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.10)',
                         border: `1px solid ${T.border}`,
                         position: 'relative',
                     }}>
@@ -328,7 +371,7 @@ export default function LandingPage() {
                         border: `1px solid ${T.border}`,
                         borderRadius: '16px',
                         padding: '28px',
-                        boxShadow: '0 12px 40px rgba(0,0,0,0.07)',
+                        boxShadow: '0 12px 40px rgba(0,0,0,0.06)',
                         textAlign: 'left',
                         position: 'relative',
                         aspectRatio: '4/3',
@@ -340,7 +383,7 @@ export default function LandingPage() {
                         <p style={{
                             fontFamily: "'EB Garamond', Georgia, serif",
                             fontSize: 'clamp(16px, 2vw, 20px)',
-                            color: T.slate, lineHeight: 1.75,
+                            color: T.ink, lineHeight: 1.75,
                             margin: 0,
                         }}>
                             I hereby swear that the claimant was present at the scene on the 14th of March 2024. The said individual did not leave the premises before 6pm.
@@ -348,25 +391,37 @@ export default function LandingPage() {
                     </div>
                 </div>
 
-                {/* CTA */}
-                <Link href="/app" className="lp-btn-primary"
-                    style={{
-                        boxShadow: ctaHover ? '0 14px 36px rgba(0,0,0,0.28)' : '0 6px 20px rgba(0,0,0,0.18)',
-                        textDecoration: 'none'
-                    }}
-                    onMouseEnter={() => setCtaHover(true)}
-                    onMouseLeave={() => setCtaHover(false)}
-                >
-                    Start transcribing <Ic.Arrow s={16} c="#fff" />
-                </Link>
-                <p style={{ marginTop: '14px', fontSize: '12px', color: T.ink4, fontWeight: 500 }}>
-                    Free. No sign up required. Works directly in your browser.
+                {/* CTAs: Web App & Google Play */}
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                    <Link href="/app" className="lp-btn-primary"
+                        style={{
+                            boxShadow: ctaHover ? '0 14px 36px rgba(0,0,0,0.28)' : '0 6px 20px rgba(0,0,0,0.18)',
+                            textDecoration: 'none'
+                        }}
+                        onMouseEnter={() => setCtaHover(true)}
+                        onMouseLeave={() => setCtaHover(false)}
+                    >
+                        Start transcribing <Ic.Arrow s={16} c="#fff" />
+                    </Link>
+
+                    <a
+                        href={PLAY_STORE_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="lp-btn-playstore"
+                    >
+                        <Ic.GooglePlay s={18} />
+                        <span>Get on Google Play</span>
+                    </a>
+                </div>
+
+                <p style={{ marginTop: '16px', fontSize: '12px', color: T.ink4, fontWeight: 500 }}>
+                    Free. No sign up required. Available on Web and Android.
                 </p>
             </section>
 
-            {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Features Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */}
+            {/* ── Features ── */}
             <Section style={{ marginBottom: '80px' }}>
-                {/* Two demo cards */}
                 <div className="lp-feat-grid">
                     {/* Card A: Edits */}
                     <div style={{
@@ -374,7 +429,7 @@ export default function LandingPage() {
                         borderRadius: '16px', padding: '28px',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
                     }}>
-                        <h3 style={{ fontSize: '17px', fontWeight: '800', margin: '0 0 18px', color: T.slate, letterSpacing: '-0.3px' }}>
+                        <h3 style={{ fontSize: '17px', fontWeight: '800', margin: '0 0 18px', color: T.ink, letterSpacing: '-0.3px' }}>
                             Understands edits, not just characters
                         </h3>
                         <div style={{
@@ -391,7 +446,7 @@ export default function LandingPage() {
                             background: T.bg, padding: '14px 18px', borderRadius: '10px',
                             border: `1px solid ${T.border}`,
                             fontFamily: "'EB Garamond', Georgia, serif",
-                            fontSize: '19px', color: T.slate, position: 'relative',
+                            fontSize: '19px', color: T.ink, position: 'relative',
                         }}>
                             <div style={{ position: 'absolute', top: '-10px', right: '12px' }}>
                                 <Pill>CLEAN OUTPUT</Pill>
@@ -406,7 +461,7 @@ export default function LandingPage() {
                         borderRadius: '16px', padding: '28px',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
                     }}>
-                        <h3 style={{ fontSize: '17px', fontWeight: '800', margin: '0 0 18px', color: T.slate, letterSpacing: '-0.3px' }}>
+                        <h3 style={{ fontSize: '17px', fontWeight: '800', margin: '0 0 18px', color: T.ink, letterSpacing: '-0.3px' }}>
                             Preserves document structure
                         </h3>
                         <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
@@ -426,7 +481,7 @@ export default function LandingPage() {
                                 flex: 1, background: T.bg, padding: '14px',
                                 borderRadius: '12px', border: `1px solid ${T.border}`,
                                 fontFamily: "'EB Garamond', Georgia, serif",
-                                fontSize: '15px', color: T.slate, lineHeight: 1.6,
+                                fontSize: '15px', color: T.ink, lineHeight: 1.6,
                                 position: 'relative', minHeight: '170px',
                                 display: 'flex', flexDirection: 'column', justifyContent: 'center',
                             }}>
@@ -458,12 +513,12 @@ export default function LandingPage() {
                 </div>
             </Section>
 
-            {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ How it works Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */}
+            {/* ── How it works ── */}
             <Section style={{ marginBottom: '96px' }}>
                 <div style={{ textAlign: 'center', marginBottom: '44px' }}>
                     <h2 style={{
                         fontSize: 'clamp(24px, 4vw, 34px)', fontWeight: '900',
-                        letterSpacing: '-0.8px', color: T.slate, margin: '0 0 10px',
+                        letterSpacing: '-0.8px', color: T.ink, margin: '0 0 10px',
                     }}>
                         From photo to text in three steps
                     </h2>
@@ -475,7 +530,7 @@ export default function LandingPage() {
                         <div key={i} className="lp-step-card">
                             <div style={{
                                 width: '44px', height: '44px', borderRadius: '12px',
-                                background: T.ink, display: 'flex', alignItems: 'center',
+                                background: T.slate, display: 'flex', alignItems: 'center',
                                 justifyContent: 'center', flexShrink: 0,
                             }}>
                                 <s.Icon s={20} c="#fff" />
@@ -483,7 +538,7 @@ export default function LandingPage() {
                             <div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '7px' }}>
                                     <span style={{ fontSize: '11px', fontWeight: '800', color: T.ink4, letterSpacing: '0.08em' }}>{s.n}</span>
-                                    <h3 style={{ fontSize: '15px', fontWeight: '800', color: T.slate, margin: 0, letterSpacing: '-0.2px' }}>{s.title}</h3>
+                                    <h3 style={{ fontSize: '15px', fontWeight: '800', color: T.ink, margin: 0, letterSpacing: '-0.2px' }}>{s.title}</h3>
                                 </div>
                                 <p style={{ fontSize: '14px', color: T.ink3, lineHeight: 1.7, margin: 0 }}>{s.desc}</p>
                             </div>
@@ -492,19 +547,20 @@ export default function LandingPage() {
                 </div>
             </Section>
 
-            {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Cross-device callout Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */}
+            {/* ── Cross-device & Google Play Callout ── */}
             <Section style={{ marginBottom: '96px' }}>
                 <div style={{
                     background: T.slate, borderRadius: '20px',
                     padding: 'clamp(32px, 5vw, 52px) clamp(28px, 5vw, 52px)',
                     color: '#fff',
+                    border: `1px solid ${T.borderDark}`,
                 }}>
                     <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
-                        {['Â­Æ’Ã´Â¦ Scan on phone', 'Â­Æ’Ã†+ Edit on laptop', 'Â­Æ’Ã´Ã© Save to history'].map(t => (
+                        {['📱 Android Native App', '💻 Web on Laptop/Desktop', '📑 Export to Word (.docx)'].map(t => (
                             <span key={t} style={{
                                 background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
                                 borderRadius: '99px', padding: '5px 14px',
-                                fontSize: '12px', fontWeight: '700', color: 'rgba(255,255,255,0.65)',
+                                fontSize: '12px', fontWeight: '700', color: 'rgba(255,255,255,0.75)',
                             }}>{t}</span>
                         ))}
                     </div>
@@ -512,11 +568,38 @@ export default function LandingPage() {
                         fontSize: 'clamp(22px, 3.5vw, 30px)', fontWeight: '900',
                         letterSpacing: '-0.6px', marginBottom: '14px', lineHeight: 1.2,
                     }}>
-                        Transcribe on your phone.<br />Save to your history.
+                        Transcribe on your phone.<br />Edit on your computer.
                     </h2>
-                    <p style={{ color: '#94A3B8', lineHeight: 1.75, fontSize: '14px', marginBottom: '28px', maxWidth: '480px' }}>
-                        After transcribing, use the <strong style={{ color: '#fff' }}>Inbox</strong> feature. You will get the Word file attached directly in your email along with a secure login link. Clicking this link saves your document to your history indefinitely.
+                    <p style={{ color: '#94A3B8', lineHeight: 1.75, fontSize: '14px', marginBottom: '24px', maxWidth: '520px' }}>
+                        Install the official Inkto app from Google Play for high-speed edge camera scanning, or use Inkto Web in any desktop browser. Word documents (.docx) are sent directly to your inbox with a secure session link.
                     </p>
+
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '28px' }}>
+                        <a
+                            href={PLAY_STORE_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '10px 18px',
+                                borderRadius: '10px',
+                                background: 'rgba(255,255,255,0.12)',
+                                border: '1px solid rgba(255,255,255,0.22)',
+                                color: '#FFFFFF',
+                                fontSize: '13.5px',
+                                fontWeight: 700,
+                                textDecoration: 'none',
+                                transition: 'background 0.15s ease',
+                            }}
+                        >
+                            <Ic.GooglePlay s={17} />
+                            <span>Download on Google Play</span>
+                            <Ic.Arrow s={14} c="#FFFFFF" />
+                        </a>
+                    </div>
+
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '380px' }}>
                         {[
                             'Word document (.docx) attached to your email',
@@ -533,7 +616,7 @@ export default function LandingPage() {
                 </div>
             </Section>
 
-            {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Final CTA Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */}
+            {/* ── Final CTA ── */}
             <section style={{
                 textAlign: 'center',
                 padding: 'clamp(56px, 8vw, 96px) clamp(20px, 5vw, 48px)',
@@ -543,30 +626,41 @@ export default function LandingPage() {
             }}>
                 <h2 style={{
                     fontSize: 'clamp(26px, 5vw, 44px)', fontWeight: '900',
-                    letterSpacing: '-1px', marginBottom: '14px', color: T.slate,
+                    letterSpacing: '-1px', marginBottom: '14px', color: T.ink,
                 }}>
                     Try it now. Free.
                 </h2>
                 <p style={{ color: T.ink3, marginBottom: '32px', fontSize: '15px', maxWidth: '340px', margin: '0 auto 32px' }}>
                     No sign up required. Just upload a photo and get clean text in seconds.
                 </p>
-                <Link href="/app" className="lp-btn-accent" style={{ textDecoration: 'none' }}>
-                    Start transcribing <Ic.Arrow s={16} c="#fff" />
-                </Link>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                    <Link href="/app" className="lp-btn-accent" style={{ textDecoration: 'none' }}>
+                        Start transcribing <Ic.Arrow s={16} c="#fff" />
+                    </Link>
+                    <a
+                        href={PLAY_STORE_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="lp-btn-playstore"
+                    >
+                        <Ic.GooglePlay s={18} />
+                        <span>Get on Google Play</span>
+                    </a>
+                </div>
             </section>
 
-            {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ FAQ Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */}
+            {/* ── FAQ ── */}
             <Section style={{ marginTop: '72px', marginBottom: '72px' }} id="faq">
                 <h2 style={{
                     fontSize: 'clamp(20px, 3vw, 28px)', fontWeight: '900',
-                    letterSpacing: '-0.5px', marginBottom: '24px', color: T.slate,
+                    letterSpacing: '-0.5px', marginBottom: '24px', color: T.ink,
                 }}>
                     Frequently asked questions
                 </h2>
                 {FAQS.map((f, i) => <FAQItem key={i} q={f.q} a={f.a} />)}
             </Section>
 
-            {/* Ã”Ã¶Ã‡Ã”Ã¶Ã‡ Footer Ã”Ã¶Ã‡Ã”Ã¶Ã‡ */}
+            {/* ── Footer ── */}
             <footer style={{
                 borderTop: `1px solid ${T.border}`,
                 padding: '28px clamp(20px, 5vw, 56px)',
@@ -574,8 +668,8 @@ export default function LandingPage() {
                 flexWrap: 'wrap', gap: '16px',
                 fontSize: '12px', color: T.ink4, background: T.bg,
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <Logo size={18} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <Logo size={20} />
                     <span style={{ fontWeight: '700', color: T.ink3 }}>Inkto</span>
                     <span>&copy; {new Date().getFullYear()}</span>
                     <span>&middot;</span>
@@ -590,7 +684,15 @@ export default function LandingPage() {
                     <Link href="/accuracy.html" style={{ color: T.ink3, textDecoration: 'none' }}>AI Accuracy</Link>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer"
+                        style={{
+                            color: T.ink2, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px',
+                            fontWeight: '600', fontSize: '12px', border: `1px solid ${T.border}`,
+                            padding: '5px 12px', borderRadius: '8px', background: T.surface,
+                        }}>
+                        <Ic.GooglePlay s={14} /> Google Play
+                    </a>
                     <a href="https://paystack.shop/pay/4h04eqpye7" target="_blank" rel="noopener noreferrer"
                         style={{
                             color: T.ink2, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px',
@@ -619,4 +721,3 @@ export default function LandingPage() {
         </div>
     );
 }
-

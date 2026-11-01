@@ -39,14 +39,6 @@ const Ic = {
     Twitter: (p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="none" stroke={p.c||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>,
     Paystack:(p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="currentColor"><path d="M4 17h6v4H4v-4zM14 17h6v4h-6v-4zM4 10h6v4H4v-4zM14 10h6v4h-6v-4zM4 3h6v4H4V3z"/></svg>,
     PayPal:  (p: any) => <svg width={p.s||16} height={p.s||16} viewBox="0 0 24 24" fill="currentColor"><path d="M7.077 16.26l1.3-8.24c.1-.64.65-1.12 1.3-1.12h4.55c2.4 0 3.9 1.15 3.9 3.4 0 2.44-1.5 4.38-4 4.38h-2.02c-.52 0-.96.38-1.04.9l-.6 3.75c-.04.25-.26.43-.51.43H7.43c-.35 0-.6-.33-.53-.66l.17-.84z"/><path fillOpacity="0.5" d="M10.77 8.26l-1.3 8.24c-.1.64-.65 1.12-1.3 1.12H5.63c-.35 0-.6.33-.53.66l1.7-10.84c.1-.64.65-1.12 1.3-1.12h4.55c1.47 0 2.57.43 3.24 1.16-.48-.7-1.33-1.16-2.52-1.16H8.82c-.65 0-1.2.48-1.3 1.12L6.22 15.26h2.52c.52 0 .96-.38 1.04-.9l.99-6.1z"/></svg>,
-    GooglePlay: (p: any) => (
-        <svg width={p.s||18} height={p.s||18} viewBox="0 0 512 512" style={{ flexShrink: 0 }}>
-            <path fill="#4285F4" d="M47.7 20.3C44.4 23.8 42.6 29 42.6 36v440c0 7 1.8 12.2 5.1 15.7l239.5-239.5L47.7 20.3z"/>
-            <path fill="#FBBC04" d="M380.1 332.8l-92.9-80.6-239.5 239.5c5.3 3.3 12.2 4.1 20 0l312.4-178.9z"/>
-            <path fill="#EA4335" d="M67.7 20.3c-7.8-4.1-14.7-3.3-20 0l239.5 239.5 92.9-80.6L67.7 20.3z"/>
-            <path fill="#34A853" d="M380.1 179.2L428.8 207c16.3 9.3 16.3 24.7 0 34l-48.7 27.8-19.4-19.4 19.4-60.2z"/>
-        </svg>
-    ),
 };
 
 /* Official Logo SVG */
@@ -251,29 +243,16 @@ export default function LandingPage() {
                     text-decoration: none; transition: color 0.15s;
                 }
                 .lp-footer-link:hover { color: ${T.ink3}; }
-                .lp-btn-playstore {
-                    display: inline-flex; align-items: center; gap: 9px;
-                    padding: 13px 22px; border-radius: 12px;
-                    background: ${T.slate}; color: #FFFFFF;
-                    font-size: 14.5px; font-weight: 700; text-decoration: none;
-                    border: 1px solid ${T.borderDark};
-                    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-                    transition: transform 0.18s cubic-bezier(.4,0,.2,1), box-shadow 0.18s cubic-bezier(.4,0,.2,1);
-                }
-                .lp-btn-playstore:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 10px 28px rgba(0,0,0,0.22);
-                    border-color: rgba(255,255,255,0.25);
-                }
             `}</style>
 
             {/* ── Navbar ── */}
             <nav style={{
                 position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '0 clamp(20px, 5vw, 56px)', height: '64px',
-                background: 'rgba(250, 250, 249, 0.92)',
-                backdropFilter: 'blur(14px)',
+                padding: 'max(12px, env(safe-area-inset-top, 0px)) clamp(16px, 5vw, 48px) 12px',
+                background: 'rgba(250, 250, 249, 0.94)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
                 borderBottom: `1px solid ${T.border}`,
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -282,31 +261,9 @@ export default function LandingPage() {
                 </div>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <a
-                        href={PLAY_STORE_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '7px',
-                            padding: '7px 14px',
-                            fontSize: '12.5px',
-                            fontWeight: 600,
-                            borderRadius: '9px',
-                            color: T.ink2,
-                            background: T.surface,
-                            border: `1px solid ${T.border}`,
-                            textDecoration: 'none',
-                            transition: 'background 0.15s ease',
-                        }}
-                    >
-                        <Ic.GooglePlay s={15} />
-                        <span className="hidden sm:inline">Google Play</span>
-                    </a>
                     <Link href="/app" className="lp-btn-primary"
                         style={{ padding: '8px 18px', fontSize: '13px', borderRadius: '9px', textDecoration: 'none' }}>
-                        Open Web App
+                        Try Free
                     </Link>
                 </div>
             </nav>
@@ -408,10 +365,14 @@ export default function LandingPage() {
                         href={PLAY_STORE_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="lp-btn-playstore"
+                        style={{ display: 'inline-block', lineHeight: 0 }}
+                        aria-label="Get it on Google Play"
                     >
-                        <Ic.GooglePlay s={18} />
-                        <span>Get on Google Play</span>
+                        <img
+                            src="/google-play-badge.png"
+                            alt="Get it on Google Play"
+                            style={{ height: '48px', width: 'auto', display: 'block' }}
+                        />
                     </a>
                 </div>
 
@@ -574,29 +535,19 @@ export default function LandingPage() {
                         Install the official Inkto app from Google Play for high-speed edge camera scanning, or use Inkto Web in any desktop browser. Word documents (.docx) are sent directly to your inbox with a secure session link.
                     </p>
 
-                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '28px' }}>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '28px' }}>
                         <a
                             href={PLAY_STORE_URL}
                             target="_blank"
                             rel="noopener noreferrer"
-                            style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                padding: '10px 18px',
-                                borderRadius: '10px',
-                                background: 'rgba(255,255,255,0.12)',
-                                border: '1px solid rgba(255,255,255,0.22)',
-                                color: '#FFFFFF',
-                                fontSize: '13.5px',
-                                fontWeight: 700,
-                                textDecoration: 'none',
-                                transition: 'background 0.15s ease',
-                            }}
+                            style={{ display: 'inline-block', lineHeight: 0 }}
+                            aria-label="Get it on Google Play"
                         >
-                            <Ic.GooglePlay s={17} />
-                            <span>Download on Google Play</span>
-                            <Ic.Arrow s={14} c="#FFFFFF" />
+                            <img
+                                src="/google-play-badge.png"
+                                alt="Get it on Google Play"
+                                style={{ height: '48px', width: 'auto', display: 'block' }}
+                            />
                         </a>
                     </div>
 
@@ -633,7 +584,7 @@ export default function LandingPage() {
                 <p style={{ color: T.ink3, marginBottom: '32px', fontSize: '15px', maxWidth: '340px', margin: '0 auto 32px' }}>
                     No sign up required. Just upload a photo and get clean text in seconds.
                 </p>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
                     <Link href="/app" className="lp-btn-accent" style={{ textDecoration: 'none' }}>
                         Start transcribing <Ic.Arrow s={16} c="#fff" />
                     </Link>
@@ -641,10 +592,14 @@ export default function LandingPage() {
                         href={PLAY_STORE_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="lp-btn-playstore"
+                        style={{ display: 'inline-block', lineHeight: 0 }}
+                        aria-label="Get it on Google Play"
                     >
-                        <Ic.GooglePlay s={18} />
-                        <span>Get on Google Play</span>
+                        <img
+                            src="/google-play-badge.png"
+                            alt="Get it on Google Play"
+                            style={{ height: '48px', width: 'auto', display: 'block' }}
+                        />
                     </a>
                 </div>
             </section>
@@ -686,12 +641,13 @@ export default function LandingPage() {
 
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                     <a href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer"
-                        style={{
-                            color: T.ink2, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px',
-                            fontWeight: '600', fontSize: '12px', border: `1px solid ${T.border}`,
-                            padding: '5px 12px', borderRadius: '8px', background: T.surface,
-                        }}>
-                        <Ic.GooglePlay s={14} /> Google Play
+                        style={{ display: 'inline-block', lineHeight: 0 }}
+                        aria-label="Get it on Google Play">
+                        <img
+                            src="/google-play-badge.png"
+                            alt="Get it on Google Play"
+                            style={{ height: '34px', width: 'auto', display: 'block' }}
+                        />
                     </a>
                     <a href="https://paystack.shop/pay/4h04eqpye7" target="_blank" rel="noopener noreferrer"
                         style={{
